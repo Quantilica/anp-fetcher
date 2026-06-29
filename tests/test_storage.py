@@ -126,6 +126,22 @@ def test_path_subdirs_correct(tmp_path):
         "shpc-4s": "shpc-ultimas-4-semanas",
         "vdpb-abertos": "vendas-abertos",
         "pp-abertos": "processamento-abertos",
+        # Onda 3a
+        "producao-el":            "producao-estado-localizacao",
+        "pb-abertos":             "producao-biocombustiveis-abertos",
+        "ie-abertos":             "importacoes-exportacoes-abertos",
+        "comercializacao-gn":     "comercializacao-gas-natural",
+        "movimentacao-terminais": "movimentacao-terminais",
+        "armazenagem-terminais":  "armazenagem-terminais",
+        "incidentes":             "incidentes-operacionais",
+        "rodadas":                "rodadas-licitacoes",
+        "concessionarios":        "concessionarios",
+        "revendedores":           "revendedores-varejistas",
+        "revendas-glp":           "revendas-glp",
+        "registro-lubrificantes": "registro-lubrificantes",
+        "pml":                    "pml",
+        "fiscalizacao":           "fiscalizacao-abastecimento",
+        "royalties":              "participacoes-governamentais",
     }
     for group_id, dir_name in expected.items():
         entry = list_datasets(group_id)[0]
@@ -155,3 +171,45 @@ def test_semestral_different_semesters_different_paths(tmp_path):
     date = dt.date(2026, 6, 1)
     paths = [repo.path_for_entry(e, last_modified=date) for e in entries]
     assert len(paths) == len(set(paths)), "Duplicate paths for semestral entries"
+
+
+def test_path_for_royalties_annual(tmp_path):
+    repo = DataRepository(tmp_path)
+    entries = list_datasets("royalties")
+    ru_2020 = next(e for e in entries if e["id"] == "royalties-uniao-2020")
+    date = dt.date(2026, 6, 29)
+    path = repo.path_for_entry(ru_2020, last_modified=date)
+    assert path.parent.name == "participacoes-governamentais"
+    assert "royalties-uniao_2020@20260629" in path.name
+
+
+def test_path_for_royalties_static_pe(tmp_path):
+    repo = DataRepository(tmp_path)
+    pe = next(e for e in list_datasets("royalties") if e["id"] == "pe-campo")
+    path = repo.path_for_entry(pe)
+    assert path.parent.name == "participacoes-governamentais"
+    assert path.name.startswith("pe-campo")
+    assert path.suffix == ".csv"
+
+
+def test_royalties_annual_entries_produce_distinct_paths(tmp_path):
+    repo = DataRepository(tmp_path)
+    date = dt.date(2026, 6, 29)
+    paths = [repo.path_for_entry(e, last_modified=date) for e in list_datasets("royalties")]
+    assert len(paths) == len(set(paths)), "Duplicate paths in royalties group"
+
+
+def test_path_for_producao_el(tmp_path):
+    repo = DataRepository(tmp_path)
+    entry = list_datasets("producao-el")[0]
+    path = repo.path_for_entry(entry)
+    assert path.parent.name == "producao-estado-localizacao"
+    assert path.suffix == ".csv"
+
+
+def test_path_for_fiscalizacao(tmp_path):
+    repo = DataRepository(tmp_path)
+    entry = list_datasets("fiscalizacao")[0]
+    path = repo.path_for_entry(entry)
+    assert path.parent.name == "fiscalizacao-abastecimento"
+    assert path.suffix == ".xlsx"

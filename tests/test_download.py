@@ -108,3 +108,53 @@ def test_download_all_pp_abertos_dry_run(tmp_path):
         paths = download_all(tmp_path, groups=["pp-abertos"], dry_run=True)
 
     assert len(paths) == 6
+
+
+def test_download_all_producao_el_dry_run(tmp_path):
+    """producao-el dry-run should return 7 paths."""
+    with patch("anp_fetcher.download._safe_head_date", return_value=None):
+        paths = download_all(tmp_path, groups=["producao-el"], dry_run=True)
+
+    assert len(paths) == 7
+
+
+def test_download_all_royalties_dry_run(tmp_path):
+    """royalties dry-run should return 79 paths."""
+    with patch("anp_fetcher.download._safe_head_date", return_value=None):
+        paths = download_all(tmp_path, groups=["royalties"], dry_run=True)
+
+    assert len(paths) == 79
+    for path in paths:
+        assert not path.exists()
+
+
+def test_download_all_3a_static_groups_dry_run(tmp_path):
+    """Each Onda 3a static group should return the expected number of paths."""
+    expected = {
+        "pb-abertos": 3,
+        "ie-abertos": 4,
+        "comercializacao-gn": 3,
+        "movimentacao-terminais": 1,
+        "armazenagem-terminais": 1,
+        "incidentes": 5,
+        "rodadas": 3,
+        "concessionarios": 2,
+        "revendedores": 1,
+        "revendas-glp": 1,
+        "registro-lubrificantes": 1,
+        "pml": 1,
+        "fiscalizacao": 2,
+    }
+    for group_id, count in expected.items():
+        with patch("anp_fetcher.download._safe_head_date", return_value=None):
+            paths = download_all(tmp_path, groups=[group_id], dry_run=True)
+        assert len(paths) == count, f"{group_id}: expected {count}, got {len(paths)}"
+
+
+def test_download_all_3a_aliases(tmp_path):
+    """Onda 3a aliases should resolve correctly in download_all."""
+    with patch("anp_fetcher.download._safe_head_date", return_value=None):
+        paths_alias = download_all(tmp_path, groups=["participacoes-governamentais"], dry_run=True)
+        paths_canon = download_all(tmp_path, groups=["royalties"], dry_run=True)
+
+    assert len(paths_alias) == len(paths_canon)

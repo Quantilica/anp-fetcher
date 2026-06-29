@@ -35,6 +35,22 @@ _GROUP_DIRS: dict[str, str] = {
     # dados-abertos — vendas e processamento
     "vdpb-abertos": "vendas-abertos",
     "pp-abertos":   "processamento-abertos",
+    # dados-abertos — Onda 3a
+    "producao-el":             "producao-estado-localizacao",
+    "pb-abertos":              "producao-biocombustiveis-abertos",
+    "ie-abertos":              "importacoes-exportacoes-abertos",
+    "comercializacao-gn":      "comercializacao-gas-natural",
+    "movimentacao-terminais":  "movimentacao-terminais",
+    "armazenagem-terminais":   "armazenagem-terminais",
+    "incidentes":              "incidentes-operacionais",
+    "rodadas":                 "rodadas-licitacoes",
+    "concessionarios":         "concessionarios",
+    "revendedores":            "revendedores-varejistas",
+    "revendas-glp":            "revendas-glp",
+    "registro-lubrificantes":  "registro-lubrificantes",
+    "pml":                     "pml",
+    "fiscalizacao":            "fiscalizacao-abastecimento",
+    "royalties":               "participacoes-governamentais",
 }
 
 

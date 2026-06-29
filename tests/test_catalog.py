@@ -17,7 +17,13 @@ _DA_GROUPS = {
     "shpc-ca", "shpc-glp", "shpc-diesel-gnv", "shpc-gasolina-etanol",
     "shpc-glp-mensal", "shpc-4s", "vdpb-abertos", "pp-abertos",
 }
-_ALL_GROUPS = _DE_GROUPS | _DA_GROUPS
+_DA_3A_GROUPS = {
+    "producao-el", "pb-abertos", "ie-abertos", "comercializacao-gn",
+    "movimentacao-terminais", "armazenagem-terminais", "incidentes",
+    "rodadas", "concessionarios", "revendedores", "revendas-glp",
+    "registro-lubrificantes", "pml", "fiscalizacao", "royalties",
+}
+_ALL_GROUPS = _DE_GROUPS | _DA_GROUPS | _DA_3A_GROUPS
 
 
 def test_all_groups_present():
@@ -260,6 +266,154 @@ def test_pp_abertos_all_csv():
 # Aliases and resolution
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Onda 3a
+# ---------------------------------------------------------------------------
+
+def test_producao_el_count():
+    assert len(GROUPS["producao-el"]["entries"]) == 7
+
+
+def test_producao_el_all_csv():
+    for e in GROUPS["producao-el"]["entries"]:
+        assert e["ext"] == "csv"
+        assert e["source"] == "dados-abertos"
+        assert e["year"] is None
+        assert "ppgn-el" in e["url"]
+
+
+def test_pb_abertos_count():
+    assert len(GROUPS["pb-abertos"]["entries"]) == 3
+
+
+def test_ie_abertos_count():
+    assert len(GROUPS["ie-abertos"]["entries"]) == 4
+
+
+def test_ie_abertos_subfolders():
+    urls = [e["url"] for e in GROUPS["ie-abertos"]["entries"]]
+    assert any("/petroleo/" in u for u in urls)
+    assert any("/gn/" in u for u in urls)
+    assert any("/derivados/" in u for u in urls)
+    assert any("/etanol/" in u for u in urls)
+
+
+def test_comercializacao_gn_count():
+    assert len(GROUPS["comercializacao-gn"]["entries"]) == 3
+
+
+def test_comercializacao_gn_url_base():
+    for e in GROUPS["comercializacao-gn"]["entries"]:
+        assert "/assuntos/" in e["url"]  # URL fora do padrão /dados-abertos/arquivos/
+
+
+def test_incidentes_count():
+    assert len(GROUPS["incidentes"]["entries"]) == 5
+
+
+def test_incidentes_ids():
+    ids = {e["id"] for e in GROUPS["incidentes"]["entries"]}
+    assert ids == {
+        "issm-incidentes", "issm-classificacao", "issm-feridos",
+        "issm-substancias", "issm-tipo",
+    }
+
+
+def test_rodadas_count():
+    assert len(GROUPS["rodadas"]["entries"]) == 3
+
+
+def test_concessionarios_count():
+    assert len(GROUPS["concessionarios"]["entries"]) == 2
+
+
+def test_fiscalizacao_count():
+    assert len(GROUPS["fiscalizacao"]["entries"]) == 2
+
+
+def test_fiscalizacao_xlsx():
+    for e in GROUPS["fiscalizacao"]["entries"]:
+        assert e["ext"] == "xlsx"
+        assert "/paineis-dinamicos-da-anp/" in e["url"]
+
+
+def test_royalties_count():
+    assert len(GROUPS["royalties"]["entries"]) == 79
+
+
+def test_royalties_uniao_url_irregularities():
+    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-uniao"]
+    assert len(entries) == 17
+    by_year = {e["year"]: e["url"] for e in entries}
+    # underscore era for 2009-2018
+    assert "royalties_uniao_2018.csv" in by_year[2018]
+    # hyphen from 2019
+    assert "royalties-uniao-2019.csv" in by_year[2019]
+    # 2020 in different subfolder
+    assert "/pg/2020/" in by_year[2020]
+
+
+def test_royalties_estado_plural_2022_2023():
+    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-estado"]
+    by_year = {e["year"]: e["url"] for e in entries}
+    assert "royalties-estados-2022.csv" in by_year[2022]
+    assert "royalties-estados-2023.csv" in by_year[2023]
+    assert "royalties-estado-2024.csv" in by_year[2024]
+
+
+def test_royalties_municipio_plural_2022_2023():
+    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-municipio"]
+    by_year = {e["year"]: e["url"] for e in entries}
+    assert "royalties-municipios-2022.csv" in by_year[2022]
+    assert "royalties-municipios-2023.csv" in by_year[2023]
+
+
+def test_royalties_pe_static():
+    pe = [e for e in GROUPS["royalties"]["entries"] if e["id"].startswith("pe-")]
+    assert len(pe) == 4
+    ids = {e["id"] for e in pe}
+    assert ids == {"pe-uniao", "pe-estado", "pe-municipio", "pe-campo"}
+    for e in pe:
+        assert e["year"] is None
+
+
+def test_royalties_preco_ref_gn_epochs():
+    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "preco-ref-gn"]
+    assert len(entries) == 16
+    by_year = {e["year"]: e["url"] for e in entries}
+    assert "precorefgn_2019.csv" in by_year[2019]      # underscore epoch
+    assert "precoref-gn-2020.csv" in by_year[2020]     # transition
+    assert "preco-referencia-gn-2021.csv" in by_year[2021]  # long name epoch
+
+
+def test_royalties_preco_ref_petroleo_epochs():
+    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "preco-ref-petroleo"]
+    assert len(entries) == 8
+    by_year = {e["year"]: e["url"] for e in entries}
+    assert "precorefpetro_2019.csv" in by_year[2019]
+    assert "precoref-petro-2020-1.csv" in by_year[2020]
+    assert "preco-referencia-petroleo-2021.csv" in by_year[2021]
+
+
+def test_3a_all_static_have_no_partitions():
+    static_groups = {
+        "producao-el", "pb-abertos", "ie-abertos", "comercializacao-gn",
+        "movimentacao-terminais", "armazenagem-terminais", "incidentes",
+        "rodadas", "concessionarios", "revendedores", "revendas-glp",
+        "registro-lubrificantes", "pml", "fiscalizacao",
+    }
+    for gid in static_groups:
+        for e in GROUPS[gid]["entries"]:
+            assert e["semester"] is None, f"{e['id']}: semester should be None"
+            assert e["month"] is None, f"{e['id']}: month should be None"
+
+
+def test_3a_source_all_dados_abertos():
+    for gid in _DA_3A_GROUPS:
+        for e in GROUPS[gid]["entries"]:
+            assert e["source"] == "dados-abertos", f"{e['id']}: wrong source"
+
+
 def test_group_aliases_resolve():
     assert resolve_group("importacoes-exportacoes") == "ie"
     assert resolve_group("processamento-petroleo") == "pp"
@@ -269,6 +423,10 @@ def test_group_aliases_resolve():
     assert resolve_group("precos-combustiveis") == "shpc-ca"
     assert resolve_group("vendas-abertos") == "vdpb-abertos"
     assert resolve_group("processamento-abertos") == "pp-abertos"
+    assert resolve_group("producao-estado") == "producao-el"
+    assert resolve_group("participacoes-governamentais") == "royalties"
+    assert resolve_group("importacoes-exportacoes-csv") == "ie-abertos"
+    assert resolve_group("producao-biocombustiveis-csv") == "pb-abertos"
 
 
 def test_resolve_canonical_keys():
