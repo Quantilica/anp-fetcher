@@ -1,0 +1,55 @@
+[project]
+name = "anp-fetcher"
+version = "1.0.0"
+description = "A commandline utility to download ANP (Agência Nacional do Petróleo) statistical data"
+readme = "README.md"
+authors = [
+    { name = "Komesu, D.K.", email = "daniel@dkko.me" },
+]
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "quantilica-core @ git+https://github.com/Quantilica/quantilica-core.git",
+    "openpyxl>=3.1.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/Quantilica/anp-fetcher"
+Repository = "https://github.com/Quantilica/anp-fetcher"
+Issues = "https://github.com/Quantilica/anp-fetcher/issues"
+
+[project.scripts]
+anp-fetcher = "anp_fetcher.cli:main"
+
+[project.entry-points."quantilica.fetchers"]
+anp = "anp_fetcher.plugin:app"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9.0",
+    "pytest>=8.0.0",
+    "pytest-cov",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anp_fetcher"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
