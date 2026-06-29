@@ -1,14 +1,16 @@
 """ANP unified dataset catalog.
 
-Re-exports types and aggregates all groups from both sources:
-- catalog_dados_estatisticos: ANP dados-estatísticos (XLS/XLSX)
-- catalog_dados_abertos:      ANP dados-abertos (CSV, SHPC, etc.)
+Aggregates all groups from all catalog modules:
+- catalog_dados_estatisticos:   ANP dados-estatísticos (XLS/XLSX) — Fase 1
+- catalog_dados_abertos:        ANP dados-abertos (CSV, SHPC, etc.) — Fase 2
+- catalog_dados_abertos_3a:     ANP dados-abertos — Onda 3a (15 grupos)
 
-Public API is backward-compatible with the original single-file catalog.
+Public API is stable across phases.
 """
 
 from ._catalog_base import DatasetEntry, GroupInfo
 from .catalog_dados_abertos import GROUP_ALIASES_DA, GROUPS_DA
+from .catalog_dados_abertos_3a import GROUP_ALIASES_DA_3A, GROUPS_DA_3A
 from .catalog_dados_estatisticos import GROUP_ALIASES_DE, GROUPS_DE
 
 __all__ = [
@@ -22,9 +24,9 @@ __all__ = [
     "list_datasets",
 ]
 
-GROUPS: dict[str, GroupInfo] = {**GROUPS_DE, **GROUPS_DA}
+GROUPS: dict[str, GroupInfo] = {**GROUPS_DE, **GROUPS_DA, **GROUPS_DA_3A}
 
-GROUP_ALIASES: dict[str, str] = {**GROUP_ALIASES_DE, **GROUP_ALIASES_DA}
+GROUP_ALIASES: dict[str, str] = {**GROUP_ALIASES_DE, **GROUP_ALIASES_DA, **GROUP_ALIASES_DA_3A}
 
 ALL_GROUP_KEYS: list[str] = list(GROUPS)
 
