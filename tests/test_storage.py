@@ -1,12 +1,9 @@
 """Tests for anp_fetcher.storage."""
 
 import datetime as dt
-from pathlib import Path
-
-import pytest
 
 from anp_fetcher.catalog import GROUPS, list_datasets
-from anp_fetcher.storage import DataRepository, _GROUP_DIRS
+from anp_fetcher.storage import _GROUP_DIRS, DataRepository
 
 
 def test_group_dirs_cover_all_groups():
@@ -54,8 +51,7 @@ def test_path_for_annual_entry_with_date(tmp_path):
 def test_path_for_semestral_entry(tmp_path):
     repo = DataRepository(tmp_path)
     entry = next(
-        e for e in list_datasets("shpc-ca")
-        if e["year"] == 2024 and e["semester"] == 1
+        e for e in list_datasets("shpc-ca") if e["year"] == 2024 and e["semester"] == 1
     )
     date = dt.date(2026, 6, 1)
     path = repo.path_for_entry(entry, last_modified=date)
@@ -67,8 +63,7 @@ def test_path_for_semestral_entry(tmp_path):
 def test_path_for_semestral_entry_second_semester(tmp_path):
     repo = DataRepository(tmp_path)
     entry = next(
-        e for e in list_datasets("shpc-glp")
-        if e["year"] == 2021 and e["semester"] == 2
+        e for e in list_datasets("shpc-glp") if e["year"] == 2021 and e["semester"] == 2
     )
     date = dt.date(2026, 6, 1)
     path = repo.path_for_entry(entry, last_modified=date)
@@ -79,7 +74,8 @@ def test_path_for_semestral_entry_second_semester(tmp_path):
 def test_path_for_monthly_entry(tmp_path):
     repo = DataRepository(tmp_path)
     entry = next(
-        e for e in list_datasets("shpc-diesel-gnv")
+        e
+        for e in list_datasets("shpc-diesel-gnv")
         if e["year"] == 2025 and e["month"] == 3
     )
     date = dt.date(2026, 6, 1)
@@ -127,21 +123,30 @@ def test_path_subdirs_correct(tmp_path):
         "vdpb-abertos": "vendas-abertos",
         "pp-abertos": "processamento-abertos",
         # Onda 3a
-        "producao-el":            "producao-estado-localizacao",
-        "pb-abertos":             "producao-biocombustiveis-abertos",
-        "ie-abertos":             "importacoes-exportacoes-abertos",
-        "comercializacao-gn":     "comercializacao-gas-natural",
+        "producao-el": "producao-estado-localizacao",
+        "pb-abertos": "producao-biocombustiveis-abertos",
+        "ie-abertos": "importacoes-exportacoes-abertos",
+        "comercializacao-gn": "comercializacao-gas-natural",
         "movimentacao-terminais": "movimentacao-terminais",
-        "armazenagem-terminais":  "armazenagem-terminais",
-        "incidentes":             "incidentes-operacionais",
-        "rodadas":                "rodadas-licitacoes",
-        "concessionarios":        "concessionarios",
-        "revendedores":           "revendedores-varejistas",
-        "revendas-glp":           "revendas-glp",
+        "armazenagem-terminais": "armazenagem-terminais",
+        "incidentes": "incidentes-operacionais",
+        "rodadas": "rodadas-licitacoes",
+        "concessionarios": "concessionarios",
+        "revendedores": "revendedores-varejistas",
+        "revendas-glp": "revendas-glp",
         "registro-lubrificantes": "registro-lubrificantes",
-        "pml":                    "pml",
-        "fiscalizacao":           "fiscalizacao-abastecimento",
-        "royalties":              "participacoes-governamentais",
+        "pml": "pml",
+        "fiscalizacao": "fiscalizacao-abastecimento",
+        "royalties": "participacoes-governamentais",
+        # Onda 3b
+        "movimentacao-gn": "movimentacao-gn",
+        "tancagem": "tancagem-abastecimento",
+        "pmqc": "qualidade-combustiveis-pmqc",
+        "movimentacao-derivados": "movimentacao-derivados",
+        "producao-poco-abertos": "producao-poco-abertos",
+        # Onda 3c
+        "producao-fdp-mar": "producao-fdp-mar",
+        "producao-fdp-terra": "producao-fdp-terra",
     }
     for group_id, dir_name in expected.items():
         entry = list_datasets(group_id)[0]
@@ -195,7 +200,9 @@ def test_path_for_royalties_static_pe(tmp_path):
 def test_royalties_annual_entries_produce_distinct_paths(tmp_path):
     repo = DataRepository(tmp_path)
     date = dt.date(2026, 6, 29)
-    paths = [repo.path_for_entry(e, last_modified=date) for e in list_datasets("royalties")]
+    paths = [
+        repo.path_for_entry(e, last_modified=date) for e in list_datasets("royalties")
+    ]
     assert len(paths) == len(set(paths)), "Duplicate paths in royalties group"
 
 

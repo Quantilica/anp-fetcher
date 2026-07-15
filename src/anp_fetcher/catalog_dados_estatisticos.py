@@ -24,8 +24,9 @@ def _a(
     years: list[int],
     ext_map: dict[int, str] | str,
 ) -> list[DatasetEntry]:
-    return _annual(group, _SOURCE, base_id, name_prefix,
-                   f"{_BASE}/{path_template}", years, ext_map)
+    return _annual(
+        group, _SOURCE, base_id, name_prefix, f"{_BASE}/{path_template}", years, ext_map
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -33,10 +34,20 @@ def _a(
 # ---------------------------------------------------------------------------
 
 _ie_entries: list[DatasetEntry] = [
-    _s("ie", "ie-m3", "Importações e Exportações (m³)",
-       "ie/importacoes-exportacoes-m3.xlsx", "xlsx"),
-    _s("ie", "ie-b", "Importações e Exportações (barris)",
-       "ie/importacoes-exportacoes-b.xlsx", "xlsx"),
+    _s(
+        "ie",
+        "ie-m3",
+        "Importações e Exportações (m³)",
+        "ie/importacoes-exportacoes-m3.xlsx",
+        "xlsx",
+    ),
+    _s(
+        "ie",
+        "ie-b",
+        "Importações e Exportações (barris)",
+        "ie/importacoes-exportacoes-b.xlsx",
+        "xlsx",
+    ),
 ]
 
 # ---------------------------------------------------------------------------
@@ -44,14 +55,34 @@ _ie_entries: list[DatasetEntry] = [
 # ---------------------------------------------------------------------------
 
 _pp_entries: list[DatasetEntry] = [
-    _s("pp", "processamento-petroleo-m3", "Volume de petróleo refinado (m³)",
-       f"{_PP_PATH}/processamento-petroleo-m3.xls", "xls"),
-    _s("pp", "processamento-petroleo-b", "Volume de petróleo refinado (barris)",
-       f"{_PP_PATH}/processamento-petroleo-b.xls", "xls"),
-    _s("pp", "producao-derivados-m3", "Produção nacional de derivados (m³)",
-       f"{_PP_PATH}/producao-derivados-m3.xls", "xls"),
-    _s("pp", "producao-derivados-b", "Produção nacional de derivados (barris)",
-       f"{_PP_PATH}/producao-derivados-b.xls", "xls"),
+    _s(
+        "pp",
+        "processamento-petroleo-m3",
+        "Volume de petróleo refinado (m³)",
+        f"{_PP_PATH}/processamento-petroleo-m3.xls",
+        "xls",
+    ),
+    _s(
+        "pp",
+        "processamento-petroleo-b",
+        "Volume de petróleo refinado (barris)",
+        f"{_PP_PATH}/processamento-petroleo-b.xls",
+        "xls",
+    ),
+    _s(
+        "pp",
+        "producao-derivados-m3",
+        "Produção nacional de derivados (m³)",
+        f"{_PP_PATH}/producao-derivados-m3.xls",
+        "xls",
+    ),
+    _s(
+        "pp",
+        "producao-derivados-b",
+        "Produção nacional de derivados (barris)",
+        f"{_PP_PATH}/producao-derivados-b.xls",
+        "xls",
+    ),
 ]
 
 # ---------------------------------------------------------------------------
@@ -59,14 +90,34 @@ _pp_entries: list[DatasetEntry] = [
 # ---------------------------------------------------------------------------
 
 _pb_entries: list[DatasetEntry] = [
-    _s("pb", "producao-biodiesel-m3", "Produção de biodiesel (m³)",
-       "pb/producao-biodiesel-m3.xls", "xls"),
-    _s("pb", "producao-biodiesel-b", "Produção de biodiesel (barris)",
-       "pb/producao-biodiesel-b.xls", "xls"),
-    _s("pb", "producao-etanol-m3", "Produção de etanol (m³)",
-       "pb/producao-etanol-m3.xls", "xls"),
-    _s("pb", "producao-etanol-b", "Produção de etanol (barris)",
-       "pb/producao-etanol-b.xls", "xls"),
+    _s(
+        "pb",
+        "producao-biodiesel-m3",
+        "Produção de biodiesel (m³)",
+        "pb/producao-biodiesel-m3.xls",
+        "xls",
+    ),
+    _s(
+        "pb",
+        "producao-biodiesel-b",
+        "Produção de biodiesel (barris)",
+        "pb/producao-biodiesel-b.xls",
+        "xls",
+    ),
+    _s(
+        "pb",
+        "producao-etanol-m3",
+        "Produção de etanol (m³)",
+        "pb/producao-etanol-m3.xls",
+        "xls",
+    ),
+    _s(
+        "pb",
+        "producao-etanol-b",
+        "Produção de etanol (barris)",
+        "pb/producao-etanol-b.xls",
+        "xls",
+    ),
 ]
 
 # ---------------------------------------------------------------------------
@@ -74,26 +125,47 @@ _pb_entries: list[DatasetEntry] = [
 # ---------------------------------------------------------------------------
 
 _ppg_static: list[DatasetEntry] = [
-    _s("ppg", "producao-petroleo-m3", "Produção nacional de petróleo e LGN (m³)",
-       "ppg/producao-petroleo-m3.xls", "xls"),
-    _s("ppg", "producao-petroleo-b", "Produção nacional de petróleo e LGN (barris)",
-       "ppg/producao-petroleo-b.xls", "xls"),
-    _s("ppg", "producao-gas-natural-m3", "Produção nacional de gás natural (mil m³)",
-       "ppg/producao-gas-natural-m3.xls", "xls"),
+    _s(
+        "ppg",
+        "producao-petroleo-m3",
+        "Produção nacional de petróleo e LGN (m³)",
+        "ppg/producao-petroleo-m3.xls",
+        "xls",
+    ),
+    _s(
+        "ppg",
+        "producao-petroleo-b",
+        "Produção nacional de petróleo e LGN (barris)",
+        "ppg/producao-petroleo-b.xls",
+        "xls",
+    ),
+    _s(
+        "ppg",
+        "producao-gas-natural-m3",
+        "Produção nacional de gás natural (mil m³)",
+        "ppg/producao-gas-natural-m3.xls",
+        "xls",
+    ),
 ]
 
 _poco_entries = _a(
-    "ppg", "producao-poco", "Produção por poço",
+    "ppg",
+    "producao-poco",
+    "Produção por poço",
     "ppg/pp/producao-pocos-{year}.{ext}",
-    list(range(2005, 2024)), "zip",
+    list(range(2005, 2024)),
+    "zip",
 )
 
 _campo_ext: dict[int, str] = {y: "xls" for y in range(2009, 2016)}
 _campo_ext[2016] = "xlsx"
 _campo_entries = _a(
-    "ppg", "producao-campo", "Produção por campo",
+    "ppg",
+    "producao-campo",
+    "Produção por campo",
     "ppg/pc/producao-campo-{year}.{ext}",
-    list(range(2009, 2017)), _campo_ext,
+    list(range(2009, 2017)),
+    _campo_ext,
 )
 
 _ppg_entries: list[DatasetEntry] = _ppg_static + _poco_entries + _campo_entries
@@ -103,43 +175,65 @@ _ppg_entries: list[DatasetEntry] = _ppg_static + _poco_entries + _campo_entries
 # ---------------------------------------------------------------------------
 
 _vdpb_static: list[DatasetEntry] = [
-    _s("vdpb", "vendas-combustiveis-m3", "Vendas de derivados combustíveis (m³)",
-       "vdpb/vendas-combustiveis-m3.xls", "xls"),
-    _s("vdpb", "vendas-combustiveis-b", "Vendas de derivados combustíveis (barris)",
-       "vdpb/vendas-combustiveis-b.xls", "xls"),
+    _s(
+        "vdpb",
+        "vendas-combustiveis-m3",
+        "Vendas de derivados combustíveis (m³)",
+        "vdpb/vendas-combustiveis-m3.xls",
+        "xls",
+    ),
+    _s(
+        "vdpb",
+        "vendas-combustiveis-b",
+        "Vendas de derivados combustíveis (barris)",
+        "vdpb/vendas-combustiveis-b.xls",
+        "xls",
+    ),
 ]
 
 _YEARS_VDPB = list(range(2000, 2025))
 
 _asfalto_ext: dict[int, str] = {y: "xlsx" if y >= 2017 else "xls" for y in _YEARS_VDPB}
 _asfalto_entries = _a(
-    "vdpb", "vendas-municipais-asfalto", "Vendas municipais - Asfalto",
+    "vdpb",
+    "vendas-municipais-asfalto",
+    "Vendas municipais - Asfalto",
     f"{_VDPB_PATH}/asfalto/asfalto-municipio-{{year}}.{{ext}}",
-    _YEARS_VDPB, _asfalto_ext,
+    _YEARS_VDPB,
+    _asfalto_ext,
 )
 
 _etanol_h_ext: dict[int, str] = {y: "xlsx" if y >= 2017 else "xls" for y in _YEARS_VDPB}
 _etanol_h_ext[2000] = "xlsx"
 _etanol_h_entries = _a(
-    "vdpb", "vendas-municipais-etanol-hidratado", "Vendas municipais - Etanol hidratado",
+    "vdpb",
+    "vendas-municipais-etanol-hidratado",
+    "Vendas municipais - Etanol hidratado",
     f"{_VDPB_PATH}/etanol-hidratado/etanol-hidratado-municipio-{{year}}.{{ext}}",
-    _YEARS_VDPB, _etanol_h_ext,
+    _YEARS_VDPB,
+    _etanol_h_ext,
 )
 
 _gas_c_ext: dict[int, str] = {y: "xlsx" if y >= 2017 else "xls" for y in _YEARS_VDPB}
 _gas_c_ext[2010] = "xlsx"
 _gas_c_ext[2000] = "xlsx"
 _gas_c_entries = _a(
-    "vdpb", "vendas-municipais-gasolina-c", "Vendas municipais - Gasolina C",
+    "vdpb",
+    "vendas-municipais-gasolina-c",
+    "Vendas municipais - Gasolina C",
     f"{_VDPB_PATH}/gasolina-c/gasolina-c-municipio-{{year}}.{{ext}}",
-    _YEARS_VDPB, _gas_c_ext,
+    _YEARS_VDPB,
+    _gas_c_ext,
 )
 
 _gas_av_ext: dict[int, str] = {y: "xlsx" if y >= 2017 else "xls" for y in _YEARS_VDPB}
 _gas_av_entries = _a(
-    "vdpb", "vendas-municipais-gasolina-aviacao", "Vendas municipais - Gasolina de aviação",
+    "vdpb",
+    "vendas-municipais-gasolina-aviacao",
+    "Vendas municipais - Gasolina de aviação",
     f"{_VDPB_PATH}/gasolina-de-aviacao/gasolina-aviacao-municipio-{{year}}.{{ext}}",
-    _YEARS_VDPB, _gas_av_ext,
+    _YEARS_VDPB,
+    _gas_av_ext,
 )
 
 _vdpb_entries: list[DatasetEntry] = (

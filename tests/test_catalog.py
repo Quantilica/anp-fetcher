@@ -1,29 +1,52 @@
 """Tests for anp_fetcher.catalog."""
 
 import pytest
-
 from anp_fetcher.catalog import (
     ALL_GROUP_KEYS,
-    GROUP_ALIASES,
     GROUPS,
     SHPC_GROUP_KEYS,
-    DatasetEntry,
     list_datasets,
     resolve_group,
 )
 
 _DE_GROUPS = {"ie", "pp", "pb", "ppg", "vdpb"}
 _DA_GROUPS = {
-    "shpc-ca", "shpc-glp", "shpc-diesel-gnv", "shpc-gasolina-etanol",
-    "shpc-glp-mensal", "shpc-4s", "vdpb-abertos", "pp-abertos",
+    # Wave 2
+    "shpc-ca",
+    "shpc-glp",
+    "shpc-diesel-gnv",
+    "shpc-gasolina-etanol",
+    "shpc-glp-mensal",
+    "shpc-4s",
+    "vdpb-abertos",
+    "pp-abertos",
+    # Wave 3a
+    "producao-el",
+    "pb-abertos",
+    "ie-abertos",
+    "comercializacao-gn",
+    "movimentacao-terminais",
+    "armazenagem-terminais",
+    "incidentes",
+    "rodadas",
+    "concessionarios",
+    "revendedores",
+    "revendas-glp",
+    "registro-lubrificantes",
+    "pml",
+    "fiscalizacao",
+    "royalties",
+    # Wave 3b
+    "movimentacao-gn",
+    "tancagem",
+    "pmqc",
+    "movimentacao-derivados",
+    "producao-poco-abertos",
+    # Wave 3c
+    "producao-fdp-mar",
+    "producao-fdp-terra",
 }
-_DA_3A_GROUPS = {
-    "producao-el", "pb-abertos", "ie-abertos", "comercializacao-gn",
-    "movimentacao-terminais", "armazenagem-terminais", "incidentes",
-    "rodadas", "concessionarios", "revendedores", "revendas-glp",
-    "registro-lubrificantes", "pml", "fiscalizacao", "royalties",
-}
-_ALL_GROUPS = _DE_GROUPS | _DA_GROUPS | _DA_3A_GROUPS
+_ALL_GROUPS = _DE_GROUPS | _DA_GROUPS
 
 
 def test_all_groups_present():
@@ -41,8 +64,18 @@ def test_each_group_has_name_and_entries():
 
 
 def test_entry_fields_complete():
-    required = {"id", "base_id", "name", "url", "ext", "group", "source",
-                "year", "semester", "month"}
+    required = {
+        "id",
+        "base_id",
+        "name",
+        "url",
+        "ext",
+        "group",
+        "source",
+        "year",
+        "semester",
+        "month",
+    }
     for entry in list_datasets():
         missing = required - entry.keys()
         assert not missing, f"Entry {entry['id']!r} missing fields: {missing}"
@@ -127,7 +160,8 @@ def test_vdpb_static_entries():
 
 def test_vendas_municipais_ext_exceptions():
     etanol = [
-        e for e in GROUPS["vdpb"]["entries"]
+        e
+        for e in GROUPS["vdpb"]["entries"]
         if e["base_id"] == "vendas-municipais-etanol-hidratado"
     ]
     e2000 = next(e for e in etanol if e["year"] == 2000)
@@ -136,7 +170,8 @@ def test_vendas_municipais_ext_exceptions():
     assert e2001["ext"] == "xls"
 
     gas_c = [
-        e for e in GROUPS["vdpb"]["entries"]
+        e
+        for e in GROUPS["vdpb"]["entries"]
         if e["base_id"] == "vendas-municipais-gasolina-c"
     ]
     e2010 = next(e for e in gas_c if e["year"] == 2010)
@@ -148,6 +183,7 @@ def test_vendas_municipais_ext_exceptions():
 # ---------------------------------------------------------------------------
 # SHPC semestral
 # ---------------------------------------------------------------------------
+
 
 def test_shpc_ca_count():
     entries = GROUPS["shpc-ca"]["entries"]
@@ -170,8 +206,11 @@ def test_shpc_ca_ext_by_year():
 
 
 def test_shpc_ca_2022_01_url_exception():
-    e = next(e for e in GROUPS["shpc-ca"]["entries"]
-             if e["year"] == 2022 and e["semester"] == 1)
+    e = next(
+        e
+        for e in GROUPS["shpc-ca"]["entries"]
+        if e["year"] == 2022 and e["semester"] == 1
+    )
     assert "precos-semestrais-ca.zip" in e["url"]
 
 
@@ -196,6 +235,7 @@ def test_shpc_glp_url_exceptions():
 # SHPC mensal
 # ---------------------------------------------------------------------------
 
+
 def test_shpc_monthly_count():
     # 12+12+12+5 = 41 months per product
     for group_id in ("shpc-diesel-gnv", "shpc-gasolina-etanol", "shpc-glp-mensal"):
@@ -213,7 +253,8 @@ def test_shpc_monthly_has_month_field():
 def test_shpc_monthly_april_2026_is_xlsx():
     for group_id in ("shpc-diesel-gnv", "shpc-gasolina-etanol", "shpc-glp-mensal"):
         e = next(
-            e for e in GROUPS[group_id]["entries"]
+            e
+            for e in GROUPS[group_id]["entries"]
             if e["year"] == 2026 and e["month"] == 4
         )
         assert e["ext"] == "xlsx", f"{group_id} April 2026 should be xlsx"
@@ -221,7 +262,8 @@ def test_shpc_monthly_april_2026_is_xlsx():
 
 def test_shpc_gasolina_etanol_feb_2026_typo_url():
     e = next(
-        e for e in GROUPS["shpc-gasolina-etanol"]["entries"]
+        e
+        for e in GROUPS["shpc-gasolina-etanol"]["entries"]
         if e["year"] == 2026 and e["month"] == 2
     )
     assert "cados-abertos-preco-gasolina-etanol" in e["url"]
@@ -230,6 +272,7 @@ def test_shpc_gasolina_etanol_feb_2026_typo_url():
 # ---------------------------------------------------------------------------
 # SHPC últimas 4 semanas
 # ---------------------------------------------------------------------------
+
 
 def test_shpc_4s_entries():
     entries = GROUPS["shpc-4s"]["entries"]
@@ -243,6 +286,7 @@ def test_shpc_4s_entries():
 # ---------------------------------------------------------------------------
 # vdpb-abertos and pp-abertos
 # ---------------------------------------------------------------------------
+
 
 def test_vdpb_abertos_count():
     assert len(GROUPS["vdpb-abertos"]["entries"]) == 23
@@ -269,6 +313,7 @@ def test_pp_abertos_all_csv():
 # ---------------------------------------------------------------------------
 # Onda 3a
 # ---------------------------------------------------------------------------
+
 
 def test_producao_el_count():
     assert len(GROUPS["producao-el"]["entries"]) == 7
@@ -314,8 +359,11 @@ def test_incidentes_count():
 def test_incidentes_ids():
     ids = {e["id"] for e in GROUPS["incidentes"]["entries"]}
     assert ids == {
-        "issm-incidentes", "issm-classificacao", "issm-feridos",
-        "issm-substancias", "issm-tipo",
+        "issm-incidentes",
+        "issm-classificacao",
+        "issm-feridos",
+        "issm-substancias",
+        "issm-tipo",
     }
 
 
@@ -342,7 +390,9 @@ def test_royalties_count():
 
 
 def test_royalties_uniao_url_irregularities():
-    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-uniao"]
+    entries = [
+        e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-uniao"
+    ]
     assert len(entries) == 17
     by_year = {e["year"]: e["url"] for e in entries}
     # underscore era for 2009-2018
@@ -354,7 +404,9 @@ def test_royalties_uniao_url_irregularities():
 
 
 def test_royalties_estado_plural_2022_2023():
-    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-estado"]
+    entries = [
+        e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-estado"
+    ]
     by_year = {e["year"]: e["url"] for e in entries}
     assert "royalties-estados-2022.csv" in by_year[2022]
     assert "royalties-estados-2023.csv" in by_year[2023]
@@ -362,7 +414,11 @@ def test_royalties_estado_plural_2022_2023():
 
 
 def test_royalties_municipio_plural_2022_2023():
-    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "royalties-municipio"]
+    entries = [
+        e
+        for e in GROUPS["royalties"]["entries"]
+        if e["base_id"] == "royalties-municipio"
+    ]
     by_year = {e["year"]: e["url"] for e in entries}
     assert "royalties-municipios-2022.csv" in by_year[2022]
     assert "royalties-municipios-2023.csv" in by_year[2023]
@@ -378,16 +434,22 @@ def test_royalties_pe_static():
 
 
 def test_royalties_preco_ref_gn_epochs():
-    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "preco-ref-gn"]
+    entries = [
+        e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "preco-ref-gn"
+    ]
     assert len(entries) == 16
     by_year = {e["year"]: e["url"] for e in entries}
-    assert "precorefgn_2019.csv" in by_year[2019]      # underscore epoch
-    assert "precoref-gn-2020.csv" in by_year[2020]     # transition
+    assert "precorefgn_2019.csv" in by_year[2019]  # underscore epoch
+    assert "precoref-gn-2020.csv" in by_year[2020]  # transition
     assert "preco-referencia-gn-2021.csv" in by_year[2021]  # long name epoch
 
 
 def test_royalties_preco_ref_petroleo_epochs():
-    entries = [e for e in GROUPS["royalties"]["entries"] if e["base_id"] == "preco-ref-petroleo"]
+    entries = [
+        e
+        for e in GROUPS["royalties"]["entries"]
+        if e["base_id"] == "preco-ref-petroleo"
+    ]
     assert len(entries) == 8
     by_year = {e["year"]: e["url"] for e in entries}
     assert "precorefpetro_2019.csv" in by_year[2019]
@@ -397,10 +459,20 @@ def test_royalties_preco_ref_petroleo_epochs():
 
 def test_3a_all_static_have_no_partitions():
     static_groups = {
-        "producao-el", "pb-abertos", "ie-abertos", "comercializacao-gn",
-        "movimentacao-terminais", "armazenagem-terminais", "incidentes",
-        "rodadas", "concessionarios", "revendedores", "revendas-glp",
-        "registro-lubrificantes", "pml", "fiscalizacao",
+        "producao-el",
+        "pb-abertos",
+        "ie-abertos",
+        "comercializacao-gn",
+        "movimentacao-terminais",
+        "armazenagem-terminais",
+        "incidentes",
+        "rodadas",
+        "concessionarios",
+        "revendedores",
+        "revendas-glp",
+        "registro-lubrificantes",
+        "pml",
+        "fiscalizacao",
     }
     for gid in static_groups:
         for e in GROUPS[gid]["entries"]:
@@ -408,8 +480,8 @@ def test_3a_all_static_have_no_partitions():
             assert e["month"] is None, f"{e['id']}: month should be None"
 
 
-def test_3a_source_all_dados_abertos():
-    for gid in _DA_3A_GROUPS:
+def test_da_phases_source_all_dados_abertos():
+    for gid in _DA_GROUPS:
         for e in GROUPS[gid]["entries"]:
             assert e["source"] == "dados-abertos", f"{e['id']}: wrong source"
 
@@ -425,6 +497,13 @@ def test_group_aliases_resolve():
     assert resolve_group("processamento-abertos") == "pp-abertos"
     assert resolve_group("producao-estado") == "producao-el"
     assert resolve_group("participacoes-governamentais") == "royalties"
+    assert resolve_group("mov-gas-gasoduto") == "movimentacao-gn"
+    assert resolve_group("capacidade-tancagem") == "tancagem"
+    assert resolve_group("qualidade-combustivel") == "pmqc"
+    assert resolve_group("mov-derivados") == "movimentacao-derivados"
+    assert resolve_group("producao-poco-da") == "producao-poco-abertos"
+    assert resolve_group("fdp-mar") == "producao-fdp-mar"
+    assert resolve_group("fdp-terra") == "producao-fdp-terra"
     assert resolve_group("importacoes-exportacoes-csv") == "ie-abertos"
     assert resolve_group("producao-biocombustiveis-csv") == "pb-abertos"
 
@@ -463,3 +542,66 @@ def test_no_duplicate_ids():
     all_entries = list_datasets()
     ids = [e["id"] for e in all_entries]
     assert len(ids) == len(set(ids)), "Duplicate entry IDs found"
+
+
+# ---------------------------------------------------------------------------
+# Onda 3b & 3c specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_movimentacao_gn_catalog():
+    entries = GROUPS["movimentacao-gn"]["entries"]
+    assert len(entries) == 66  # 12 * 5 + 6
+    assert all(e["ext"] == "csv" for e in entries)
+    assert all(e["month"] is not None for e in entries)
+
+
+def test_tancagem_catalog():
+    entries = GROUPS["tancagem"]["entries"]
+    assert len(entries) == 36
+    csv_entries = [e for e in entries if e["ext"] == "csv"]
+    xlsx_entries = [e for e in entries if e["ext"] == "xlsx"]
+    assert len(csv_entries) == 35
+    assert len(xlsx_entries) == 1
+    assert xlsx_entries[0]["year"] == 2022 and xlsx_entries[0]["month"] == 10
+
+
+def test_pmqc_catalog():
+    entries = GROUPS["pmqc"]["entries"]
+    assert len(entries) == 248  # 124 months * 2 (csv + json)
+    csv_entries = [e for e in entries if e["base_id"] == "pmqc-csv"]
+    json_entries = [e for e in entries if e["base_id"] == "pmqc-json"]
+    assert len(csv_entries) == 124
+    assert len(json_entries) == 124
+    # check custom extensions
+    assert any(e["ext"] == "zip" for e in json_entries)
+    assert any(e["ext"] == "csv" for e in json_entries)
+
+
+def test_movimentacao_derivados_catalog():
+    entries = GROUPS["movimentacao-derivados"]["entries"]
+    assert len(entries) == 9
+    assert all(e["ext"] == "zip" for e in entries)
+    assert all(e["year"] is None for e in entries)
+
+
+def test_producao_poco_abertos_catalog():
+    entries = GROUPS["producao-poco-abertos"]["entries"]
+    assert len(entries) == 52  # 12 * 3 (monthly) + 16 (annual)
+    annual_entries = [e for e in entries if e["month"] is None]
+    monthly_entries = [e for e in entries if e["month"] is not None]
+    assert len(annual_entries) == 16
+    assert len(monthly_entries) == 36
+    assert all(e["ext"] == "zip" for e in entries)
+
+
+def test_producao_fdp_mar_catalog():
+    entries = GROUPS["producao-fdp-mar"]["entries"]
+    assert len(entries) == 18
+    assert all(e["ext"] == "csv" for e in entries)
+
+
+def test_producao_fdp_terra_catalog():
+    entries = GROUPS["producao-fdp-terra"]["entries"]
+    assert len(entries) == 107
+    assert all(e["ext"] == "csv" for e in entries)

@@ -113,6 +113,8 @@ def download_all(
     paths: list[Path] = []
     for group_id in resolved:
         paths.extend(
-            download_group(group_id, output, dry_run=dry_run, show_progress=show_progress)
+            download_group(
+                group_id, output, dry_run=dry_run, show_progress=show_progress
+            )
         )
     return paths
