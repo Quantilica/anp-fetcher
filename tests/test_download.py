@@ -1,10 +1,9 @@
 """Tests for anp_fetcher.download."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-
 from anp_fetcher.catalog import list_datasets
 from anp_fetcher.download import download_all, download_entry
 from anp_fetcher.storage import DataRepository
@@ -154,7 +153,26 @@ def test_download_all_3a_static_groups_dry_run(tmp_path):
 def test_download_all_3a_aliases(tmp_path):
     """Onda 3a aliases should resolve correctly in download_all."""
     with patch("anp_fetcher.download._safe_head_date", return_value=None):
-        paths_alias = download_all(tmp_path, groups=["participacoes-governamentais"], dry_run=True)
+        paths_alias = download_all(
+            tmp_path, groups=["participacoes-governamentais"], dry_run=True
+        )
         paths_canon = download_all(tmp_path, groups=["royalties"], dry_run=True)
 
     assert len(paths_alias) == len(paths_canon)
+
+
+def test_download_all_3b_and_3c_dry_run(tmp_path):
+    """Each Wave 3b and 3c group should return the expected number of paths."""
+    expected = {
+        "movimentacao-gn": 66,
+        "tancagem": 36,
+        "pmqc": 248,
+        "movimentacao-derivados": 9,
+        "producao-poco-abertos": 52,
+        "producao-fdp-mar": 18,
+        "producao-fdp-terra": 107,
+    }
+    for group_id, count in expected.items():
+        with patch("anp_fetcher.download._safe_head_date", return_value=None):
+            paths = download_all(tmp_path, groups=[group_id], dry_run=True)
+        assert len(paths) == count, f"{group_id}: expected {count}, got {len(paths)}"

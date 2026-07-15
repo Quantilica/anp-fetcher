@@ -83,15 +83,13 @@ def sync(
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Listar arquivos sem baixar")
     ] = False,
-    verbose: Annotated[
-        bool, typer.Option("--verbose", help="Logs detalhados")
-    ] = False,
+    verbose: Annotated[bool, typer.Option("--verbose", help="Logs detalhados")] = False,
 ) -> None:
     """Sincronizar dados da ANP (estatísticos e dados abertos)."""
     setup_rich_logging(verbose, console=console)
 
     target_groups: list[str] = []
-    for g in (groups or ALL_GROUP_KEYS):
+    for g in groups or ALL_GROUP_KEYS:
         expanded = _expand_group(g)
         if not expanded:
             console.print(f"[red]Grupo desconhecido: {g!r}[/red]")
@@ -135,7 +133,9 @@ def sync(
         console.print("\n[yellow]Interrompido.[/yellow]")
         raise typer.Exit(130)
 
-    console.print(f"\n[green]Concluído:[/green] {downloaded}/{total} arquivo(s) baixado(s).")
+    console.print(
+        f"\n[green]Concluído:[/green] {downloaded}/{total} arquivo(s) baixado(s)."
+    )
     if errors:
         console.print(f"[red]{len(errors)} erro(s):[/red]")
         for eid, emsg in errors:
@@ -144,16 +144,17 @@ def sync(
 
 @app.command("discover")
 def discover(
-    verbose: Annotated[
-        bool, typer.Option("--verbose", help="Logs detalhados")
-    ] = False,
+    verbose: Annotated[bool, typer.Option("--verbose", help="Logs detalhados")] = False,
 ) -> None:
     """Listar todos os datasets disponíveis no catálogo."""
     setup_rich_logging(verbose, console=console)
 
     for group_id, group_info in GROUPS.items():
         table = Table(
-            "ID", "Partição", "Extensão", "URL",
+            "ID",
+            "Partição",
+            "Extensão",
+            "URL",
             title=f"[bold]{group_id}[/bold] — {group_info['name']}",
         )
         for entry in group_info["entries"]:

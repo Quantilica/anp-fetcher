@@ -10,10 +10,10 @@ class DatasetEntry(TypedDict):
     url: str
     ext: str
     group: str
-    source: str          # "dados-estatisticos" | "dados-abertos"
+    source: str  # "dados-estatisticos" | "dados-abertos"
     year: int | None
     semester: int | None  # 1 or 2 — for semestral series
-    month: int | None     # 1-12 — for monthly series
+    month: int | None  # 1-12 — for monthly series
 
 
 class GroupInfo(TypedDict):

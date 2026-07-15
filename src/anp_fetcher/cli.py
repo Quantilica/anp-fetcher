@@ -7,7 +7,13 @@ from pathlib import Path
 from quantilica.core.logging import configure_cli_logging
 
 from . import __version__
-from .catalog import ALL_GROUP_KEYS, GROUP_ALIASES, SHPC_GROUP_KEYS, list_datasets, resolve_group
+from .catalog import (
+    ALL_GROUP_KEYS,
+    GROUP_ALIASES,
+    SHPC_GROUP_KEYS,
+    list_datasets,
+    resolve_group,
+)
 from .download import download_all
 
 _DEFAULT_OUTPUT = Path("/data/anp")
@@ -34,7 +40,9 @@ def _get_parser() -> argparse.ArgumentParser:
         prog="anp-fetcher",
         description="Download de dados da ANP (estatísticos e dados abertos).",
     )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
 
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
 
@@ -52,7 +60,8 @@ def _get_parser() -> argparse.ArgumentParser:
         ),
     )
     sync_parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         type=Path,
         default=_DEFAULT_OUTPUT,
         metavar="DIR",
@@ -64,15 +73,19 @@ def _get_parser() -> argparse.ArgumentParser:
         help="Listar arquivos sem baixar",
     )
     sync_parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Logs detalhados",
     )
 
     # discover
-    discover_parser = subparsers.add_parser("discover", help="Listar datasets no catálogo")
+    discover_parser = subparsers.add_parser(
+        "discover", help="Listar datasets no catálogo"
+    )
     discover_parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Logs detalhados",
     )
@@ -123,7 +136,9 @@ def _handle_discover(args: argparse.Namespace) -> None:
                 partition = str(entry["year"])
             else:
                 partition = "—"
-            print(f"  {entry['id']:55s}  {partition:10s}  [{entry['ext']}]  {entry['url']}")
+            print(
+                f"  {entry['id']:55s}  {partition:10s}  [{entry['ext']}]  {entry['url']}"
+            )
     total = sum(len(g["entries"]) for g in GROUPS.values())
     print(f"\n{total} dataset(s) no catálogo.")
 
