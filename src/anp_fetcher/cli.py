@@ -14,7 +14,7 @@ from .catalog import (
     list_datasets,
     resolve_group,
 )
-from .download import download_all
+from .download import DownloadError, download_all
 
 _DEFAULT_OUTPUT = Path("/data/anp")
 _ALL_KEYS = ALL_GROUP_KEYS + list(GROUP_ALIASES) + ["shpc"]
@@ -118,7 +118,15 @@ def _handle_sync(args: argparse.Namespace) -> None:
         print(f"\n{len(entries)} arquivo(s) listado(s).")
         return
 
-    download_all(args.output, groups=groups, show_progress=True)
+    errors: list[DownloadError] = []
+    paths = download_all(args.output, groups=groups, show_progress=True, errors=errors)
+
+    print(f"\n{len(paths)}/{len(paths) + len(errors)} arquivo(s) baixado(s).")
+    if errors:
+        print(f"{len(errors)} erro(s):", file=sys.stderr)
+        for entry, exc in errors:
+            print(f"  {entry['id']}: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 def _handle_discover(args: argparse.Namespace) -> None:
@@ -137,7 +145,8 @@ def _handle_discover(args: argparse.Namespace) -> None:
             else:
                 partition = "—"
             print(
-                f"  {entry['id']:55s}  {partition:10s}  [{entry['ext']}]  {entry['url']}"
+                f"  {entry['id']:55s}  {partition:10s}  "
+                f"[{entry['ext']}]  {entry['url']}"
             )
     total = sum(len(g["entries"]) for g in GROUPS.values())
     print(f"\n{total} dataset(s) no catálogo.")

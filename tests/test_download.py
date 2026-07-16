@@ -5,7 +5,12 @@ from unittest.mock import patch
 
 import pytest
 from anp_fetcher.catalog import list_datasets
-from anp_fetcher.download import download_all, download_entry
+from anp_fetcher.download import (
+    DownloadError,
+    download_all,
+    download_entry,
+    download_group,
+)
 from anp_fetcher.storage import DataRepository
 
 
@@ -34,7 +39,7 @@ def test_download_entry_calls_download_with_manifest(tmp_path):
             return_value=fake_path,
         ) as mock_dl,
     ):
-        result = download_entry(entry, repo)
+        download_entry(entry, repo)
 
     mock_dl.assert_called_once()
     call_kwargs = mock_dl.call_args
@@ -176,3 +181,67 @@ def test_download_all_3b_and_3c_dry_run(tmp_path):
         with patch("anp_fetcher.download._safe_head_date", return_value=None):
             paths = download_all(tmp_path, groups=[group_id], dry_run=True)
         assert len(paths) == count, f"{group_id}: expected {count}, got {len(paths)}"
+
+
+def test_download_group_continues_after_entry_failure(tmp_path):
+    """A failing entry must not abort the rest of the group (regression:
+    previously one bad URL aborted every remaining file in the group)."""
+    entries = list_datasets("ie")
+    assert len(entries) == 2
+    call_count = 0
+
+    def fake_download(url, output, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise RuntimeError("boom")
+        return output
+
+    errors: list[DownloadError] = []
+    with (
+        patch("anp_fetcher.download._safe_head_date", return_value=None),
+        patch(
+            "anp_fetcher.download.client.download_with_manifest",
+            side_effect=fake_download,
+        ),
+    ):
+        paths = download_group("ie", tmp_path, errors=errors)
+
+    assert len(paths) == 1
+    assert len(errors) == 1
+    assert errors[0][0]["id"] == entries[0]["id"]
+    assert isinstance(errors[0][1], RuntimeError)
+
+
+def test_download_all_continues_after_group_failure(tmp_path):
+    """A group where every entry fails must not stop subsequent groups."""
+    with (
+        patch("anp_fetcher.download._safe_head_date", return_value=None),
+        patch(
+            "anp_fetcher.download.client.download_with_manifest",
+            side_effect=RuntimeError("boom"),
+        ),
+    ):
+        errors: list[DownloadError] = []
+        paths = download_all(
+            tmp_path, groups=["pb-abertos", "ie-abertos"], errors=errors
+        )
+
+    assert paths == []
+    assert len(errors) == len(list_datasets("pb-abertos")) + len(
+        list_datasets("ie-abertos")
+    )
+
+
+def test_download_group_without_errors_list_does_not_raise(tmp_path):
+    """Without an ``errors`` list, a failing entry is skipped, not raised."""
+    with (
+        patch("anp_fetcher.download._safe_head_date", return_value=None),
+        patch(
+            "anp_fetcher.download.client.download_with_manifest",
+            side_effect=RuntimeError("boom"),
+        ),
+    ):
+        paths = download_group("pb-abertos", tmp_path)
+
+    assert paths == []
