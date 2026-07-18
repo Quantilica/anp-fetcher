@@ -52,7 +52,10 @@ def _annual(
     years: list[int],
     ext_map: dict[int, str] | str,
 ) -> list[DatasetEntry]:
-    """Build year-partitioned entries from a URL template with {year} and {ext} placeholders."""
+    """Build year-partitioned entries from a URL template.
+
+    The template accepts ``{year}`` and ``{ext}`` placeholders.
+    """
     entries: list[DatasetEntry] = []
     for year in years:
         ext = ext_map[year] if isinstance(ext_map, dict) else ext_map

@@ -1,6 +1,7 @@
 """Tests for anp_fetcher.catalog."""
 
 import pytest
+
 from anp_fetcher.catalog import (
     ALL_GROUP_KEYS,
     GROUPS,

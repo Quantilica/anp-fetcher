@@ -131,7 +131,7 @@ def sync(
             file_prog.update(file_task, visible=False)
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrompido.[/yellow]")
-        raise typer.Exit(130)
+        raise typer.Exit(130) from None
 
     console.print(
         f"\n[green]Concluído:[/green] {downloaded}/{total} arquivo(s) baixado(s)."
