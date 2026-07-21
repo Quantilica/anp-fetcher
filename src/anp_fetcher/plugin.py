@@ -111,8 +111,10 @@ def sync(
         return
 
     repo = DataRepository(output)
-    batch_prog, overall = make_batch_progress(total)
-    file_prog, file_task = make_download_progress()
+    overall = make_batch_progress(console)
+    file_prog = make_download_progress(console)
+    overall_task = overall.add_task("[cyan]Iniciando...[/cyan]", total=total)
+    file_task = file_prog.add_task("", total=None, visible=False)
 
     downloaded = 0
     errors: list[tuple[str, str]] = []
@@ -120,6 +122,7 @@ def sync(
     try:
         with Live(Group(overall, file_prog), console=console, refresh_per_second=10):
             for entry in entries:
+                overall.update(overall_task, description=f"[cyan]{entry['id']}[/cyan]")
                 cb = _file_callback(file_prog, file_task, entry["id"])
                 try:
                     download_entry(entry, repo, progress=cb)
@@ -127,7 +130,7 @@ def sync(
                 except Exception as exc:
                     errors.append((entry["id"], str(exc)))
                 finally:
-                    batch_prog.advance()
+                    overall.update(overall_task, advance=1)
             file_prog.update(file_task, visible=False)
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrompido.[/yellow]")
