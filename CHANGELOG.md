@@ -21,3 +21,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `quantilica-core>=0.3.1` (versão publicada no PyPI). `typer`/`rich` (usados pelo
   `plugin.py`) são fornecidos pelo host `quantilica-cli`, não declarados pelo fetcher —
   a CLI standalone (`cli.py`) usa `argparse` e não precisa deles.
+- Comando `sync` quebrava com `AttributeError: 'int' object has no attribute
+  'get_time'`: `make_batch_progress`/`make_download_progress` estavam sendo
+  chamadas fora do padrão usado pelos demais fetchers (`total` no lugar de
+  `console`, retorno desempacotado como tupla). Corrigido para seguir o mesmo
+  padrão de `comex-fetcher`/`pdet-fetcher`/`rtn-fetcher`.
