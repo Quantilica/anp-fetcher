@@ -5,6 +5,14 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-07-21
+
+### Corrigido
+
+- Removido o atalho `-v` de `--verbose` em `cli.py` (`sync` e `discover`),
+  que violava `docs/docs/normas/cli-fetchers.md` §11.7 ("Nunca use `-v` como
+  atalho de `--verbose`").
+
 ## [1.1.0] - 2026-07-17
 
 ### Adicionado

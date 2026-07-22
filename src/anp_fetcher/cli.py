@@ -74,7 +74,6 @@ def _get_parser() -> argparse.ArgumentParser:
     )
     sync_parser.add_argument(
         "--verbose",
-        "-v",
         action="store_true",
         help="Logs detalhados",
     )
@@ -85,7 +84,6 @@ def _get_parser() -> argparse.ArgumentParser:
     )
     discover_parser.add_argument(
         "--verbose",
-        "-v",
         action="store_true",
         help="Logs detalhados",
     )
