@@ -1,6 +1,7 @@
 """Standalone command-line interface for anp-fetcher."""
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -93,6 +94,9 @@ def _get_parser() -> argparse.ArgumentParser:
 
 def _handle_sync(args: argparse.Namespace) -> None:
     configure_cli_logging(args.verbose)
+    if not args.verbose:
+        logging.getLogger("quantilica.core").setLevel(logging.WARNING)
+        logging.getLogger("anp_fetcher").setLevel(logging.WARNING)
 
     raw_groups: list[str] = args.groups or []
     if raw_groups:
@@ -129,6 +133,9 @@ def _handle_sync(args: argparse.Namespace) -> None:
 
 def _handle_discover(args: argparse.Namespace) -> None:
     configure_cli_logging(args.verbose)
+    if not args.verbose:
+        logging.getLogger("quantilica.core").setLevel(logging.WARNING)
+        logging.getLogger("anp_fetcher").setLevel(logging.WARNING)
     from .catalog import GROUPS
 
     for group_id, group_info in GROUPS.items():
