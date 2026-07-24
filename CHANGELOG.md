@@ -5,6 +5,15 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.2] - 2026-07-24
+
+### Corrigido
+
+- `cli.py` não suprimia os loggers verbosos de terceiros (`quantilica.core`,
+  `httpx` via `log_step`) fora do modo `--verbose`, conforme
+  `docs/docs/normas/cli-fetchers.md` §2.6 — padronizado com os demais
+  fetchers do ecossistema.
+
 ## [1.1.1] - 2026-07-21
 
 ### Corrigido
