@@ -81,6 +81,7 @@ def download_group(
     dry_run: bool = False,
     show_progress: bool = False,
     errors: list[DownloadError] | None = None,
+    workers: int = 4,
 ) -> list[Path]:
     """Download all datasets for one group.
 
@@ -90,25 +91,37 @@ def download_group(
     list) to collect the ``(entry, exception)`` pairs for entries that
     failed.
     """
+    import concurrent.futures
+    import threading
+
     canon = resolve_group(group_id)
     if canon is None:
         raise ValueError(f"Unknown group: {group_id!r}")
     entries = list_datasets(canon)
     repo = DataRepository(output)
     paths: list[Path] = []
-    with batch_progress("anp-fetcher", total=len(entries)) as batch_pbar:
-        for entry in entries:
-            try:
-                path = download_entry(
-                    entry, repo, dry_run=dry_run, show_progress=show_progress
-                )
-            except Exception as exc:
-                logger.warning("Failed to download %s: %s", entry["id"], exc)
-                if errors is not None:
+    lock = threading.Lock()
+
+    def _worker(entry: DatasetEntry) -> Path | None:
+        try:
+            return download_entry(
+                entry, repo, dry_run=dry_run, show_progress=show_progress
+            )
+        except Exception as exc:
+            logger.warning("Failed to download %s: %s", entry["id"], exc)
+            if errors is not None:
+                with lock:
                     errors.append((entry, exc))
-            else:
-                paths.append(path)
-            finally:
+            return None
+
+    with batch_progress("anp-fetcher", total=len(entries)) as batch_pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(_worker, entry): entry for entry in entries}
+            for future in concurrent.futures.as_completed(futures):
+                path = future.result()
+                if path:
+                    with lock:
+                        paths.append(path)
                 batch_pbar.update()
     return paths
 
@@ -120,6 +133,7 @@ def download_all(
     dry_run: bool = False,
     show_progress: bool = False,
     errors: list[DownloadError] | None = None,
+    workers: int = 4,
 ) -> list[Path]:
     """Download all (or selected) groups.
 
@@ -147,6 +161,7 @@ def download_all(
                 dry_run=dry_run,
                 show_progress=show_progress,
                 errors=errors,
+                workers=workers,
             )
         )
     return paths

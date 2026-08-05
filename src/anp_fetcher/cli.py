@@ -69,6 +69,13 @@ def get_parser() -> argparse.ArgumentParser:
         help="Diretório de saída (padrão: /data/anp)",
     )
     sync_parser.add_argument(
+        "-w",
+        "--workers",
+        type=int,
+        default=4,
+        help="Número de downloads simultâneos (padrão: 4)",
+    )
+    sync_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Listar arquivos sem baixar",
@@ -119,7 +126,13 @@ def _handle_sync(args: argparse.Namespace) -> None:
         return
 
     errors: list[DownloadError] = []
-    paths = download_all(args.output, groups=groups, show_progress=True, errors=errors)
+    paths = download_all(
+        args.output,
+        groups=groups,
+        show_progress=True,
+        errors=errors,
+        workers=args.workers,
+    )
 
     print(f"\n{len(paths)}/{len(paths) + len(errors)} arquivo(s) baixado(s).")
     if errors:

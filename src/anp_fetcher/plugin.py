@@ -12,10 +12,9 @@ from quantilica.core.cli import (
     make_download_progress,
     setup_rich_logging,
 )
-from quantilica.core.http import ProgressCallback
 from rich.console import Group
 from rich.live import Live
-from rich.progress import Progress, TaskID
+from rich.progress import TaskID
 from rich.table import Table
 
 from .catalog import (
@@ -47,23 +46,6 @@ def _expand_group(key: str) -> list[str]:
     return [canon]
 
 
-def _file_callback(
-    file_progress: Progress,
-    task_id: TaskID,
-    description: str,
-) -> ProgressCallback:
-    def callback(downloaded: int, total_bytes: int) -> None:
-        if downloaded == 0 and total_bytes == 0:
-            file_progress.reset(task_id)
-            file_progress.update(task_id, description=description, visible=True)
-            return
-        if total_bytes:
-            file_progress.update(task_id, total=total_bytes)
-        file_progress.update(task_id, completed=downloaded)
-
-    return callback
-
-
 @app.command("sync")
 def sync(
     groups: Annotated[
@@ -83,6 +65,7 @@ def sync(
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Listar arquivos sem baixar")
     ] = False,
+    workers: Annotated[int, typer.Option("--workers", help="Downloads paralelos")] = 4,
     verbose: Annotated[bool, typer.Option("--verbose", help="Logs detalhados")] = False,
 ) -> None:
     """Sincronizar dados da ANP (estatísticos e dados abertos)."""
@@ -113,25 +96,55 @@ def sync(
     repo = DataRepository(output)
     overall = make_batch_progress(console)
     file_prog = make_download_progress(console)
-    overall_task = overall.add_task("[cyan]Iniciando...[/cyan]", total=total)
-    file_task = file_prog.add_task("", total=None, visible=False)
+    overall_task = overall.add_task("[cyan]Baixando...[/cyan]", total=total)
 
     downloaded = 0
     errors: list[tuple[str, str]] = []
 
+    import concurrent.futures
+    import threading
+
+    lock = threading.Lock()
+    file_tasks: dict[str, TaskID] = {}
+
+    def _worker(entry: dict) -> bool:
+        def cb(downloaded_bytes: int, total_bytes: int) -> None:
+            with lock:
+                if entry["id"] not in file_tasks:
+                    if downloaded_bytes == 0 and total_bytes == 0:
+                        return
+                    task_id = file_prog.add_task(entry["id"], total=total_bytes or None)
+                    file_tasks[entry["id"]] = task_id
+
+                task_id = file_tasks[entry["id"]]
+                if downloaded_bytes == 0 and total_bytes == 0:
+                    file_prog.update(task_id, completed=0)
+                    return
+                file_prog.update(
+                    task_id, completed=downloaded_bytes, total=total_bytes or None
+                )
+
+        try:
+            download_entry(entry, repo, progress=cb)
+            with lock:
+                if entry["id"] in file_tasks:
+                    pass
+            return True
+        except Exception as exc:
+            with lock:
+                errors.append((entry["id"], str(exc)))
+                if entry["id"] in file_tasks:
+                    pass
+            return False
+
     try:
         with Live(Group(overall, file_prog), console=console, refresh_per_second=10):
-            for entry in entries:
-                overall.update(overall_task, description=f"[cyan]{entry['id']}[/cyan]")
-                cb = _file_callback(file_prog, file_task, entry["id"])
-                try:
-                    download_entry(entry, repo, progress=cb)
-                    downloaded += 1
-                except Exception as exc:
-                    errors.append((entry["id"], str(exc)))
-                finally:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = {executor.submit(_worker, entry): entry for entry in entries}
+                for future in concurrent.futures.as_completed(futures):
                     overall.update(overall_task, advance=1)
-            file_prog.update(file_task, visible=False)
+                    if future.result():
+                        downloaded += 1
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrompido.[/yellow]")
         raise typer.Exit(130) from None
