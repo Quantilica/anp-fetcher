@@ -19,6 +19,8 @@ DownloadError = tuple[DatasetEntry, Exception]
 client = HttpClient(
     timeout=180.0,
     verify=True,
+    attempts=5,
+    retry_base_delay=2.0,
     headers={
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -62,16 +64,51 @@ def download_entry(
     progress: ProgressCallback | None = None,
 ) -> Path:
     """Download one dataset entry and return the destination path."""
-    last_modified = _safe_head_date(entry["url"])
-    output = repo.path_for_entry(entry, last_modified=last_modified)
-    if dry_run:
-        return output
-    if progress is not None:
-        return download_file(entry["url"], output, progress=progress)
-    if show_progress:
-        with file_progress(output.name) as progress_cb:
-            return download_file(entry["url"], output, progress=progress_cb)
-    return download_file(entry["url"], output)
+    urls_to_try = [entry["url"]]
+    if "fallback_urls" in entry and entry["fallback_urls"]:
+        urls_to_try.extend(entry["fallback_urls"])
+
+    from quantilica.core.http import HttpStatusError
+
+    last_err = None
+
+    for url in urls_to_try:
+        try:
+            last_modified = _safe_head_date(url)
+            output = repo.path_for_entry(entry, last_modified=last_modified)
+
+            # Use original ext for output filename but override
+            # extension if url has different one
+            if url != entry["url"]:
+                # change suffix of output path
+                actual_ext = url.split(".")[-1]
+                if output.name.endswith(f".{entry['ext']}"):
+                    new_name = (
+                        output.name[: -(len(entry["ext"]) + 1)] + f".{actual_ext}"
+                    )
+                    output = output.with_name(new_name)
+
+            if dry_run:
+                return output
+            if progress is not None:
+                return download_file(url, output, progress=progress)
+            if show_progress:
+                with file_progress(output.name) as progress_cb:
+                    return download_file(url, output, progress=progress_cb)
+            return download_file(url, output)
+        except HttpStatusError as exc:
+            if exc.status_code == 404:
+                last_err = exc
+                continue
+            raise
+
+    # If we get here, all URLs returned 404
+    # Just raise the last 404 error
+    if last_err:
+        raise last_err
+    from quantilica.core.exceptions import FetchError
+
+    raise FetchError(f"No valid URLs for {entry['id']}")
 
 
 def download_group(

@@ -142,14 +142,18 @@ _shpc_glp_entries: list[DatasetEntry] = [
 
 def _dsan_url(
     year: int, month: int, product_old: str, product_new: str
-) -> tuple[str, str]:
+) -> tuple[str, str, list[str]]:
     if year <= 2025:
-        return f"{_SHPC_DSAN}/{year}/precos-{product_old}-{month:02d}.csv", "csv"
-    ext = "xlsx" if month == 4 else "csv"
-    return (
-        f"{_SHPC_DSAN}/{year}/{month:02d}-dados-abertos-precos-{product_new}.{ext}",
-        ext,
+        return f"{_SHPC_DSAN}/{year}/precos-{product_old}-{month:02d}.csv", "csv", []
+    # For 2026 onwards, default to csv but add xlsx as fallback (and vice versa)
+    ext = "csv"
+    fallback_ext = "xlsx"
+    url = f"{_SHPC_DSAN}/{year}/{month:02d}-dados-abertos-precos-{product_new}.{ext}"
+    fallback_url = (
+        f"{_SHPC_DSAN}/{year}/"
+        f"{month:02d}-dados-abertos-precos-{product_new}.{fallback_ext}"
     )
+    return url, ext, [fallback_url]
 
 
 _MONTHLY_DATES: list[tuple[int, int]] = [
@@ -159,7 +163,7 @@ _MONTHLY_DATES: list[tuple[int, int]] = [
 # shpc-diesel-gnv
 _shpc_diesel_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
-    _url, _ext = _dsan_url(_y, _m, "diesel-gnv", "diesel-gnv")
+    _url, _ext, _fallbacks = _dsan_url(_y, _m, "diesel-gnv", "diesel-gnv")
     _shpc_diesel_entries.append(
         _mon_entry(
             "shpc-diesel-gnv",
@@ -171,15 +175,18 @@ for _y, _m in _MONTHLY_DATES:
             _ext,
         )
     )
+    if _fallbacks:
+        _shpc_diesel_entries[-1]["fallback_urls"] = _fallbacks
 
 # shpc-gasolina-etanol
 _shpc_gas_etanol_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
+    _fallbacks = []
     if (_y, _m) == (2026, 2):
         _url = f"{_SHPC_DSAN}/2026/02-cados-abertos-preco-gasolina-etanol.csv"
         _ext = "csv"
     else:
-        _url, _ext = _dsan_url(_y, _m, "gasolina-etanol", "gasolina-etanol")
+        _url, _ext, _fallbacks = _dsan_url(_y, _m, "gasolina-etanol", "gasolina-etanol")
     _shpc_gas_etanol_entries.append(
         _mon_entry(
             "shpc-gasolina-etanol",
@@ -191,11 +198,13 @@ for _y, _m in _MONTHLY_DATES:
             _ext,
         )
     )
+    if _fallbacks:
+        _shpc_gas_etanol_entries[-1]["fallback_urls"] = _fallbacks
 
 # shpc-glp-mensal
 _shpc_glp_mensal_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
-    _url, _ext = _dsan_url(_y, _m, "glp", "glp")
+    _url, _ext, _fallbacks = _dsan_url(_y, _m, "glp", "glp")
     _shpc_glp_mensal_entries.append(
         _mon_entry(
             "shpc-glp-mensal",
@@ -207,6 +216,8 @@ for _y, _m in _MONTHLY_DATES:
             _ext,
         )
     )
+    if _fallbacks:
+        _shpc_glp_mensal_entries[-1]["fallback_urls"] = _fallbacks
 
 # ---------------------------------------------------------------------------
 # shpc-4s — Últimas 4 Semanas
@@ -1387,8 +1398,10 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
         max_m = 4 if y == 2026 else 12
         for m in range(1, max_m + 1):
             csv_ext = "csv"
+            fallback_csv = None
             if y == 2026:
                 csv_url = f"{_PMQC_BASE}/2026/pmqc_2026_{m:02d}.csv"
+                fallback_csv = f"{_PMQC_BASE}/2026/pmqc-{m:02d}.csv"
             elif y == 2025:
                 if m in (1, 2, 3):
                     csv_url = f"{_PMQC_BASE}/2025/pmqc-{m:02d}.csv"
@@ -1412,8 +1425,10 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
                     csv_url = f"{_PMQC_BASE}/2021/2021-{m:02d}-pmqc.csv"
             elif y in (2020, 2019):
                 csv_url = f"{_PMQC_BASE}/{y}/{y}-{m:02d}-pmqc.csv"
+                fallback_csv = f"{_PMQC_BASE}/{y}/pmqc_{y}_{m:02d}.csv"
             elif y == 2018:
                 csv_url = f"{_PMQC_BASE}/2018/pmqc_2018_{m:02d}.csv"
+                fallback_csv = f"{_PMQC_BASE}/2018/pmqc-{m:02d}.csv"
             elif y == 2017:
                 if m == 8:
                     csv_url = f"{_PMQC_BASE}/2017/pmqc_2017_08-1.csv"
@@ -1422,21 +1437,24 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
             else:  # 2016
                 csv_url = f"{_PMQC_BASE}/2016/pmqc_2016_{m:02d}.csv"
 
-            entries.append(
-                _mon_entry(
-                    "pmqc",
-                    "pmqc-csv",
-                    "Qualidade combustíveis PMQC (CSV)",
-                    y,
-                    m,
-                    csv_url,
-                    csv_ext,
-                )
+            e_csv = _mon_entry(
+                "pmqc",
+                "pmqc-csv",
+                "Qualidade combustíveis PMQC (CSV)",
+                y,
+                m,
+                csv_url,
+                csv_ext,
             )
+            if fallback_csv:
+                e_csv["fallback_urls"] = [fallback_csv]
+            entries.append(e_csv)
 
             json_ext = "json"
+            fallback_json = None
             if y == 2026:
                 json_url = f"{_PMQC_BASE}/2026/pmqc_2026_{m:02d}.json"
+                fallback_json = f"{_PMQC_BASE}/2026/pmqc-{m:02d}.json"
             elif y == 2025:
                 if m <= 6:
                     json_url = f"{_PMQC_BASE}/2025/pmqc_2025_{m:02d}.json"
@@ -1450,6 +1468,7 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
                     json_ext = "zip"
                 else:
                     json_url = f"{_PMQC_BASE}/2024/pmqc-{m:02d}.json"
+                    fallback_json = f"{_PMQC_BASE}/2024/pmqc_{y}_{m:02d}.json"
             elif y == 2023:
                 if m >= 10:
                     json_url = f"{_PMQC_BASE}/2023/pmqc_2023_{m:02d}.json"
@@ -1478,17 +1497,18 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
                 else:
                     json_url = f"{_PMQC_BASE}/2016/pmqc_2016_{m:02d}.json"
 
-            entries.append(
-                _mon_entry(
-                    "pmqc",
-                    "pmqc-json",
-                    "Qualidade combustíveis PMQC (JSON)",
-                    y,
-                    m,
-                    json_url,
-                    json_ext,
-                )
+            e_json = _mon_entry(
+                "pmqc",
+                "pmqc-json",
+                "Qualidade combustíveis PMQC (JSON)",
+                y,
+                m,
+                json_url,
+                json_ext,
             )
+            if fallback_json:
+                e_json["fallback_urls"] = [fallback_json]
+            entries.append(e_json)
     return entries
 
 

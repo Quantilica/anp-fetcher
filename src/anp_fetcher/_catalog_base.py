@@ -2,6 +2,11 @@
 
 from typing import TypedDict
 
+try:
+    from typing import NotRequired
+except ImportError:
+    from typing import NotRequired
+
 
 class DatasetEntry(TypedDict):
     id: str
@@ -14,6 +19,7 @@ class DatasetEntry(TypedDict):
     year: int | None
     semester: int | None  # 1 or 2 — for semestral series
     month: int | None  # 1-12 — for monthly series
+    fallback_urls: NotRequired[list[str]]
 
 
 class GroupInfo(TypedDict):
