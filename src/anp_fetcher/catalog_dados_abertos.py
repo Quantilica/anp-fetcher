@@ -163,6 +163,8 @@ _MONTHLY_DATES: list[tuple[int, int]] = [
 # shpc-diesel-gnv
 _shpc_diesel_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
+    if (_y, _m) >= (2026, 4):
+        continue  # Not published yet
     _url, _ext, _fallbacks = _dsan_url(_y, _m, "diesel-gnv", "diesel-gnv")
     _shpc_diesel_entries.append(
         _mon_entry(
@@ -181,6 +183,8 @@ for _y, _m in _MONTHLY_DATES:
 # shpc-gasolina-etanol
 _shpc_gas_etanol_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
+    if (_y, _m) >= (2026, 4):
+        continue  # Not published yet
     _fallbacks = []
     if (_y, _m) == (2026, 2):
         _url = f"{_SHPC_DSAN}/2026/02-cados-abertos-preco-gasolina-etanol.csv"
@@ -204,6 +208,8 @@ for _y, _m in _MONTHLY_DATES:
 # shpc-glp-mensal
 _shpc_glp_mensal_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
+    if (_y, _m) >= (2026, 4):
+        continue  # Not published yet
     _url, _ext, _fallbacks = _dsan_url(_y, _m, "glp", "glp")
     _shpc_glp_mensal_entries.append(
         _mon_entry(
@@ -544,14 +550,15 @@ _producao_el_entries: list[DatasetEntry] = [
         f"{_PPGN_EL}/producao-gas-natural-1000m3.csv",
         "csv",
     ),
-    _static(
-        "producao-el",
-        _SOURCE,
-        "pel-reinjecao",
-        "Reinjeção de gás natural por estado e localização (mil m³) 2000-2026",
-        f"{_PPGN_EL}/reinjecao-gn-1000m3.csv",
-        "csv",
-    ),
+    # A ANP não publica mais pel-reinjecao, removido para evitar 404
+    # _static(
+    #     "producao-el",
+    #     _SOURCE,
+    #     "pel-reinjecao",
+    #     "Reinjeção de gás natural por estado e localização (mil m³) 2000-2026",
+    #     f"{_PPGN_EL}/reinjecao-gn-1000m3.csv",
+    #     "csv",
+    # ),
     _static(
         "producao-el",
         _SOURCE,
@@ -1411,7 +1418,12 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
                     csv_url = f"{_PMQC_BASE}/2025/pmqc-2025-m:02d.csv".replace(
                         "m:02d", f"{m:02d}"
                     )
-            elif y in (2024, 2023):
+            elif y == 2024:
+                if m in (11, 12):
+                    continue  # Not published yet
+                csv_url = f"{_PMQC_BASE}/{y}/pmqc-{m:02d}.csv"
+                fallback_csv = f"{_PMQC_BASE}/{y}/pmqc_{y}_{m:02d}.csv"
+            elif y == 2023:
                 csv_url = f"{_PMQC_BASE}/{y}/pmqc-{m:02d}.csv"
             elif y == 2022:
                 if m <= 6:
@@ -1461,6 +1473,8 @@ def _pmqc_entries_list() -> list[DatasetEntry]:
                 else:
                     json_url = f"{_PMQC_BASE}/2025/pmqc-2025-{m:02d}.json"
             elif y == 2024:
+                if m in (11, 12):
+                    continue  # Not published yet
                 if m == 1:
                     json_url = f"{_PMQC_BASE}/2024/pmqc_2024_01.json"
                 elif m == 2:
