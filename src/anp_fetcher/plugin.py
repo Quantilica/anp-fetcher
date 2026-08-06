@@ -113,6 +113,13 @@ def sync(
         with lock:
             task_id = available_tasks.pop(0)
 
+        file_prog.update(
+            task_id,
+            description=f"[cyan]{entry['id']}[/cyan]",
+            completed=0,
+            total=None,
+        )
+
         def cb(downloaded_bytes: int, total_bytes: int) -> None:
             if downloaded_bytes == 0 and total_bytes == 0:
                 file_prog.update(task_id, completed=0)
@@ -138,15 +145,20 @@ def sync(
                 )
                 available_tasks.append(task_id)
 
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=workers)
+    futures = {}
     try:
         with Live(Group(overall, file_prog), console=console, refresh_per_second=10):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = {executor.submit(_worker, entry): entry for entry in entries}
-                for future in concurrent.futures.as_completed(futures):
-                    overall.update(overall_task, advance=1)
-                    if future.result():
-                        downloaded += 1
+            futures = {executor.submit(_worker, entry): entry for entry in entries}
+            for future in concurrent.futures.as_completed(futures):
+                overall.update(overall_task, advance=1)
+                if future.result():
+                    downloaded += 1
+        executor.shutdown(wait=True)
     except KeyboardInterrupt:
+        for future in futures:
+            future.cancel()
+        executor.shutdown(wait=False, cancel_futures=True)
         console.print("\n[yellow]Interrompido.[/yellow]")
         raise typer.Exit(130) from None
 
