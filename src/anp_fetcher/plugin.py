@@ -14,7 +14,6 @@ from quantilica.core.cli import (
 )
 from rich.console import Group
 from rich.live import Live
-from rich.progress import TaskID
 from rich.table import Table
 
 from .catalog import (
@@ -105,37 +104,39 @@ def sync(
     import threading
 
     lock = threading.Lock()
-    file_tasks: dict[str, TaskID] = {}
+    worker_task_ids = [
+        file_prog.add_task("[dim]Inativo[/dim]", total=1) for _ in range(workers)
+    ]
+    available_tasks = worker_task_ids.copy()
 
     def _worker(entry: dict) -> bool:
-        def cb(downloaded_bytes: int, total_bytes: int) -> None:
-            with lock:
-                if entry["id"] not in file_tasks:
-                    if downloaded_bytes == 0 and total_bytes == 0:
-                        return
-                    task_id = file_prog.add_task(entry["id"], total=total_bytes or None)
-                    file_tasks[entry["id"]] = task_id
+        with lock:
+            task_id = available_tasks.pop(0)
 
-                task_id = file_tasks[entry["id"]]
-                if downloaded_bytes == 0 and total_bytes == 0:
-                    file_prog.update(task_id, completed=0)
-                    return
-                file_prog.update(
-                    task_id, completed=downloaded_bytes, total=total_bytes or None
-                )
+        def cb(downloaded_bytes: int, total_bytes: int) -> None:
+            if downloaded_bytes == 0 and total_bytes == 0:
+                file_prog.update(task_id, completed=0)
+                return
+            file_prog.update(
+                task_id,
+                description=f"[cyan]{entry['id']}[/cyan]",
+                completed=downloaded_bytes,
+                total=total_bytes or None,
+            )
 
         try:
             download_entry(entry, repo, progress=cb)
-            with lock:
-                if entry["id"] in file_tasks:
-                    pass
             return True
         except Exception as exc:
             with lock:
                 errors.append((entry["id"], str(exc)))
-                if entry["id"] in file_tasks:
-                    pass
             return False
+        finally:
+            with lock:
+                file_prog.update(
+                    task_id, description="[dim]Inativo[/dim]", completed=0, total=1
+                )
+                available_tasks.append(task_id)
 
     try:
         with Live(Group(overall, file_prog), console=console, refresh_per_second=10):
