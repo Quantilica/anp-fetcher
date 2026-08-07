@@ -1,6 +1,6 @@
 [project]
 name = "anp-fetcher"
-version = "1.2.1"
+version = "1.3.0"
 description = "A commandline utility to download ANP (Agência Nacional do Petróleo) statistical data"
 readme = "README.md"
 authors = [
@@ -25,8 +25,6 @@ classifiers = [
 ]
 dependencies = [
     "quantilica-core>=0.4.0",
-    "quantilica-cli>=0.2.0",
-    "quantilica-catalog>=0.2.0",
     "openpyxl>=3.1.5",
 ]
 
