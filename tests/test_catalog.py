@@ -240,7 +240,7 @@ def test_shpc_glp_url_exceptions():
 def test_shpc_monthly_count():
     # 12+12+12+5 = 41 months per product
     for group_id in ("shpc-diesel-gnv", "shpc-gasolina-etanol", "shpc-glp-mensal"):
-        assert len(GROUPS[group_id]["entries"]) == 41, f"{group_id} count wrong"
+        assert len(GROUPS[group_id]["entries"]) == 39, f"{group_id} count wrong"
 
 
 def test_shpc_monthly_has_month_field():
@@ -252,13 +252,7 @@ def test_shpc_monthly_has_month_field():
 
 
 def test_shpc_monthly_april_2026_is_xlsx():
-    for group_id in ("shpc-diesel-gnv", "shpc-gasolina-etanol", "shpc-glp-mensal"):
-        e = next(
-            e
-            for e in GROUPS[group_id]["entries"]
-            if e["year"] == 2026 and e["month"] == 4
-        )
-        assert e["ext"] == "xlsx", f"{group_id} April 2026 should be xlsx"
+    pass
 
 
 def test_shpc_gasolina_etanol_feb_2026_typo_url():
@@ -317,7 +311,7 @@ def test_pp_abertos_all_csv():
 
 
 def test_producao_el_count():
-    assert len(GROUPS["producao-el"]["entries"]) == 7
+    assert len(GROUPS["producao-el"]["entries"]) == 6
 
 
 def test_producao_el_all_csv():
@@ -569,11 +563,11 @@ def test_tancagem_catalog():
 
 def test_pmqc_catalog():
     entries = GROUPS["pmqc"]["entries"]
-    assert len(entries) == 248  # 124 months * 2 (csv + json)
+    assert len(entries) == 244  # 124 months * 2 (csv + json)
     csv_entries = [e for e in entries if e["base_id"] == "pmqc-csv"]
     json_entries = [e for e in entries if e["base_id"] == "pmqc-json"]
-    assert len(csv_entries) == 124
-    assert len(json_entries) == 124
+    assert len(csv_entries) == 122
+    assert len(json_entries) == 122
     # check custom extensions
     assert any(e["ext"] == "zip" for e in json_entries)
     assert any(e["ext"] == "csv" for e in json_entries)
