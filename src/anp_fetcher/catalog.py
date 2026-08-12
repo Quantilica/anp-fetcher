@@ -41,7 +41,11 @@ SHPC_GROUP_KEYS: list[str] = [k for k in GROUPS if k.startswith("shpc-")]
 def resolve_group(key: str) -> str | None:
     """Resolve a group key or alias to a canonical group id.
 
-    Returns None if not found.
+    Args:
+        key (str): The group key or alias to resolve.
+
+    Returns:
+        str | None: The canonical group id, or None if not found.
     """
     if key in GROUPS:
         return key
@@ -49,7 +53,17 @@ def resolve_group(key: str) -> str | None:
 
 
 def list_datasets(group: str | None = None) -> list[DatasetEntry]:
-    """Return all dataset entries, optionally filtered by group."""
+    """Return all dataset entries, optionally filtered by group.
+
+    Args:
+        group (str | None): Optional group key to filter by.
+
+    Returns:
+        list[DatasetEntry]: A list of dataset entries.
+
+    Raises:
+        ValueError: If an unknown group is provided.
+    """
     if group is not None:
         canon = resolve_group(group)
         if canon is None:

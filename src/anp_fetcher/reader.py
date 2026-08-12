@@ -57,7 +57,12 @@ def _read_and_clean_shpc(filepath: Path) -> pl.DataFrame:
 
 
 def convert_anp(input_dir: Path, output_dir: Path) -> None:
-    """Procura arquivos brutos da ANP e converte para Parquet."""
+    """Procura arquivos brutos da ANP e converte para Parquet.
+
+    Args:
+        input_dir (Path): The directory containing raw ANP files.
+        output_dir (Path): The directory where Parquet files will be saved.
+    """
     if not input_dir.exists():
         logger.warning("Input directory %s does not exist.", input_dir)
         return

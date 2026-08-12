@@ -16,6 +16,16 @@ from .storage import DataRepository
 def path_builder(
     output_dir: Path, entry: dict[str, Any], last_modified: dt.date | None
 ) -> Path:
+    """Build the local file path for a dataset entry.
+
+    Args:
+        output_dir (Path): The base output directory.
+        entry (dict[str, Any]): The dataset entry dictionary.
+        last_modified (dt.date | None): The last modified date of the remote file.
+
+    Returns:
+        Path: The constructed local file path.
+    """
     return DataRepository(output_dir).path_for_entry(entry, last_modified=last_modified)
 
 
@@ -43,7 +53,16 @@ def cmd_convert(
     ] = Path("/data/anp"),
     verbose: Annotated[bool, typer.Option("--verbose", help="Logs detalhados")] = False,
 ) -> None:
-    """Converter arquivos brutos da ANP para Parquet."""
+    """Converter arquivos brutos da ANP para Parquet.
+
+    Args:
+        input (Path): Origin directory with raw files.
+        output (Path): Destination directory for Parquet files.
+        verbose (bool): Enable verbose logging.
+
+    Raises:
+        typer.Exit: If the analysis extras are not installed.
+    """
     from quantilica.cli.ui import setup_rich_logging
 
     setup_rich_logging(
@@ -94,7 +113,20 @@ def cmd_pipeline(
     workers: Annotated[int, typer.Option("--workers", help="Downloads paralelos")] = 4,
     verbose: Annotated[bool, typer.Option("--verbose", help="Logs detalhados")] = False,
 ) -> None:
-    """Pipeline completo: sync seguido de convert."""
+    """Pipeline completo: sync seguido de convert.
+
+    Args:
+        ctx (typer.Context): The Typer context.
+        groups (list[str] | None): Groups to download.
+        output (Path | None): Output directory for raw files.
+        parquet_dir (Path | None): Output directory for Parquet files.
+        dry_run (bool): If True, only lists files without downloading.
+        workers (int): Number of parallel downloads.
+        verbose (bool): Enable verbose logging.
+
+    Raises:
+        typer.Exit: If the analysis extras are not installed.
+    """
     from quantilica.cli.ui import get_console, setup_rich_logging
     from rich.rule import Rule
 

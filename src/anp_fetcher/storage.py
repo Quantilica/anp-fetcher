@@ -67,6 +67,11 @@ class DataRepository(BaseDataRepository):
     """Manages local storage for anp-fetcher files."""
 
     def __init__(self, root: Path | str):
+        """Initialize the data repository.
+
+        Args:
+            root (Path | str): The root directory for storage.
+        """
         super().__init__(root)
 
     def path_for_entry(
@@ -75,7 +80,15 @@ class DataRepository(BaseDataRepository):
         *,
         last_modified: dt.date | None = None,
     ) -> Path:
-        """Compute the local path for a dataset entry."""
+        """Compute the local path for a dataset entry.
+
+        Args:
+            entry (DatasetEntry): The dataset entry to process.
+            last_modified (dt.date | None, optional): The last modified date of the dataset. Defaults to None.
+
+        Returns:
+            Path: The computed local path for the dataset.
+        """
         group_dir = _GROUP_DIRS[entry["group"]]
         ext = entry["ext"]
         base_id = entry["base_id"]

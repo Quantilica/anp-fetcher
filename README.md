@@ -4,6 +4,8 @@
 
 Utilitário de linha de comando para baixar dados públicos da [ANP](https://www.gov.br/anp/) (Agência Nacional do Petróleo, Gás Natural e Biocombustíveis) — séries estatísticas e datasets de dados abertos. Descobre datasets a partir de um catálogo declarativo e faz o download organizado por grupo, com manifestos de proveniência via `quantilica-core`.
 
+Para a documentação completa, consulte [https://docs.quantilica.com](https://docs.quantilica.com).
+
 ## Instalação
 
 ```bash

@@ -9,6 +9,8 @@ except ImportError:
 
 
 class DatasetEntry(TypedDict):
+    """Represents a single ANP dataset entry."""
+
     id: str
     base_id: str
     name: str
@@ -23,6 +25,8 @@ class DatasetEntry(TypedDict):
 
 
 class GroupInfo(TypedDict):
+    """Contains metadata and entries for a dataset group."""
+
     name: str
     entries: list[DatasetEntry]
 
