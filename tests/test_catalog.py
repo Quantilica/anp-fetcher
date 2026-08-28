@@ -46,6 +46,15 @@ _DA_GROUPS = {
     # Wave 3c
     "producao-fdp-mar",
     "producao-fdp-terra",
+    # Expansão
+    "autorizacoes-gn",
+    "distribuidores",
+    "multas",
+    "fiscalizacao-conteudo-local",
+    "aditamento-conteudo-local",
+    "acervo-dados-tecnicos",
+    "amostras-rochas-fluidos",
+    "pdi",
 }
 _ALL_GROUPS = _DE_GROUPS | _DA_GROUPS
 
@@ -501,6 +510,15 @@ def test_group_aliases_resolve():
     assert resolve_group("fdp-terra") == "producao-fdp-terra"
     assert resolve_group("importacoes-exportacoes-csv") == "ie-abertos"
     assert resolve_group("producao-biocombustiveis-csv") == "pb-abertos"
+    # Expansão
+    assert resolve_group("autorizacoes-gas-natural") == "autorizacoes-gn"
+    assert resolve_group("distribuidores-combustiveis") == "distribuidores"
+    assert resolve_group("multas-aplicadas") == "multas"
+    assert resolve_group("fisc-conteudo-local") == "fiscalizacao-conteudo-local"
+    assert resolve_group("aditamento-cl") == "aditamento-conteudo-local"
+    assert resolve_group("bdep-dados-tecnicos") == "acervo-dados-tecnicos"
+    assert resolve_group("amostras-bdep") == "amostras-rochas-fluidos"
+    assert resolve_group("pesquisa-desenvolvimento") == "pdi"
 
 
 def test_resolve_canonical_keys():
@@ -600,3 +618,19 @@ def test_producao_fdp_terra_catalog():
     entries = GROUPS["producao-fdp-terra"]["entries"]
     assert len(entries) == 107
     assert all(e["ext"] == "csv" for e in entries)
+
+
+# ---------------------------------------------------------------------------
+# Expansão Regulação, Fiscalização e E&P tests
+# ---------------------------------------------------------------------------
+
+
+def test_expansao_groups_catalog():
+    assert len(GROUPS["autorizacoes-gn"]["entries"]) == 2
+    assert len(GROUPS["distribuidores"]["entries"]) == 3
+    assert len(GROUPS["multas"]["entries"]) == 7
+    assert len(GROUPS["fiscalizacao-conteudo-local"]["entries"]) == 7
+    assert len(GROUPS["aditamento-conteudo-local"]["entries"]) == 1
+    assert len(GROUPS["acervo-dados-tecnicos"]["entries"]) == 15
+    assert len(GROUPS["amostras-rochas-fluidos"]["entries"]) == 24
+    assert len(GROUPS["pdi"]["entries"]) == 5

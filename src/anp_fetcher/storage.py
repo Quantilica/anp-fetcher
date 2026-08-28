@@ -60,6 +60,15 @@ _GROUP_DIRS: dict[str, str] = {
     # dados-abertos — Onda 3c
     "producao-fdp-mar": "producao-fdp-mar",
     "producao-fdp-terra": "producao-fdp-terra",
+    # dados-abertos — Expansão
+    "autorizacoes-gn": "autorizacoes-gas-natural",
+    "distribuidores": "distribuidores-combustiveis",
+    "multas": "multas-aplicadas",
+    "fiscalizacao-conteudo-local": "fiscalizacao-conteudo-local",
+    "aditamento-conteudo-local": "aditamento-conteudo-local",
+    "acervo-dados-tecnicos": "acervo-dados-tecnicos",
+    "amostras-rochas-fluidos": "amostras-rochas-fluidos",
+    "pdi": "pesquisa-desenvolvimento-inovacao",
 }
 
 

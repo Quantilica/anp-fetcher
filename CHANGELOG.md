@@ -1,13 +1,27 @@
 # Changelog
 
-## [1.3.0] - 2026-08-07
-### Alterado
-- Refatoração arquitetural: Remoção de dependências (`quantilica-cli` e `quantilica-catalog`) e limpeza de imports. Os fetchers agora são pacotes de extração puros, dependendo estritamente do `quantilica-core`.
-
 Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
+
+## [Unreleased]
+
+### Adicionado
+- Expansão do catálogo de Dados Abertos com 8 novos grupos (64 novos datasets):
+  - `autorizacoes-gn` (Autorizações de Construção e Operação de Gás Natural - CSV/XLSX)
+  - `distribuidores` (Distribuidores de Combustíveis Líquidos e contratos homologados)
+  - `multas` (Multas Aplicadas com Vencimento a partir de 2016 - MAV)
+  - `fiscalizacao-conteudo-local` (Fiscalização de Conteúdo Local em E&P - Exploração e Desenvolvimento)
+  - `aditamento-conteudo-local` (Planilha de Aditamento de Conteúdo Local - Resolução ANP 726/2018)
+  - `acervo-dados-tecnicos` (BDEP - Acervo de Dados Técnicos, Sísmica, Geoquímica, PROMAR e Poços Públicos)
+  - `amostras-rochas-fluidos` (Declarações Anuais de Acervo de Amostras e Valores Praticados pelas Depositárias)
+  - `pdi` (Obrigações e Investimentos em Pesquisa, Desenvolvimento e Inovação - P,D&I)
+
+## [1.3.0] - 2026-08-07
+
+### Alterado
+- Refatoração arquitetural: Remoção de dependências (`quantilica-cli` e `quantilica-catalog`) e limpeza de imports. Os fetchers agora são pacotes de extração puros, dependendo estritamente do `quantilica-core`.
 
 ## [1.1.2] - 2026-07-24
 

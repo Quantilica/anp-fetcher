@@ -2008,6 +2008,409 @@ _fdp_terra_entries = _fdp_terra_entries_list()
 
 
 # ===========================================================================
+# Regulação, Fiscalização e E&P — Expansão de Dados Abertos
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# autorizacoes-gn — Autorizações de Gás Natural
+# ---------------------------------------------------------------------------
+
+_AUT_GN = f"{_BASE}/autorizacoes-gas-natural"
+_autorizacoes_gn_entries: list[DatasetEntry] = [
+    _static(
+        "autorizacoes-gn",
+        _SOURCE,
+        "autorizacoes-gn-csv",
+        "Autorizações de construção e operação de instalações de gás natural (CSV)",
+        f"{_AUT_GN}/autorizacoes-construcao-operacao-gas-natural.csv",
+        "csv",
+    ),
+    _static(
+        "autorizacoes-gn",
+        _SOURCE,
+        "autorizacoes-gn-xlsx",
+        "Autorizações de construção e operação de instalações de gás natural (Excel)",
+        f"{_AUT_GN}/autorizacoes-construcao-operacao-gas-natural.xlsx",
+        "xlsx",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# distribuidores — Distribuidores de Combustíveis Líquidos
+# ---------------------------------------------------------------------------
+
+_DCL = f"{_BASE}/dcl"
+_distribuidores_entries: list[DatasetEntry] = [
+    _static(
+        "distribuidores",
+        _SOURCE,
+        "distribuidores-filiais",
+        "Distribuidores de combustíveis líquidos autorizados ao exercício da atividade",
+        f"{_DCL}/planilha-aea-filiais.csv",
+        "csv",
+    ),
+    _static(
+        "distribuidores",
+        _SOURCE,
+        "distribuidores-cessao-espaco",
+        "Contratos de cessão de espaço ou carregamento homologados pela ANP",
+        f"{_DCL}/ce-cr.csv",
+        "csv",
+    ),
+    _static(
+        "distribuidores",
+        _SOURCE,
+        "distribuidores-inutilizadores-glp",
+        "Agentes inutilizadores de botijões de GLP cadastrados",
+        f"{_DCL}/inutilizadores.csv",
+        "csv",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# multas — Multas Aplicadas com Vencimento a partir de 2016
+# ---------------------------------------------------------------------------
+
+_MAV = f"{_BASE}/mav"
+_multas_entries: list[DatasetEntry] = [
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2016-2019",
+        "Multas aplicadas pela ANP — 2016 a 2019",
+        f"{_MAV}/multas-aplicadas-2016a2019.csv",
+        "csv",
+    ),
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2020",
+        "Multas aplicadas pela ANP — 2020",
+        f"{_MAV}/multas-aplicadas-2020.csv",
+        "csv",
+    ),
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2021",
+        "Multas aplicadas pela ANP — 2021",
+        f"{_MAV}/multas-2021-junho22.xlsx",
+        "xlsx",
+    ),
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2022",
+        "Multas aplicadas pela ANP — 2022",
+        f"{_MAV}/multas-aplicadas-2022.csv",
+        "csv",
+    ),
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2023",
+        "Multas aplicadas pela ANP — 2023",
+        f"{_MAV}/multas-aplicadas-2023.csv",
+        "csv",
+    ),
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2024",
+        "Multas aplicadas pela ANP — 2024",
+        f"{_MAV}/multas-aplicadas-2024.csv",
+        "csv",
+    ),
+    _static(
+        "multas",
+        _SOURCE,
+        "multas-2025",
+        "Multas aplicadas pela ANP — 2025",
+        f"{_MAV}/multas-aplicadas-2025.csv",
+        "csv",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# fiscalizacao-conteudo-local — Fiscalização de Conteúdo Local em E&P
+# ---------------------------------------------------------------------------
+
+_FISC_CL = f"{_BASE}/fiscalizacao-de-conteudo-local"
+_fisc_conteudo_local_entries: list[DatasetEntry] = [
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-exploracao-r1-r6",
+        "Fiscalização de Conteúdo Local — Exploração (1ª a 6ª Rodadas)",
+        f"{_FISC_CL}/fiscalizacao-exploracao-r1-r6-1.csv",
+        "csv",
+    ),
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-exploracao-r7-aditados",
+        "Fiscalização de Conteúdo Local — Exploração (7ª Rodada em diante / Aditados)",
+        f"{_FISC_CL}/fiscalizacao-exploracao-r7-aditados-1.csv",
+        "csv",
+    ),
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-desenv-mar",
+        "Fiscalização de Conteúdo Local — Desenvolvimento Mar (Aditados)",
+        f"{_FISC_CL}/fiscalizacao-desenvolvimento-mar.csv",
+        "csv",
+    ),
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-desenv-terra",
+        "Fiscalização de Conteúdo Local — Desenvolvimento Terra (Aditados)",
+        f"{_FISC_CL}/fiscalizacao-desenvolvimento-terra.csv",
+        "csv",
+    ),
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-desenv-r1-r4",
+        "Fiscalização de Conteúdo Local — Desenvolvimento (1ª a 4ª Rodadas)",
+        f"{_FISC_CL}/fiscalizacao-desenvolvimento-r1-r4.csv",
+        "csv",
+    ),
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-desenv-r5-r6",
+        "Fiscalização de Conteúdo Local — Desenvolvimento (5ª e 6ª Rodadas)",
+        f"{_FISC_CL}/fiscalizacao-desenvolvimento-r5-r6.csv",
+        "csv",
+    ),
+    _static(
+        "fiscalizacao-conteudo-local",
+        _SOURCE,
+        "fisc-cl-desenv-r7",
+        "Fiscalização de Conteúdo Local — Desenvolvimento (7ª Rodada em diante)",
+        f"{_FISC_CL}/fiscalizacao-desenvolvimento-r7.csv",
+        "csv",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# aditamento-conteudo-local — Aditamento de Conteúdo Local
+# ---------------------------------------------------------------------------
+
+_ADIT_CL = f"{_BASE}/arquivos-aditamento-conteudo-local"
+_aditamento_conteudo_local_entries: list[DatasetEntry] = [
+    _static(
+        "aditamento-conteudo-local",
+        _SOURCE,
+        "aditamento-conteudo-local",
+        "Planilha de aditamento de conteúdo local (Resolução ANP 726/2018)",
+        f"{_ADIT_CL}/planilha-aditamento-conteudo-local.csv",
+        "csv",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# acervo-dados-tecnicos — Acervo de Dados Técnicos (BDEP)
+# ---------------------------------------------------------------------------
+
+_ADT = f"{_BASE}/arquivos-acervo-de-dados-tecnicos"
+_adt_static: list[DatasetEntry] = [
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        "adt-programas-geofisicos",
+        "Tabela de programas geofísicos (sísmica 2D/3D)",
+        f"{_ADT}/tabela-programas-geofisicos.csv",
+        "csv",
+    ),
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        "adt-dados-geoquimicos",
+        "Tabela de dados de geoquímica",
+        f"{_ADT}/tabela-dados-geoquimicos.csv",
+        "csv",
+    ),
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        "adt-levantamentos-geoquimicos",
+        "Tabela de levantamentos geoquímicos",
+        f"{_ADT}/tabela-levantamentos-geoquimicos.csv",
+        "csv",
+    ),
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        "adt-estudos",
+        "Tabela de estudos geológicos, geofísicos e geoquímicos",
+        f"{_ADT}/tabela-de-estudos.csv",
+        "csv",
+    ),
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        "adt-promar",
+        "Dados técnicos marítimos do PROMAR",
+        f"{_ADT}/dados-tecnicos-maritimos-promar.csv",
+        "csv",
+    ),
+]
+_adt_pocos: list[DatasetEntry] = [
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        f"adt-pocos-publicos-{y}",
+        f"Poços perfurados públicos — {y}",
+        f"{_ADT}/pocos-publicos-{y}.csv",
+        "csv",
+    )
+    for y in (2023, 2022, 2021, 2020, 2019)
+]
+_adt_sismica: list[DatasetEntry] = [
+    _static(
+        "acervo-dados-tecnicos",
+        _SOURCE,
+        f"adt-sismicos-publicos-{y}",
+        f"Dados sísmicos públicos — {y}",
+        f"{_ADT}/sismicos-publicos-{y}.csv",
+        "csv",
+    )
+    for y in (2023, 2022, 2021, 2020, 2019)
+]
+_acervo_dados_tecnicos_entries: list[DatasetEntry] = (
+    _adt_static + _adt_pocos + _adt_sismica
+)
+
+# ---------------------------------------------------------------------------
+# amostras-rochas-fluidos — Amostras de Rochas e Fluidos
+# ---------------------------------------------------------------------------
+
+_ARF = f"{_BASE}/arquivos-amostras-de-rochas-e-fluidos"
+_arf_acervo = f"{_ARF}/acervo-de-amostras"
+_arf_depositarias = (
+    f"{_ARF}/valores-praticados-pelas-fieis-depositarias-para-atendimento-das-saas"
+)
+
+_arf_consolidacao: list[DatasetEntry] = [
+    _static(
+        "amostras-rochas-fluidos",
+        _SOURCE,
+        f"arf-consolidacao-{y}",
+        f"Consolidação de amostras de rochas e fluidos — {y}",
+        f"{_arf_acervo}/2019-consolidacao.zip"
+        if y == 2019
+        else f"{_arf_acervo}/2018-consolidacao.zip"
+        if y == 2018
+        else f"{_arf_acervo}/consolidacao-{y}.zip",
+        "zip",
+    )
+    for y in range(2025, 2016, -1)
+] + [
+    _static(
+        "amostras-rochas-fluidos",
+        _SOURCE,
+        "arf-consolidacao-daa-2016",
+        "Consolidação DAA — 2016",
+        f"{_arf_acervo}/consolidacao-daa-2016.csv",
+        "csv",
+    ),
+    _static(
+        "amostras-rochas-fluidos",
+        _SOURCE,
+        "arf-consolidacao-daa-laminas-2016",
+        "Consolidação DAA Lâminas — 2016",
+        f"{_arf_acervo}/consolidacao-daa-laminas-2016.csv",
+        "csv",
+    ),
+    _static(
+        "amostras-rochas-fluidos",
+        _SOURCE,
+        "arf-consolidacao-daa-2015",
+        "Consolidação DAA — 2015",
+        f"{_arf_acervo}/consolidacao-daa-2015.csv",
+        "csv",
+    ),
+    _static(
+        "amostras-rochas-fluidos",
+        _SOURCE,
+        "arf-consolidacao-daa-petrobras-2015",
+        "Consolidação DAA Petrobras — 2015",
+        f"{_arf_acervo}/consolidacao-daa-petrobras-2015.csv",
+        "csv",
+    ),
+]
+
+_arf_dep_entries: list[DatasetEntry] = [
+    _static(
+        "amostras-rochas-fluidos",
+        _SOURCE,
+        f"arf-depositarias-{y}",
+        f"Valores praticados pelas fiéis depositárias (SAAs) — {y}",
+        f"{_arf_depositarias}/valores-depositarias-saas-2021-1.zip"
+        if y == 2021
+        else f"{_arf_depositarias}/valores-depositarias-saas-{y}.zip",
+        "zip",
+    )
+    for y in range(2026, 2015, -1)
+]
+
+_amostras_rochas_fluidos_entries: list[DatasetEntry] = (
+    _arf_consolidacao + _arf_dep_entries
+)
+
+# ---------------------------------------------------------------------------
+# pdi — Pesquisa, Desenvolvimento e Inovação
+# ---------------------------------------------------------------------------
+
+_PDI = f"{_BASE}/arquivos-pdi"
+_pdi_entries: list[DatasetEntry] = [
+    _static(
+        "pdi",
+        _SOURCE,
+        "pdi-obrigacao",
+        "Obrigação de investimentos em PD&I por empresa petrolífera",
+        f"{_PDI}/obrigacaopdi.csv",
+        "csv",
+    ),
+    _static(
+        "pdi",
+        _SOURCE,
+        "pdi-prh",
+        "Investimentos no Programa de Recursos Humanos da ANP (PRH-ANP)",
+        f"{_PDI}/investimentos-prh.csv",
+        "csv",
+    ),
+    _static(
+        "pdi",
+        _SOURCE,
+        "pdi-unidades-pesquisa",
+        "Credenciamento de unidades de pesquisa — áreas, temas e subtemas",
+        f"{_PDI}/dados-abertos-unidades-pesquisa-area-tema-subtema.xlsx",
+        "xlsx",
+    ),
+    _static(
+        "pdi",
+        _SOURCE,
+        "pdi-projetos-rt-3-2015",
+        "Projetos RT 3/2015 iniciados até 2026",
+        f"{_PDI}/projetos-rt-3-2015.csv",
+        "csv",
+    ),
+    _static(
+        "pdi",
+        _SOURCE,
+        "pdi-projetos-rt-5-2005",
+        "Projetos RT 5/2005",
+        f"{_PDI}/projetos-rt-5-2005.csv",
+        "csv",
+    ),
+]
+
+
+# ===========================================================================
 # Consolidated Exports for all Dados Abertos
 # ===========================================================================
 
@@ -2136,6 +2539,39 @@ GROUPS_DA: dict[str, GroupInfo] = {
         name="Produção de Petróleo e Gás Natural — Terra (FDP, dados abertos)",
         entries=_fdp_terra_entries,
     ),
+    # Expansão — Regulação, Fiscalização e E&P
+    "autorizacoes-gn": GroupInfo(
+        name="Autorizações de Gás Natural",
+        entries=_autorizacoes_gn_entries,
+    ),
+    "distribuidores": GroupInfo(
+        name="Distribuidores de Combustíveis Líquidos",
+        entries=_distribuidores_entries,
+    ),
+    "multas": GroupInfo(
+        name="Multas Aplicadas com Vencimento a partir de 2016",
+        entries=_multas_entries,
+    ),
+    "fiscalizacao-conteudo-local": GroupInfo(
+        name="Fiscalização de Conteúdo Local em E&P",
+        entries=_fisc_conteudo_local_entries,
+    ),
+    "aditamento-conteudo-local": GroupInfo(
+        name="Aditamento de Conteúdo Local",
+        entries=_aditamento_conteudo_local_entries,
+    ),
+    "acervo-dados-tecnicos": GroupInfo(
+        name="Acervo de Dados Técnicos (BDEP)",
+        entries=_acervo_dados_tecnicos_entries,
+    ),
+    "amostras-rochas-fluidos": GroupInfo(
+        name="Amostras de Rochas e Fluidos",
+        entries=_amostras_rochas_fluidos_entries,
+    ),
+    "pdi": GroupInfo(
+        name="Pesquisa, Desenvolvimento e Inovação (P,D&I)",
+        entries=_pdi_entries,
+    ),
 }
 
 GROUP_ALIASES_DA: dict[str, str] = {
@@ -2157,4 +2593,13 @@ GROUP_ALIASES_DA: dict[str, str] = {
     # Wave 3c
     "fdp-mar": "producao-fdp-mar",
     "fdp-terra": "producao-fdp-terra",
+    # Expansão
+    "autorizacoes-gas-natural": "autorizacoes-gn",
+    "distribuidores-combustiveis": "distribuidores",
+    "multas-aplicadas": "multas",
+    "fisc-conteudo-local": "fiscalizacao-conteudo-local",
+    "aditamento-cl": "aditamento-conteudo-local",
+    "bdep-dados-tecnicos": "acervo-dados-tecnicos",
+    "amostras-bdep": "amostras-rochas-fluidos",
+    "pesquisa-desenvolvimento": "pdi",
 }
