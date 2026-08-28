@@ -30,7 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 analysis = [
-    "quantilica-analytics>=0.4.0",
+    "quantilica-analytics>=0.2.0",
 ]
 
 [project.urls]
