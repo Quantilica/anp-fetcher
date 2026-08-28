@@ -64,6 +64,9 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/anp_fetcher"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [build-system]
 requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
