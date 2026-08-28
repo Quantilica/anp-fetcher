@@ -84,7 +84,8 @@ class DataRepository(BaseDataRepository):
 
         Args:
             entry (DatasetEntry): The dataset entry to process.
-            last_modified (dt.date | None, optional): The last modified date of the dataset. Defaults to None.
+            last_modified (dt.date | None, optional): The last modified date of
+                the dataset. Defaults to None.
 
         Returns:
             Path: The computed local path for the dataset.
