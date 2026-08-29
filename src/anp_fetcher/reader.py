@@ -1,100 +1,270 @@
+"""Extração e leitura tipada de arquivos brutos da ANP.
+
+Camada de conversão de dados coletados para Polars/Parquet, no padrão do
+``pdet-fetcher`` (reader + wrangling). Lê CSV (latin-1/utf-8, separador ``;``,
+decimal vírgula), XLS/XLSX (via ``pl.read_excel`` + fastexcel) e arquivos
+ZIP/7z, normaliza dtypes e escreve Parquet com metadados de proveniência
+extraídos do sidecar ``DownloadManifest``.
+"""
+
+from __future__ import annotations
+
+import json
 import logging
+import re
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import polars as pl
+from quantilica.analytics.reader import read_brazilian_csv
 
 logger = logging.getLogger(__name__)
 
-NUMERIC_COLUMNS = ["Valor de Venda", "Valor de Compra"]
+# Layouts do storage do anp-fetcher (o stamp @YYYYMMDD é opcional — ausente
+# quando o servidor não reporta Last-Modified):
+#   {base_id}[@{YYYYMMDD}].{ext}                   (estático)
+#   {base_id}_{year}[@{YYYYMMDD}].{ext}            (anual)
+#   {base_id}_{year}-{part:02d}[@{YYYYMMDD}].{ext} (mensal/semestral)
+_FILENAME_RE = re.compile(
+    r"^(?P<base_id>.+?)"
+    r"(?:_(?P<year>\d{4})(?:-(?P<part>\d{2}))?)?"
+    r"(?:@(?P<mod>\d{8}))?"
+    r"\.(?P<ext>[a-z0-9]+)$"
+)
+
+_DECOMPRESSIBLE = {".zip", ".7z"}
 
 
-def _decompress(filepath: Path) -> Path:
-    """Decompress a zip or 7z file and return the first extracted file."""
-    logger.info("Decompressing %s", filepath)
+def parse_filename(path: Path) -> dict[str, Any]:
+    """Extrai metadados de um arquivo no padrão de nome do storage ANP.
+
+    Args:
+        path (Path): O caminho do arquivo bruto.
+
+    Returns:
+        dict[str, Any]: Metadados com ``base_id``, ``year``, ``part``,
+            ``partition`` (string de partição ou None), ``modification``
+            (YYYYMMDD) e ``ext``.
+    """
+    m = _FILENAME_RE.match(path.name)
+    if not m:
+        return {
+            "filepath": path,
+            "filename": path.name,
+            "base_id": path.stem,
+            "year": None,
+            "part": None,
+            "partition": None,
+            "modification": None,
+            "ext": path.suffix.lstrip("."),
+        }
+    g = m.groupdict()
+    year = int(g["year"]) if g["year"] else None
+    part = int(g["part"]) if g["part"] else None
+    mod = int(g["mod"]) if g["mod"] else None
+    if part is not None:
+        partition = f"{year}-{part:02d}"
+    elif year is not None:
+        partition = str(year)
+    else:
+        partition = None
+    return {
+        "filepath": path,
+        "filename": path.name,
+        "base_id": g["base_id"],
+        "year": year,
+        "part": part,
+        "partition": partition,
+        "modification": mod,
+        "ext": g["ext"],
+    }
+
+
+def decompress(path: Path) -> Path:
+    """Descompacta um arquivo ZIP/7z e retorna o primeiro arquivo de dados.
+
+    Args:
+        path (Path): O caminho do arquivo compactado.
+
+    Returns:
+        Path: O caminho do arquivo extraído (primeiro csv/xls/xlsx encontrado).
+
+    Raises:
+        RuntimeError: Se o 7z falhar ou não produzir arquivos.
+    """
+    logger.info("Descompactando %s", path)
     tmp_dir = Path(tempfile.mkdtemp(prefix="anp_"))
-    command = ["7z", "e", str(filepath), f"-o{tmp_dir}"]
+    command = ["7z", "e", str(path), f"-o{tmp_dir}"]
     result = subprocess.run(command, capture_output=True)
     if result.returncode != 0:
         raise RuntimeError(
-            f"7z failed decompressing {filepath}: "
+            f"7z falhou ao descompactar {path}: "
             f"{result.stderr.decode(errors='replace')}"
         )
-    extracted = list(tmp_dir.iterdir())
+    extracted = [p for p in tmp_dir.iterdir() if p.is_file()]
     if not extracted:
-        raise RuntimeError(f"7z produced no files from {filepath}")
-    return extracted[0]
+        raise RuntimeError(f"7z não produziu arquivos de {path}")
+    data_file = next(
+        (p for p in extracted if p.suffix.lower() in (".csv", ".xls", ".xlsx")),
+        extracted[0],
+    )
+    return data_file
 
 
-def _read_and_clean_shpc(filepath: Path) -> pl.DataFrame:
-    """Read a SHPC CSV file and apply strict types."""
-    # Sniff encoding and separator could be complex, but ANP is usually utf-8 or latin1
+def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
+    """Lê um CSV da ANP (utf-8 com fallback latin-1).
+
+    Args:
+        path (Path): Caminho do arquivo CSV.
+        spec (dict[str, Any]): Especificação de processamento do grupo.
+
+    Returns:
+        pl.DataFrame: O DataFrame lido com tipos inferidos.
+    """
+    kwargs: dict[str, Any] = {
+        "separator": spec.get("separator", ";"),
+        "infer_schema_length": spec.get("infer_schema_length", 0),
+    }
+    if spec.get("skip_rows"):
+        kwargs["skip_rows"] = spec["skip_rows"]
+    encoding = spec.get("encoding")
     try:
-        # First attempt with utf-8
-        df = pl.read_csv(
-            filepath, separator=";", encoding="utf8", infer_schema_length=0
+        return read_brazilian_csv(
+            path, encoding=encoding or "utf-8", decimal=",", **kwargs
         )
-    except Exception:
-        # Fallback to latin-1
-        df = pl.read_csv(
-            filepath, separator=";", encoding="latin1", infer_schema_length=0
-        )
+    except Exception as exc:  # fallback latin-1
+        if encoding is not None:
+            raise
+        logger.debug("UTF-8 falhou (%s); tentando latin-1", exc)
+        return read_brazilian_csv(path, encoding="latin-1", decimal=",", **kwargs)
 
-    # Standardize column names if needed, but assuming they match SHPC_COLUMNS
-    for col in NUMERIC_COLUMNS:
-        if col in df.columns:
-            df = df.with_columns(
-                pl.col(col).str.replace(",", ".").cast(pl.Float64, strict=False)
-            )
 
-    # For all other columns, strip whitespace and cast to Categorical/String
-    for col in df.columns:
-        if col not in NUMERIC_COLUMNS:
-            df = df.with_columns(pl.col(col).str.strip_chars())
+def read_excel(
+    path: Path, spec: dict[str, Any]
+) -> pl.DataFrame | dict[str, pl.DataFrame]:
+    """Lê uma planilha XLS/XLSX.
 
+    Args:
+        path (Path): Caminho do arquivo de planilha.
+        spec (dict[str, Any]): Especificação de processamento. ``sheet=None``
+            lê a primeira aba; ``sheet=0`` lê todas as abas (dict); ``sheet=N``
+            lê a N-ésima aba.
+
+    Returns:
+        pl.DataFrame | dict[str, pl.DataFrame]: DataFrame único ou dict de
+            DataFrames por nome de aba.
+    """
+    sheet = spec.get("sheet")
+    if sheet == "all":
+        frames = pl.read_excel(path, sheet_id=0)
+        assert isinstance(frames, dict), "sheet_id=0 deve retornar dict"
+        return frames
+    if sheet is None:
+        return pl.read_excel(path, sheet_id=None)
+    return pl.read_excel(path, sheet_id=sheet)
+
+
+def read_file(
+    path: Path, spec: dict[str, Any]
+) -> pl.DataFrame | dict[str, pl.DataFrame]:
+    """Lê um arquivo bruto conforme o formato e a especificação do grupo.
+
+    Args:
+        path (Path): Caminho do arquivo (csv, xls ou xlsx).
+        spec (dict[str, Any]): Especificação de processamento do grupo.
+
+    Returns:
+        pl.DataFrame | dict[str, pl.DataFrame]: Dados lidos.
+
+    Raises:
+        ValueError: Se o formato não for suportado.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        return read_csv(path, spec)
+    if suffix in (".xls", ".xlsx"):
+        return read_excel(path, spec)
+    raise ValueError(f"Formato não suportado: {suffix}")
+
+
+def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
+    """Normaliza dtypes: números com vírgula decimal e strings sem espaços.
+
+    Args:
+        df (pl.DataFrame): O DataFrame a normalizar.
+        spec (dict[str, Any]): Especificação com ``numeric_columns``.
+
+    Returns:
+        pl.DataFrame: O DataFrame normalizado.
+    """
+    numeric = set(spec.get("numeric_columns", []))
+    df = df.with_columns(
+        [
+            pl.col(col)
+            .str.replace_all(r"\.", "")
+            .str.replace_all(",", ".")
+            .cast(pl.Float64, strict=False)
+            for col in numeric
+            if col in df.columns and df[col].dtype == pl.Utf8
+        ]
+    )
+    df = df.with_columns(
+        [
+            pl.col(col).str.strip_chars()
+            for col in df.columns
+            if col not in numeric and df[col].dtype == pl.Utf8
+        ]
+    )
     return df
 
 
-def convert_anp(input_dir: Path, output_dir: Path) -> None:
-    """Procura arquivos brutos da ANP e converte para Parquet.
+def provenance_metadata(path: Path) -> dict[str, str]:
+    """Lê o sidecar ``{path}.manifest.json`` e devolve metadados de proveniência.
 
     Args:
-        input_dir (Path): The directory containing raw ANP files.
-        output_dir (Path): The directory where Parquet files will be saved.
+        path (Path): Caminho do arquivo de dados bruto.
+
+    Returns:
+        dict[str, str]: Metadados ``quantilica.*`` vazios se não houver manifest.
     """
-    if not input_dir.exists():
-        logger.warning("Input directory %s does not exist.", input_dir)
-        return
+    manifest_path = path.with_suffix(path.suffix + ".manifest.json")
+    if not manifest_path.exists():
+        return {}
+    try:
+        data = json.loads(manifest_path.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Manifest inválido %s: %s", manifest_path, exc)
+        return {}
+    return {
+        "quantilica.source_id": str(data.get("source_id", "")),
+        "quantilica.dataset_id": str(data.get("dataset_id", "")),
+        "quantilica.origin_url": str(data.get("url", "")),
+        "quantilica.origin_sha256": str(data.get("sha256", "")),
+        "quantilica.fetched_at": str(data.get("fetched_at", "")),
+        "quantilica.producer": str(data.get("producer", "")),
+    }
 
-    shpc_dirs = [
-        d for d in input_dir.iterdir() if d.is_dir() and d.name.startswith("shpc-")
-    ]
 
-    for shpc_dir in shpc_dirs:
-        for file in shpc_dir.glob("*"):
-            if file.is_dir():
-                continue
+def write_parquet(
+    df: pl.DataFrame,
+    target: Path,
+    *,
+    source_path: Path | None = None,
+) -> Path:
+    """Escreve um DataFrame como Parquet (zstd) com proveniência opcional.
 
-            filepath = file
+    Args:
+        df (pl.DataFrame): O DataFrame a escrever.
+        target (Path): Caminho de destino do Parquet.
+        source_path (Path | None, optional): Arquivo bruto de origem, para
+            injetar os metadados do manifest sidecar.
 
-            # Decompress if zip
-            if filepath.suffix.lower() == ".zip":
-                try:
-                    filepath = _decompress(filepath)
-                except Exception as e:
-                    logger.error("Failed to decompress %s: %s", file, e)
-                    continue
-
-            if filepath.suffix.lower() == ".csv":
-                logger.info("Converting %s", file)
-                try:
-                    df = _read_and_clean_shpc(filepath)
-
-                    # Create output path
-                    out_path = output_dir / shpc_dir.name / f"{file.stem}.parquet"
-                    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-                    df.write_parquet(out_path)
-                except Exception as e:
-                    logger.error("Failed to convert %s: %s", file, e)
+    Returns:
+        Path: O caminho do Parquet escrito.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    metadata = provenance_metadata(source_path) if source_path else {}
+    df.write_parquet(target, compression="zstd", metadata=metadata)
+    return target

@@ -9,8 +9,31 @@ from typing import Annotated, Any
 import typer
 from quantilica.cli.sdk import FetcherApp
 
-from .catalog import GROUP_ALIASES, GROUPS, list_datasets
+from .catalog import GROUP_ALIASES, GROUPS, list_datasets, resolve_group
 from .storage import DataRepository
+
+
+def _resolve_groups(groups: list[str] | None) -> list[str]:
+    """Resolve nomes de grupo/aliases para ids canônicos; None → todos.
+
+    Args:
+        groups (list[str] | None): Nomes ou aliases de grupo informados na CLI.
+
+    Returns:
+        list[str]: Ids canônicos dos grupos.
+
+    Raises:
+        typer.BadParameter: Se um grupo não for reconhecido.
+    """
+    if groups is None:
+        return list(GROUPS)
+    resolved: list[str] = []
+    for name in groups:
+        canon = resolve_group(name)
+        if canon is None:
+            raise typer.BadParameter(f"Grupo desconhecido: {name!r}")
+        resolved.append(canon)
+    return resolved
 
 
 def path_builder(
@@ -43,6 +66,10 @@ app = fetcher.app
 
 @app.command("convert")
 def cmd_convert(
+    groups: Annotated[
+        list[str] | None,
+        typer.Argument(help="Grupos a converter. Use 'list'. Omitir para todos."),
+    ] = None,
     input: Annotated[
         Path,
         typer.Option("-i", "--input", help="Diretório de origem com arquivos brutos"),
@@ -56,6 +83,7 @@ def cmd_convert(
     """Converter arquivos brutos da ANP para Parquet.
 
     Args:
+        groups (list[str] | None): Groups to convert.
         input (Path): Origin directory with raw files.
         output (Path): Destination directory for Parquet files.
         verbose (bool): Enable verbose logging.
@@ -71,7 +99,7 @@ def cmd_convert(
     )
 
     try:
-        from .reader import convert_anp
+        from .wrangling import convert_group
     except ImportError:
         from quantilica.cli.ui import get_console
 
@@ -81,11 +109,15 @@ def cmd_convert(
         )
         raise typer.Exit(1) from None
 
-    convert_anp(input, output)
+    target_groups = _resolve_groups(groups)
+    converted = convert_group(target_groups, input, output)
 
     from quantilica.cli.ui import get_console
 
-    get_console().print("[green]✓[/green] Conversão concluída.")
+    get_console().print(
+        f"[green]✓[/green] Conversão concluída: [bold]{converted}[/bold] "
+        f"Parquet(s) em [dim]{output}[/dim]."
+    )
 
 
 @app.command("pipeline")
@@ -152,7 +184,7 @@ def cmd_pipeline(
     console.print(Rule("[bold]Passo 2/2: Conversão[/bold]"))
 
     try:
-        from .reader import convert_anp
+        from .wrangling import convert_group
     except ImportError:
         console.print(
             "[red]Erro:[/red] pipeline (conversão) requer extras de análise: "
@@ -160,5 +192,8 @@ def cmd_pipeline(
         )
         raise typer.Exit(1) from None
 
-    convert_anp(output or Path("/data/anp"), parquet_out)
-    console.print(f"[green]✓[/green] Parquet salvo em [dim]{parquet_out}[/dim]")
+    target_groups = _resolve_groups(groups)
+    converted = convert_group(target_groups, output or Path("/data/anp"), parquet_out)
+    console.print(
+        f"[green]✓[/green] {converted} Parquet(s) salvo(s) em [dim]{parquet_out}[/dim]"
+    )

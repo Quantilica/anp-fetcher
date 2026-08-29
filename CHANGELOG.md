@@ -8,6 +8,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Não lançado]
 
 ### Adicionado
+- Camada de extração e tratamento de dados (padrão `pdet-fetcher`): `reader.py`
+  (leitura tipada de CSV/XLS/XLSX/ZIP, normalização de dtypes, Parquet com
+  proveniência do manifest) e `wrangling.py` (`convert_group` idempotente por
+  grupo + `extract_schema`). Comando `convert` agora aceita `[GROUPS]...` e o
+  `pipeline` repassa a seleção ao passo de conversão. Extra `[analysis]` ganhou
+  `fastexcel` (leitura XLS/XLSX). Grupos-chave (SHPC, reservas) validados por
+  `DataContract`.
 - 20 novos grupos de dados de E&P e reservas, ampliando o catálogo de 43 para
   63 grupos (~1.1k para ~1.7k datasets):
   - **Fase de Exploração** (9 grupos, mensal desde 02/2023):

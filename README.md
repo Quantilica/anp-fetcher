@@ -53,6 +53,27 @@ além dos grupos de E&P: fase de exploração (`blocos-contrato`, `pocos-explora
 Use `anp-fetcher list` para ver todos os grupos e aliases (ex.: `blocos` → `blocos-contrato`,
 `reservas` → `reservas-nacionais`).
 
+### Converter para Parquet
+
+Após o `sync`, os dados brutos podem ser convertidos para Parquet (requer o
+extra `[analysis]`):
+
+```bash
+# Converter todos os grupos
+anp-fetcher convert -i ./dados/anp -o ./dados/anp
+
+# Converter grupos específicos (aceita aliases)
+anp-fetcher convert reservas-nacionais shpc -i ./dados/anp -o ./dados/anp
+
+# Pipeline completo: sync + convert dos grupos escolhidos
+anp-fetcher pipeline reservas-nacionais -o ./dados/anp
+```
+
+A conversão é **idempotente** (pula o que já foi convertido), lê CSV/XLS/XLSX/ZIP,
+normaliza dtypes (números com vírgula decimal, strings sem espaços) e injeta a
+proveniência do `DownloadManifest` nos metadados do Parquet (`quantilica.*`).
+Grupos-chave (SHPC, reservas) têm `DataContract` de validação aplicado.
+
 ### Integração com `quantilica-cli`
 
 Se o `quantilica-cli` estiver instalado no mesmo ambiente, o `anp-fetcher` é detectado
