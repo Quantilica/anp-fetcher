@@ -69,6 +69,29 @@ _GROUP_DIRS: dict[str, str] = {
     "acervo-dados-tecnicos": "acervo-dados-tecnicos",
     "amostras-rochas-fluidos": "amostras-rochas-fluidos",
     "pdi": "pesquisa-desenvolvimento-inovacao",
+    # dados-abertos — Fase de Exploração (Onda 4)
+    "blocos-contrato": "fase-exploracao-blocos-contrato",
+    "declaracoes-comercialidade": "fase-exploracao-declaracoes-comercialidade",
+    "pads-concluidos": "fase-exploracao-pads-concluidos",
+    "pads-andamento": "fase-exploracao-pads-andamento",
+    "pocos-exploratorios": "fase-exploracao-pocos-exploratorios",
+    "prorrogacoes-708": "fase-exploracao-prorrogacoes-708",
+    "prorrogacoes-815": "fase-exploracao-prorrogacoes-815",
+    "prorrogacoes-878": "fase-exploracao-prorrogacoes-878",
+    "processos-sancionadores": "fase-exploracao-processos-sancionadores",
+    # dados-abertos — Fase de Desenvolvimento e Produção
+    "producao-mar": "producao-mar",
+    "producao-terra": "producao-terra",
+    "producao-zona": "producao-zona",
+    "plataformas-operacao": "plataformas-operacao",
+    "campos-producao": "campos-producao",
+    "situacao-pocos": "situacao-pocos",
+    "sondas-operacao": "sondas-operacao",
+    "intervencoes-pocos": "intervencoes-pocos",
+    "previsao-pat-pap": "previsao-pat-pap",
+    "atividades-investimentos": "atividades-investimentos",
+    # dados-estatísticos — Reservas
+    "reservas-nacionais": "reservas-nacionais",
 }
 
 

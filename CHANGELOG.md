@@ -8,7 +8,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Não lançado]
 
 ### Adicionado
-- Expansão do catálogo de Dados Abertos com 8 novos grupos (64 novos datasets):
+- 20 novos grupos de dados de E&P e reservas, ampliando o catálogo de 43 para
+  63 grupos (~1.1k para ~1.7k datasets):
+  - **Fase de Exploração** (9 grupos, mensal desde 02/2023):
+    `blocos-contrato`, `declaracoes-comercialidade`, `pads-concluidos`,
+    `pads-andamento`, `pocos-exploratorios`, `prorrogacoes-708`,
+    `prorrogacoes-815`, `prorrogacoes-878`, `processos-sancionadores` —
+    mapeamento literal extraído do HTML do portal (nomenclatura irregular).
+  - **Fase de Desenvolvimento e Produção** (10 grupos): `producao-mar`,
+    `producao-terra`, `producao-zona`, `plataformas-operacao`,
+    `campos-producao`, `situacao-pocos`, `sondas-operacao`,
+    `intervencoes-pocos`, `previsao-pat-pap`, `atividades-investimentos`.
+  - **Reservas** (1 grupo): `reservas-nacionais` (XLSX 2020–2025).
+- Expansão do catálogo de Dados Abertos com 8 grupos (64 novos datasets):
   - `autorizacoes-gn` (Autorizações de Construção e Operação de Gás Natural - CSV/XLSX)
   - `distribuidores` (Distribuidores de Combustíveis Líquidos e contratos homologados)
   - `multas` (Multas Aplicadas com Vencimento a partir de 2016 - MAV)

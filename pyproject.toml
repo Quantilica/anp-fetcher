@@ -60,6 +60,7 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+per-file-ignores = { "src/anp_fetcher/catalog_fase_exploracao.py" = ["E501"] }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/anp_fetcher"]

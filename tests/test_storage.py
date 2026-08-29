@@ -220,3 +220,66 @@ def test_path_for_fiscalizacao(tmp_path):
     path = repo.path_for_entry(entry)
     assert path.parent.name == "fiscalizacao-abastecimento"
     assert path.suffix == ".xlsx"
+
+
+def test_path_for_fase_exploracao_monthly(tmp_path):
+    repo = DataRepository(tmp_path)
+    entry = next(
+        e
+        for e in list_datasets("blocos-contrato")
+        if e["year"] == 2025 and e["month"] == 9
+    )
+    date = dt.date(2026, 8, 1)
+    path = repo.path_for_entry(entry, last_modified=date)
+    assert path.parent.name == "fase-exploracao-blocos-contrato"
+    assert "blocos-contrato_2025-09@20260801" in path.name
+    assert path.suffix == ".csv"
+
+
+def test_path_for_producao_zona(tmp_path):
+    repo = DataRepository(tmp_path)
+    entry = next(
+        e
+        for e in list_datasets("producao-zona")
+        if e["year"] == 2024 and e["month"] == 10
+    )
+    date = dt.date(2026, 8, 1)
+    path = repo.path_for_entry(entry, last_modified=date)
+    assert path.parent.name == "producao-zona"
+    assert "producao-zona_2024-10@20260801" in path.name
+
+
+def test_path_for_producao_terra_semestral(tmp_path):
+    repo = DataRepository(tmp_path)
+    entry = next(
+        e
+        for e in list_datasets("producao-terra")
+        if e["year"] == 2010 and e["semester"] == 1
+    )
+    path = repo.path_for_entry(entry)
+    assert path.parent.name == "producao-terra"
+    assert "producao-terra-s1_2010-01" in path.name
+
+
+def test_path_for_reservas(tmp_path):
+    repo = DataRepository(tmp_path)
+    entry = next(e for e in list_datasets("reservas-nacionais") if e["year"] == 2024)
+    date = dt.date(2026, 4, 2)
+    path = repo.path_for_entry(entry, last_modified=date)
+    assert path.parent.name == "reservas-nacionais"
+    assert "reservas-nacionais_2024@20260402" in path.name
+    assert path.suffix == ".xlsx"
+
+
+def test_new_groups_produce_distinct_paths(tmp_path):
+    repo = DataRepository(tmp_path)
+    date = dt.date(2026, 8, 1)
+    for gid in (
+        "blocos-contrato",
+        "producao-zona",
+        "producao-terra",
+        "pads-concluidos",
+        "reservas-nacionais",
+    ):
+        paths = [repo.path_for_entry(e, last_modified=date) for e in list_datasets(gid)]
+        assert len(paths) == len(set(paths)), f"Duplicate paths in {gid}"

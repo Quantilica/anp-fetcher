@@ -25,7 +25,7 @@ uv add anp-fetcher
 ### Listar os datasets disponíveis
 
 ```bash
-anp-fetcher discover
+anp-fetcher list
 ```
 
 ### Sincronizar (baixar) datasets
@@ -42,7 +42,16 @@ anp-fetcher sync --dry-run
 ```
 
 Grupos de dados abertos incluem `shpc` (Sistema de Levantamento de Preços) e suas
-subdivisões (`shpc-glp`, `shpc-gasolina-etanol`, etc.), `vdpb-abertos` e `pp-abertos`.
+subdivisões (`shpc-glp`, `shpc-gasolina-etanol`, etc.), `vdpb-abertos` e `pp-abertos`,
+além dos grupos de E&P: fase de exploração (`blocos-contrato`, `pocos-exploratorios`,
+`pads-concluidos`, `pads-andamento`, `declaracoes-comercialidade`, `prorrogacoes-708`,
+`prorrogacoes-815`, `prorrogacoes-878`, `processos-sancionadores`), fase de produção
+(`producao-mar`, `producao-terra`, `producao-zona`, `plataformas-operacao`,
+`campos-producao`, `situacao-pocos`, `sondas-operacao`, `intervencoes-pocos`,
+`previsao-pat-pap`, `atividades-investimentos`) e `reservas-nacionais`.
+
+Use `anp-fetcher list` para ver todos os grupos e aliases (ex.: `blocos` → `blocos-contrato`,
+`reservas` → `reservas-nacionais`).
 
 ### Integração com `quantilica-cli`
 
@@ -50,7 +59,7 @@ Se o `quantilica-cli` estiver instalado no mesmo ambiente, o `anp-fetcher` é de
 automaticamente como plugin:
 
 ```bash
-quantilica anp discover
+quantilica anp list
 ```
 
 ## API Python

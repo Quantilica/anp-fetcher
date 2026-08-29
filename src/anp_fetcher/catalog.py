@@ -3,7 +3,9 @@
 Aggregates all groups from all catalog modules:
 - catalog_dados_estatisticos:   ANP dados-estatísticos (XLS/XLSX) — Fase 1
 - catalog_dados_abertos:        ANP dados-abertos (CSV, SHPC, etc.) — Fase 2
-- catalog_dados_abertos_3a:     ANP dados-abertos — Onda 3a (15 grupos)
+- catalog_fase_exploracao:      Fase de Exploração (9 grupos) — Onda 4
+- catalog_fase_producao:        Fase de Desenvolvimento e Produção (10 grupos)
+- catalog_reservas:             Reservas nacionais de petróleo e gás (XLSX)
 
 Public API is stable across phases.
 """
@@ -11,6 +13,15 @@ Public API is stable across phases.
 from ._catalog_base import DatasetEntry, GroupInfo
 from .catalog_dados_abertos import GROUP_ALIASES_DA, GROUPS_DA
 from .catalog_dados_estatisticos import GROUP_ALIASES_DE, GROUPS_DE
+from .catalog_fase_exploracao import (
+    GROUP_ALIASES_FASE_EXPLORACAO,
+    GROUPS_FASE_EXPLORACAO,
+)
+from .catalog_fase_producao import (
+    GROUP_ALIASES_FASE_PRODUCAO,
+    GROUPS_FASE_PRODUCAO,
+)
+from .catalog_reservas import GROUP_ALIASES_RESERVAS, GROUPS_RESERVAS
 
 __all__ = [
     "DatasetEntry",
@@ -26,11 +37,17 @@ __all__ = [
 GROUPS: dict[str, GroupInfo] = {
     **GROUPS_DE,
     **GROUPS_DA,
+    **GROUPS_FASE_EXPLORACAO,
+    **GROUPS_FASE_PRODUCAO,
+    **GROUPS_RESERVAS,
 }
 
 GROUP_ALIASES: dict[str, str] = {
     **GROUP_ALIASES_DE,
     **GROUP_ALIASES_DA,
+    **GROUP_ALIASES_FASE_EXPLORACAO,
+    **GROUP_ALIASES_FASE_PRODUCAO,
+    **GROUP_ALIASES_RESERVAS,
 }
 
 ALL_GROUP_KEYS: list[str] = list(GROUPS)

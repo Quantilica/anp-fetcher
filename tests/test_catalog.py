@@ -10,7 +10,7 @@ from anp_fetcher.catalog import (
     resolve_group,
 )
 
-_DE_GROUPS = {"ie", "pp", "pb", "ppg", "vdpb"}
+_DE_GROUPS = {"ie", "pp", "pb", "ppg", "vdpb", "reservas-nacionais"}
 _DA_GROUPS = {
     # Wave 2
     "shpc-ca",
@@ -55,6 +55,27 @@ _DA_GROUPS = {
     "acervo-dados-tecnicos",
     "amostras-rochas-fluidos",
     "pdi",
+    # Onda 4 — Fase de Exploração
+    "blocos-contrato",
+    "declaracoes-comercialidade",
+    "pads-concluidos",
+    "pads-andamento",
+    "pocos-exploratorios",
+    "prorrogacoes-708",
+    "prorrogacoes-815",
+    "prorrogacoes-878",
+    "processos-sancionadores",
+    # Fase de Desenvolvimento e Produção
+    "producao-mar",
+    "producao-terra",
+    "producao-zona",
+    "plataformas-operacao",
+    "campos-producao",
+    "situacao-pocos",
+    "sondas-operacao",
+    "intervencoes-pocos",
+    "previsao-pat-pap",
+    "atividades-investimentos",
 }
 _ALL_GROUPS = _DE_GROUPS | _DA_GROUPS
 
@@ -634,3 +655,229 @@ def test_expansao_groups_catalog():
     assert len(GROUPS["acervo-dados-tecnicos"]["entries"]) == 15
     assert len(GROUPS["amostras-rochas-fluidos"]["entries"]) == 24
     assert len(GROUPS["pdi"]["entries"]) == 5
+
+
+# ---------------------------------------------------------------------------
+# Onda 4 — Fase de Exploração
+# ---------------------------------------------------------------------------
+
+
+def test_fase_exploracao_counts():
+    expected = {
+        "blocos-contrato": 40,
+        "declaracoes-comercialidade": 42,
+        "pads-concluidos": 41,
+        "pads-andamento": 41,
+        "pocos-exploratorios": 41,
+        "prorrogacoes-708": 42,
+        "prorrogacoes-815": 42,
+        "prorrogacoes-878": 41,
+        "processos-sancionadores": 42,
+    }
+    for gid, count in expected.items():
+        assert len(GROUPS[gid]["entries"]) == count, gid
+
+
+def test_fase_exploracao_monthly_partition():
+    for gid in (
+        "blocos-contrato",
+        "declaracoes-comercialidade",
+        "pads-concluidos",
+        "pads-andamento",
+        "pocos-exploratorios",
+        "prorrogacoes-708",
+        "prorrogacoes-815",
+        "prorrogacoes-878",
+        "processos-sancionadores",
+    ):
+        for e in GROUPS[gid]["entries"]:
+            assert e["month"] in range(1, 13), e["id"]
+            assert e["semester"] is None, e["id"]
+            assert e["ext"] == "csv", e["id"]
+
+
+def test_fase_exploracao_2023_anomalies():
+    # 2023-06 pads-andamento excluído (URL quebrada junho-csv)
+    assert not any(
+        e["year"] == 2023 and e["month"] == 6
+        for e in GROUPS["pads-andamento"]["entries"]
+    )
+    # 2023-02 pocos excluído (aponta para arquivo de blocos)
+    assert not any(
+        e["year"] == 2023 and e["month"] == 2
+        for e in GROUPS["pocos-exploratorios"]["entries"]
+    )
+    # blocos-2023 só tem meses 4–12 (fev = path genérico não particionado,
+    # mar excluído por apontar para arquivo de poços)
+    blocos_2023 = [
+        e["month"] for e in GROUPS["blocos-contrato"]["entries"] if e["year"] == 2023
+    ]
+    assert blocos_2023 == list(range(4, 13))
+    # 2023 usa nomes de mês (fev de processos com typo "feveiro.csv")
+    feb_proc = next(
+        e
+        for e in GROUPS["processos-sancionadores"]["entries"]
+        if e["year"] == 2023 and e["month"] == 2
+    )
+    assert feb_proc["url"].endswith("2023/feveiro.csv")  # typo verificado
+
+
+def test_fase_exploracao_2024_2026_overrides():
+    # 2024-05 blocos: nome sem separadores blocossobcontratomai.csv
+    mai_2024 = next(
+        e
+        for e in GROUPS["blocos-contrato"]["entries"]
+        if e["year"] == 2024 and e["month"] == 5
+    )
+    assert mai_2024["url"].endswith("blocossobcontratomai.csv")
+    # pads-concluidos 2025-09 ausente: ANP publicou duplicata de agosto
+    assert not any(
+        e["year"] == 2025 and e["month"] == 9
+        for e in GROUPS["pads-concluidos"]["entries"]
+    )
+    # prorrogacoes-878 2025-09 idem (duplicata de agosto)
+    assert not any(
+        e["year"] == 2025 and e["month"] == 9
+        for e in GROUPS["prorrogacoes-878"]["entries"]
+    )
+    # 2026-01 prorrogacoes-878: sufixo duplo *-jan-csv.csv
+    jan_878 = next(
+        e
+        for e in GROUPS["prorrogacoes-878"]["entries"]
+        if e["year"] == 2026 and e["month"] == 1
+    )
+    assert jan_878["url"].endswith("ranp-878-2022-jan-csv.csv")
+
+
+def test_fase_exploracao_2026_irregular_names():
+    # dcfe 2026 usa prefixo "fase-exploracao" e sufixos irregulares
+    jan_dcfe = next(
+        e
+        for e in GROUPS["declaracoes-comercialidade"]["entries"]
+        if e["year"] == 2026 and e["month"] == 1
+    )
+    assert jan_dcfe["url"].endswith(
+        "declaracoes-comercialidade-fase-exploracao-jan.csv"
+    )
+    fev_dcfe = next(
+        e
+        for e in GROUPS["declaracoes-comercialidade"]["entries"]
+        if e["year"] == 2026 and e["month"] == 2
+    )
+    assert fev_dcfe["url"].endswith(
+        "declaracoes-comercialidade-fase-exploracao-fev-26.csv"
+    )
+    # pocos 2026-02 usa separadores diferentes
+    fev_pocos = next(
+        e
+        for e in GROUPS["pocos-exploratorios"]["entries"]
+        if e["year"] == 2026 and e["month"] == 2
+    )
+    assert fev_pocos["url"].endswith("pocos-exploratorios_fev_2026.csv")
+
+
+def test_fase_exploracao_aliases():
+    assert resolve_group("blocos") == "blocos-contrato"
+    assert resolve_group("comercialidade") == "declaracoes-comercialidade"
+    assert resolve_group("pads") == "pads-concluidos"
+    assert resolve_group("pocos") == "pocos-exploratorios"
+    assert resolve_group("sancionadores") == "processos-sancionadores"
+    assert resolve_group("prorrogacoes") == "prorrogacoes-708"
+
+
+# ---------------------------------------------------------------------------
+# Fase de Desenvolvimento e Produção
+# ---------------------------------------------------------------------------
+
+
+def test_producao_mar_catalog():
+    entries = GROUPS["producao-mar"]["entries"]
+    assert len(entries) == 18
+    assert all(e["ext"] == "csv" for e in entries)
+    # 2024 é outlier (nome de poço, não producao-mar-2024.csv)
+    e2024 = next(e for e in entries if e["id"] == "producao-mar-2024")
+    assert e2024["url"].endswith("producao_por_poco_2024.csv")
+
+
+def test_producao_terra_catalog():
+    entries = GROUPS["producao-terra"]["entries"]
+    assert len(entries) == 86
+    assert all(e["ext"] == "csv" for e in entries)
+    # tem entradas semestrais com semester preenchido
+    assert any(e["semester"] is not None for e in entries)
+    # faixas históricas com year=None
+    assert any(e["year"] is None for e in entries)
+
+
+def test_producao_zona_catalog():
+    entries = GROUPS["producao-zona"]["entries"]
+    assert len(entries) == 141
+    assert min((e["year"], e["month"]) for e in entries) == (2014, 10)
+    assert all(e["ext"] == "csv" for e in entries)
+    # overrides verificados
+    mar_2026 = next(e for e in entries if e["year"] == 2026 and e["month"] == 3)
+    assert mar_2026["url"].endswith("Produo_Zona_032026.csv")
+    fev_2022 = next(e for e in entries if e["year"] == 2022 and e["month"] == 2)
+    assert fev_2022["url"].endswith("producao_zona_03-2022.csv")
+
+
+def test_fase_producao_snapshots():
+    assert len(GROUPS["plataformas-operacao"]["entries"]) == 1
+    assert len(GROUPS["campos-producao"]["entries"]) == 4
+    assert len(GROUPS["situacao-pocos"]["entries"]) == 1
+    assert len(GROUPS["sondas-operacao"]["entries"]) == 13
+    assert len(GROUPS["intervencoes-pocos"]["entries"]) == 7
+    assert len(GROUPS["previsao-pat-pap"]["entries"]) == 4
+    assert len(GROUPS["atividades-investimentos"]["entries"]) == 2
+    for gid in (
+        "plataformas-operacao",
+        "campos-producao",
+        "situacao-pocos",
+        "previsao-pat-pap",
+        "atividades-investimentos",
+    ):
+        for e in GROUPS[gid]["entries"]:
+            assert e["year"] is None, e["id"]
+
+
+def test_sondas_operacao_annual():
+    years = {e["year"] for e in GROUPS["sondas-operacao"]["entries"]}
+    assert years == set(range(2013, 2026))
+
+
+def test_intervencoes_biennial_names():
+    entries = GROUPS["intervencoes-pocos"]["entries"]
+    assert all("intervencao_em_pocos_" in e["url"] for e in entries)
+
+
+def test_fase_producao_aliases():
+    assert resolve_group("mar") == "producao-mar"
+    assert resolve_group("terra") == "producao-terra"
+    assert resolve_group("zona") == "producao-zona"
+    assert resolve_group("campos") == "campos-producao"
+    assert resolve_group("sondas") == "sondas-operacao"
+    assert resolve_group("previsao") == "previsao-pat-pap"
+
+
+# ---------------------------------------------------------------------------
+# Reservas
+# ---------------------------------------------------------------------------
+
+
+def test_reservas_nacionais_catalog():
+    entries = GROUPS["reservas-nacionais"]["entries"]
+    assert len(entries) == 6
+    assert all(e["ext"] == "xlsx" for e in entries)
+    years = {e["year"] for e in entries}
+    assert years == {2020, 2021, 2022, 2023, 2024, 2025}
+    # 2020 é outlier (tabela-de-dados-bar-2020.xlsx)
+    e2020 = next(e for e in entries if e["year"] == 2020)
+    assert e2020["url"].endswith("tabela-de-dados-bar-2020.xlsx")
+    # demais: tabela-dados-bar-{year}.xlsx
+    e2024 = next(e for e in entries if e["year"] == 2024)
+    assert e2024["url"].endswith("tabela-dados-bar-2024.xlsx")
+
+
+def test_reservas_aliases():
+    assert resolve_group("reservas") == "reservas-nacionais"
+    assert resolve_group("bar") == "reservas-nacionais"
