@@ -7,14 +7,21 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import typer
-from quantilica.cli.sdk import FetcherApp
+from quantilica.cli.sdk import FetcherApp, make_resolve_groups
 
-from .catalog import GROUP_ALIASES, GROUPS, list_datasets, resolve_group
+from .catalog import GROUP_ALIASES, GROUPS, list_datasets
 from .storage import DataRepository
+
+# Resolver canônico (elimina a duplicação de _resolve_groups):
+resolve_groups = make_resolve_groups(
+    GROUPS, {alias: [canon] for alias, canon in GROUP_ALIASES.items()}
+)
 
 
 def _resolve_groups(groups: list[str] | None) -> list[str]:
     """Resolve nomes de grupo/aliases para ids canônicos; None → todos.
+
+    Delega ao ``make_resolve_groups`` canônico do ``quantilica.cli.sdk``.
 
     Args:
         groups (list[str] | None): Nomes ou aliases de grupo informados na CLI.
@@ -25,21 +32,22 @@ def _resolve_groups(groups: list[str] | None) -> list[str]:
     Raises:
         typer.BadParameter: Se um grupo não for reconhecido.
     """
-    if groups is None:
-        return list(GROUPS)
-    resolved: list[str] = []
-    for name in groups:
-        canon = resolve_group(name)
-        if canon is None:
-            raise typer.BadParameter(f"Grupo desconhecido: {name!r}")
-        resolved.append(canon)
-    return resolved
+    try:
+        return resolve_groups(groups)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from None
 
 
 def path_builder(
     output_dir: Path, entry: dict[str, Any], last_modified: dt.date | None
 ) -> Path:
     """Build the local file path for a dataset entry.
+
+    NÃO usa o ``default_path_builder`` do SDK: o layout canônico dele usa
+    ``entry["group"]`` como bucket e ``entry["id"]`` como slug, enquanto o
+    layout ANP usa ``_GROUP_DIRS[group]`` + ``base_id`` (id varia por ano).
+    O ``wrangling.py`` lê/escreve no mesmo layout — trocar o builder
+    incompatibilizaria os dados existentes em disco.
 
     Args:
         output_dir (Path): The base output directory.
