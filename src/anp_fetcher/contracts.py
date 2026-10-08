@@ -7,8 +7,14 @@ contrato registrado, e falhas são logadas como warning sem abortar a
 conversão (schemas da ANP variam entre períodos).
 """
 
-import polars as pl
-from quantilica.analytics.schema import DataContract, Field
+try:
+    import polars as pl
+    from quantilica.analytics.schema import DataContract, Field
+except ImportError as exc:
+    raise ImportError(
+        "anp_fetcher.contracts requer o extra 'analysis': "
+        "pip install 'anp-fetcher[analysis]'"
+    ) from exc
 
 _SHPC_FIELDS = [
     Field("Regiao - Sigla", pl.Utf8),

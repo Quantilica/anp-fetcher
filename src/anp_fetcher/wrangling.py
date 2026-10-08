@@ -14,7 +14,13 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-import polars as pl
+try:
+    import polars as pl
+except ImportError as exc:
+    raise ImportError(
+        "anp_fetcher.wrangling requer o extra 'analysis': "
+        "pip install 'anp-fetcher[analysis]'"
+    ) from exc
 
 from .contracts import CONTRACTS
 from .reader import (

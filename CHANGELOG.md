@@ -11,6 +11,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - `cli.py` protege o import do plugin; sem o host a CLI standalone sai com
   código 1 e orienta `quantilica install <fonte>`.
 - `reader.decompress` agora delega a descompressão de arquivos brutos para `quantilica.core.files.decompress_archive`, eliminando lógica local duplicada.
+- `cli.py` ganha o bloco `if __name__ == "__main__": main()` (paridade com
+  `bcb-sgs-fetcher`).
+- `reader.py`, `contracts.py` e `wrangling.py`: imports de `polars`/
+  `quantilica.analytics` agora falham com mensagem acionável orientando o
+  extra `analysis` (`pip install 'anp-fetcher[analysis]'`).
+- Extra `analysis` declara `polars>=1.0.0` explicitamente; `openpyxl>=3.1.5`
+  sai de `dependencies` para o extra `analysis` (só era usado nos testes de
+  leitura XLSX, nunca no núcleo).
 
 ## [1.4.1] - 2026-10-02
 
