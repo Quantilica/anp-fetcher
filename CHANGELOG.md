@@ -5,7 +5,7 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [1.4.2] - 2026-10-14
 
 ### Corrigido
 
@@ -20,7 +20,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `bcb-sgs-fetcher`).
 - `reader.py`, `contracts.py` e `wrangling.py`: imports de `polars`/
   `quantilica.analytics` agora falham com mensagem acionável orientando o
-  extra `analysis` (`pip install 'anp-fetcher[analysis]'`).
+  extra `analysis` (`uv add 'anp-fetcher[analysis]' --index https://index.quantilica.com/simple/`).
 - Extra `analysis` declara `polars>=1.0.0` explicitamente; `openpyxl>=3.1.5`
   sai de `dependencies` para o extra `analysis` (só era usado nos testes de
   leitura XLSX, nunca no núcleo).
