@@ -13,7 +13,8 @@ try:
 except ImportError as exc:
     raise ImportError(
         "anp_fetcher.contracts requer o extra 'analysis': "
-        "pip install 'anp-fetcher[analysis]'"
+        "uv add 'anp-fetcher[analysis]' "
+        "--index https://index.quantilica.com/simple/"
     ) from exc
 
 _SHPC_FIELDS = [

@@ -19,7 +19,8 @@ try:
 except ImportError as exc:
     raise ImportError(
         "anp_fetcher.wrangling requer o extra 'analysis': "
-        "pip install 'anp-fetcher[analysis]'"
+        "uv add 'anp-fetcher[analysis]' "
+        "--index https://index.quantilica.com/simple/"
     ) from exc
 
 from .contracts import CONTRACTS
