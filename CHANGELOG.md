@@ -9,7 +9,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
-- `plugin.py`, `reader.py`, `wrangling.py` e `contracts.py`: a dica de instalação do extra `analysis` mandava `pip install anp-fetcher[analysis]`, que não funciona para fetchers do Fluxo B (fora do PyPI), e o Rich engolia o `[analysis]` por tratá-lo como marcação, deixando só `pip install anp-fetcher`. Agora a mensagem é `uv add 'anp-fetcher[analysis]' --index https://index.quantilica.com/simple/`, forma que a norma `cli-fetchers` exige.
+- `plugin.py`: a dica de instalação do extra `analysis` mandava `pip install anp-fetcher[analysis]`, que não funciona para fetchers do Fluxo B (fora do PyPI), e o Rich ainda engolia o `[analysis]` por tratá-lo como marcação, deixando só `pip install anp-fetcher`. Agora a mensagem é `quantilica install anp --extra analysis`. Nos guards de `reader.py`, `wrangling.py` e `contracts.py`, que atendem quem importa o pacote, a mensagem é `uv add 'anp-fetcher[analysis]' --index https://index.quantilica.com/simple/`.
 
 ### Alterado
 - `cli.py` protege o import do plugin; sem o host a CLI standalone sai com
