@@ -8,14 +8,20 @@ Para a documentação completa, consulte [https://docs.quantilica.com](https://d
 
 ## Instalação
 
+Pela CLI unificada (recomendado):
+
 ```bash
-pip install anp-fetcher
+quantilica install anp
+# com o extra de análise (comandos convert e pipeline):
+quantilica install anp --extra analysis
 ```
 
-Com [uv](https://github.com/astral-sh/uv):
+Como biblioteca num projeto, a partir do índice próprio (este pacote não é publicado no PyPI):
 
 ```bash
-uv add anp-fetcher
+uv add anp-fetcher --index https://index.quantilica.com/simple/
+# com o extra de análise:
+uv add 'anp-fetcher[analysis]' --index https://index.quantilica.com/simple/
 ```
 
 **Requisitos:** Python 3.12+
