@@ -71,6 +71,8 @@ fetcher = FetcherApp(
 
 app = fetcher.app
 
+_DEFAULT_OUTPUT = fetcher.default_output
+
 
 @app.command("convert")
 def cmd_convert(
@@ -85,7 +87,7 @@ def cmd_convert(
     output: Annotated[
         Path,
         typer.Option("-o", "--output", help="Diretório de destino para Parquet"),
-    ] = Path("/data/anp"),
+    ] = fetcher.default_output,
     verbose: Annotated[bool, typer.Option("--verbose", help="Logs detalhados")] = False,
 ) -> None:
     """Converter arquivos brutos da ANP para Parquet.
@@ -173,7 +175,7 @@ def cmd_pipeline(
     console = get_console()
     setup_rich_logging(verbose, console=console)
 
-    parquet_out = parquet_dir or output or Path("/data/anp")
+    parquet_out = parquet_dir or output or _DEFAULT_OUTPUT
 
     console.print(Rule("[bold]Passo 1/2: Download[/bold]"))
     sync_cmd = next(c.callback for c in app.registered_commands if c.name == "sync")
@@ -201,7 +203,7 @@ def cmd_pipeline(
         raise typer.Exit(1) from None
 
     target_groups = _resolve_groups(groups)
-    converted = convert_group(target_groups, output or Path("/data/anp"), parquet_out)
+    converted = convert_group(target_groups, output or _DEFAULT_OUTPUT, parquet_out)
     console.print(
         f"[green]✓[/green] {converted} Parquet(s) salvo(s) em [dim]{parquet_out}[/dim]"
     )

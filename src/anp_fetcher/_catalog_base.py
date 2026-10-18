@@ -1,11 +1,6 @@
 """Shared types and helper constructors for ANP dataset catalogs."""
 
-from typing import TypedDict
-
-try:
-    from typing import NotRequired
-except ImportError:
-    from typing import NotRequired
+from typing import NotRequired, TypedDict
 
 
 class DatasetEntry(TypedDict):

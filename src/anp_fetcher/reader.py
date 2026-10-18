@@ -9,7 +9,6 @@ extraídos do sidecar ``DownloadManifest``.
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from pathlib import Path
@@ -21,7 +20,7 @@ try:
         normalize_brazilian_numbers,
         read_brazilian_csv,
     )
-    from quantilica.analytics.writer import to_parquet
+    from quantilica.analytics.writer import manifest_to_metadata, to_parquet
 except ImportError as exc:
     raise ImportError(
         "anp_fetcher.reader requer o extra 'analysis': "
@@ -30,7 +29,7 @@ except ImportError as exc:
     ) from exc
 from quantilica.core.exceptions import StorageError
 from quantilica.core.files import decompress_archive
-from quantilica.core.manifests import DownloadManifest, manifest_sidecar_path
+from quantilica.core.manifests import DownloadManifest, read_manifest_sidecar
 
 logger = logging.getLogger(__name__)
 
@@ -231,22 +230,7 @@ def provenance_metadata(path: Path) -> dict[str, str]:
     Returns:
         dict[str, str]: Metadados ``quantilica.*`` vazios se não houver manifest.
     """
-    manifest_path = path.with_suffix(path.suffix + ".manifest.json")
-    if not manifest_path.exists():
-        return {}
-    try:
-        data = json.loads(manifest_path.read_text())
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Manifest inválido %s: %s", manifest_path, exc)
-        return {}
-    return {
-        "quantilica.source_id": str(data.get("source_id", "")),
-        "quantilica.dataset_id": str(data.get("dataset_id", "")),
-        "quantilica.origin_url": str(data.get("url", "")),
-        "quantilica.origin_sha256": str(data.get("sha256", "")),
-        "quantilica.fetched_at": str(data.get("fetched_at", "")),
-        "quantilica.producer": str(data.get("producer", "")),
-    }
+    return manifest_to_metadata(read_manifest_sidecar(path))
 
 
 def write_parquet(
@@ -272,12 +256,13 @@ def write_parquet(
     Returns:
         Path: O caminho do Parquet escrito.
     """
-    manifest = _sidecar_manifest(source_path) if source_path else None
-    return to_parquet(df, target, manifest=manifest)
+    return to_parquet(df, target, source_path=source_path)
 
 
 def _sidecar_manifest(path: Path) -> DownloadManifest | None:
     """Reconstroi o ``DownloadManifest`` do sidecar ``{path}.manifest.json``.
+
+    Alias fino para ``quantilica.core.manifests.read_manifest_sidecar``.
 
     Args:
         path (Path): Caminho do arquivo bruto de origem.
@@ -286,25 +271,4 @@ def _sidecar_manifest(path: Path) -> DownloadManifest | None:
         DownloadManifest | None: O manifest reconstruído, ou None quando o
             sidecar não existe ou é inválido.
     """
-    sidecar = manifest_sidecar_path(path)
-    if not sidecar.exists():
-        return None
-    try:
-        data = json.loads(sidecar.read_text())
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Manifest inválido %s: %s", sidecar, exc)
-        return None
-    try:
-        size_bytes = int(data.get("size_bytes") or path.stat().st_size)
-    except OSError:
-        size_bytes = 0
-    return DownloadManifest(
-        source_id=str(data.get("source_id", "")),
-        dataset_id=str(data.get("dataset_id", "")),
-        url=str(data.get("url", "")),
-        fetched_at=str(data.get("fetched_at", "")),
-        sha256=str(data.get("sha256", "")),
-        size_bytes=size_bytes,
-        path=str(path),
-        producer=data.get("producer") or None,
-    )
+    return read_manifest_sidecar(path)
