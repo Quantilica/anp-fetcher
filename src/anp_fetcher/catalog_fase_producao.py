@@ -138,8 +138,13 @@ def _terra_entries() -> list[DatasetEntry]:
         entries.append(
             _terra_entry(2021, quarter, f"producao-terra-2021-{quarter}-trim.csv")
         )
-    # 2016–2020: producao-terra-{year}-{N}trim.csv (2019 Q1/Q3 com anomalias)
-    for year in (2016, 2017, 2018, 2020):
+    # 2016–2018: producao-terra-{year}-{N}trim.csv; 2019 com anomalias
+    # próprias. Os trimestres de 2020 nunca seguiram esse padrão:
+    # producao-terra-2020-{N}trim.csv dá 404 — o mesmo dado de 2020 só
+    # existe como producao-terra-{N}-trim.csv, já coberto pelo grupo
+    # producao-fdp-terra — removido do catálogo para evitar 404
+    # (plano crons-fetchers-skip-postgres §2.4).
+    for year in (2016, 2017, 2018):
         for quarter in range(1, 5):
             entries.append(
                 _terra_entry(year, quarter, f"producao-terra-{year}-{quarter}trim.csv")

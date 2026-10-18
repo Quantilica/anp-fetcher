@@ -801,12 +801,27 @@ def test_producao_mar_catalog():
 
 def test_producao_terra_catalog():
     entries = GROUPS["producao-terra"]["entries"]
-    assert len(entries) == 86
+    assert len(entries) == 82
     assert all(e["ext"] == "csv" for e in entries)
     # tem entradas semestrais com semester preenchido
     assert any(e["semester"] is not None for e in entries)
     # faixas históricas com year=None
     assert any(e["year"] is None for e in entries)
+
+
+def test_producao_terra_2020_removed_dead_urls():
+    """A ANP nunca publicou producao-terra-2020-{q}trim.csv
+    (404 confirmado por probe GET Range em 2026-10-18). O dado de 2020 só
+    existe como producao-terra-{q}-trim.csv, já coberto pelo grupo
+    producao-fdp-terra — entradas removidas do catálogo para evitar 404
+    (plano crons-fetchers-skip-postgres §2.4)."""
+    dead = [e for e in GROUPS["producao-terra"]["entries"] if e["year"] == 2020]
+    assert dead == []
+    live = [e for e in GROUPS["producao-fdp-terra"]["entries"] if e["year"] == 2020]
+    assert len(live) == 4
+    for e in live:
+        assert e["url"].endswith("-trim.csv")
+        assert "/2020/" in e["url"]
 
 
 def test_producao_zona_catalog():

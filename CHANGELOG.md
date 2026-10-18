@@ -5,6 +5,17 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Removido
+
+- Catálogo `producao-terra` (Fase de Desenvolvimento e Produção): entradas
+  trimestrais `producao-terra-2020-01..04` descontinuadas — os arquivos
+  `producao-terra-2020-{q}trim.csv` nunca existiram no portal com esse
+  nome (404 confirmado por probe GET Range em 2026-10-18); os arquivos
+  reais de 2020 usam `producao-terra-{q}-trim.csv` e já são cobertos pelo
+  grupo `producao-fdp-terra` (grupo: 86 → 82 entradas).
+
 ## [1.4.2] - 2026-10-14
 
 ### Corrigido
