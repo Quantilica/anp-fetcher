@@ -5,12 +5,17 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [1.5.0] - 2026-10-27
+## [2.0.0] - 2026-10-27
+
+### Quebras de Compatibilidade
+- Transição da saída analítica legada para o lake Parquet particionado no formato Hive (`ano=/mes=` para séries mensais como Preços de Combustíveis, `ano=` para anuais e sem partição para cadastros estáticos), com descritores `_dataset.json` e locks cooperativos.
+- Substituição das rotinas e flags analíticas anteriores pelos comandos padronizados `convert` e `pipeline` integrados via SDK do `FetcherApp` (`--lake`, `--dataset`, `--force`).
 
 ### Adicionado
-- Módulo `anp_fetcher.lake` e entry point `quantilica.lake`: conversão direta dos arquivos abertos da ANP para o lake Parquet particionado no formato Hive (`ano=/mes=` para séries mensais como Preços de Combustíveis, `ano=` para anuais e sem partição para cadastros estáticos).
+- Módulo `anp_fetcher.lake` e entry point `quantilica.lake`: conversão direta dos arquivos abertos da ANP para o lake Parquet particionado no formato Hive.
 - Comandos CLI `convert` e `pipeline` integrados via SDK do `FetcherApp`, com suporte a `--lake`, `--dataset` e `--force`.
 - Extra `analysis` atualizado para `quantilica-analytics>=0.8.0`.
+- Dependência de base `quantilica-core` atualizada para `>=0.13.0`.
 
 ## [1.4.3] - 2026-10-20
 
