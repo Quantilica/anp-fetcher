@@ -14,7 +14,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### Adicionado
 - Módulo `anp_fetcher.lake` e entry point `quantilica.lake`: conversão direta dos arquivos abertos da ANP para o lake Parquet particionado no formato Hive.
 - Comandos CLI `convert` e `pipeline` integrados via SDK do `FetcherApp`, com suporte a `--lake`, `--dataset` e `--force`.
-- Extra `analysis` atualizado para `quantilica-analytics>=0.8.0`.
+- Extra `analysis` atualizado para `quantilica-analytics>=0.5.0`.
 - Dependência de base `quantilica-core` atualizada para `>=0.13.0`.
 
 ## [1.4.3] - 2026-10-20
