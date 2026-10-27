@@ -1,6 +1,6 @@
 [project]
 name = "anp-fetcher"
-version = "1.4.3"
+version = "1.5.0"
 description = "A commandline utility to download ANP (Agência Nacional do Petróleo) statistical data"
 readme = "README.md"
 authors = [
@@ -30,7 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 analysis = [
     "polars>=1.0.0",
-    "quantilica-analytics>=0.4.0",
+    "quantilica-analytics>=0.8.0",
     "fastexcel>=0.12.0",
     "openpyxl>=3.1.5",
 ]
@@ -45,6 +45,9 @@ anp-fetcher = "anp_fetcher.cli:main"
 
 [project.entry-points."quantilica.fetchers"]
 anp = "anp_fetcher.plugin:app"
+
+[project.entry-points."quantilica.lake"]
+anp = "anp_fetcher.lake:converter"
 
 [dependency-groups]
 dev = [
