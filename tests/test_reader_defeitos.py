@@ -1,0 +1,39 @@
+"""Arquivos da ANP que os leitores recusavam."""
+
+from pathlib import Path
+
+import pytest
+
+pl = pytest.importorskip("polars")
+pytest.importorskip("fastexcel")
+
+from anp_fetcher.lake import pick_one_format  # noqa: E402
+from anp_fetcher.reader import read_csv, read_file  # noqa: E402
+
+
+def test_xls_que_e_xlsx(tmp_path: Path) -> None:
+    src = tmp_path / "producao-etanol-m3.xls"
+    pl.DataFrame({"ano": [2024], "volume": [10.5]}).write_excel(tmp_path / "x.xlsx")
+    (tmp_path / "x.xlsx").rename(src)
+    df = read_file(src, {})
+    assert df["volume"].to_list() == [10.5]
+
+
+def test_csv_com_campo_a_mais(tmp_path: Path) -> None:
+    src = tmp_path / "movterm.csv"
+    src.write_text("a;b\n1;2\n3;4;\n", encoding="latin-1")
+    df = read_csv(src, {})
+    assert df.columns == ["a", "b"]
+    assert df.height == 2
+
+
+def test_json_tabular(tmp_path: Path) -> None:
+    src = tmp_path / "pmqc-json_2024-01.json"
+    src.write_text('[{"Produto": "ETANOL", "Valor": "1,5"}, {"Produto": "GLP"}]')
+    df = read_file(src, {})
+    assert df["Produto"].to_list() == ["ETANOL", "GLP"]
+
+
+def test_pick_one_format() -> None:
+    names = ["pmqc-csv_2024-01@20240210.csv", "pmqc-json_2024-01@20240210.json"]
+    assert [p.name for p in pick_one_format([Path(n) for n in names])] == [names[0]]

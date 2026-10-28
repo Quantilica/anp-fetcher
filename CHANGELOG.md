@@ -5,6 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [Unreleased]
+
+### Corrigido
+- `convert` converte um só formato de cada conteúdo publicado em vários (`-csv`,
+  `-json`): CSV, depois XLSX, XLS e JSON, na versão mais recente.
+- `read_file` lê JSON tabular (PMQC) e planilhas `.xls` que na verdade são xlsx
+  (assinatura `PK`), que antes falhavam com "Formato não suportado" e "Invalid OLE".
+- `read_csv` relê de forma tolerante (linhas com campo a mais, uma só thread) os CSVs
+  que o leitor paralelo recusava.
+
 ## [2.0.0] - 2026-10-27
 
 ### Quebras de Compatibilidade

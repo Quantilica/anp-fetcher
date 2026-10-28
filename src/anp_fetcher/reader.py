@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -142,7 +144,63 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
         if encoding is not None:
             raise
         logger.debug("UTF-8 falhou (%s); tentando latin-1", exc)
-        return read_brazilian_csv(path, encoding="latin-1", decimal=",", **kwargs)
+        try:
+            return read_brazilian_csv(path, encoding="latin-1", decimal=",", **kwargs)
+        except Exception as exc2:
+            # Linhas com um campo a mais (separador no fim) ou CSV que o leitor
+            # paralelo do polars recusa ("CSV malformed: expected N rows").
+            logger.warning("%s: %s; relendo tolerante e sem paralelismo", path, exc2)
+            for enc in ("utf-8", "latin-1"):
+                try:
+                    return read_brazilian_csv(
+                        path,
+                        encoding=enc,
+                        decimal=",",
+                        truncate_ragged_lines=True,
+                        n_threads=1,
+                        **kwargs,
+                    )
+                except Exception:
+                    if enc == "latin-1":
+                        raise
+            raise
+
+
+def read_json(path: Path) -> pl.DataFrame:
+    """Lê um JSON tabular (array de objetos), em UTF-8 (com BOM) ou Latin-1.
+
+    Colunas com tipos mistos ficam como texto, para não perder registros.
+    """
+    import json as _json
+
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        text = path.read_text(encoding="latin-1")
+    data = _json.loads(text)
+    if isinstance(data, dict):  # {"dados": [...]} e afins
+        data = next((v for v in data.values() if isinstance(v, list)), [data])
+    try:
+        return pl.from_dicts(data)
+    except Exception:
+        keys = {k for row in data for k in row}
+        return pl.from_dicts(data, schema_overrides={k: pl.String for k in keys})
+
+
+def _excel_path(path: Path, tmp_dir: Path) -> Path:
+    """O caminho a ler como planilha, com a extensão que bate com o conteúdo.
+
+    A ANP publica xlsx com extensão ``.xls``; o leitor escolhe o formato pela
+    extensão e recusa o arquivo ("Invalid OLE").
+    """
+    with open(path, "rb") as fh:
+        is_zip = fh.read(4) == b"PK\x03\x04"
+    want = ".xlsx" if is_zip else ".xls"
+    if path.suffix.lower() == want:
+        return path
+    fixed = tmp_dir / (path.stem + want)
+    shutil.copyfile(path, fixed)
+    return fixed
 
 
 def read_excel(
@@ -161,13 +219,15 @@ def read_excel(
             DataFrames por nome de aba.
     """
     sheet = spec.get("sheet")
-    if sheet == "all":
-        frames = pl.read_excel(path, sheet_id=0)
-        assert isinstance(frames, dict), "sheet_id=0 deve retornar dict"
-        return frames
-    if sheet is None:
-        return pl.read_excel(path, sheet_id=None)
-    return pl.read_excel(path, sheet_id=sheet)
+    with tempfile.TemporaryDirectory() as tmp:
+        source = _excel_path(path, Path(tmp))
+        if sheet == "all":
+            frames = pl.read_excel(source, sheet_id=0)
+            assert isinstance(frames, dict), "sheet_id=0 deve retornar dict"
+            return frames
+        if sheet is None:
+            return pl.read_excel(source, sheet_id=None)
+        return pl.read_excel(source, sheet_id=sheet)
 
 
 def read_file(
@@ -190,6 +250,8 @@ def read_file(
         return read_csv(path, spec)
     if suffix in (".xls", ".xlsx"):
         return read_excel(path, spec)
+    if suffix == ".json":
+        return read_json(path)
     raise ValueError(f"Formato não suportado: {suffix}")
 
 
