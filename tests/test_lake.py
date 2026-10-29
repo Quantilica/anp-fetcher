@@ -16,6 +16,7 @@ from typer.testing import CliRunner  # noqa: E402
 from anp_fetcher.lake import (  # noqa: E402
     SOURCE_ID,
     converter,
+    dataset_for_granularity,
     resolve_partitions,
 )
 from anp_fetcher.plugin import app  # noqa: E402
@@ -113,3 +114,38 @@ def test_cli_convert(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0, result.output
     assert (lake_dir / SOURCE_ID / group).exists()
+
+
+def test_dataset_for_granularity() -> None:
+    assert (
+        dataset_for_granularity("producao-terra", ["ano", "mes"], 2) == "producao-terra"
+    )
+    assert (
+        dataset_for_granularity("producao-terra", ["ano"], 2) == "producao-terra-anual"
+    )
+    assert (
+        dataset_for_granularity("producao-terra", [], 2) == "producao-terra-historico"
+    )
+    assert dataset_for_granularity("royalties", ["ano"], 1) == "royalties"
+
+
+def test_granularidades_misturadas_viram_datasets_separados(tmp_path: Path) -> None:
+    group = "producao-terra"
+    group_dir = tmp_path / "raw" / _GROUP_DIRS[group]
+    group_dir.mkdir(parents=True)
+    for name in (
+        "producao-terra-s1_2000-01.csv",
+        "producao-terra-01_2016.csv",
+        "producao-terra-1941-1966.csv",
+    ):
+        (group_dir / name).write_text("Campo;Volume\nX;1,5\n", encoding="utf-8")
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(tmp_path / "raw", lake_dir, datasets=[group])
+    assert not res.errors, res.errors
+    assert res.converted == 3
+    for ds in (group, f"{group}-anual", f"{group}-historico"):
+        assert check_dataset(lake_dir / SOURCE_ID / ds) == [], ds
+    assert scan_dataset(lake_dir / SOURCE_ID / group).collect().columns[-2:] == [
+        "ano",
+        "mes",
+    ]

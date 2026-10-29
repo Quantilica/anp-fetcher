@@ -8,6 +8,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 ### Corrigido
+- `convert` separa as granularidades de um mesmo grupo em datasets distintos: em
+  `producao-terra`, `producao-fdp-terra` e `producao-poco-abertos` a série mensal fica com
+  o nome do grupo e os arquivos anuais e históricos vão para `<grupo>-anual` e
+  `<grupo>-historico`. Antes, partições de profundidades diferentes no mesmo dataset
+  impediam o DuckDB de ler o lake ("Hive partition mismatch").
 - `convert` converte um só formato de cada conteúdo publicado em vários (`-csv`,
   `-json`): CSV, depois XLSX, XLS e JSON, na versão mais recente.
 - `read_file` lê JSON tabular (PMQC) e planilhas `.xls` que na verdade são xlsx
