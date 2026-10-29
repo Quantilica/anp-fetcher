@@ -148,9 +148,12 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
             return read_brazilian_csv(path, encoding="latin-1", decimal=",", **kwargs)
         except Exception as exc2:
             # Linhas com um campo a mais (separador no fim) ou CSV que o leitor
-            # paralelo do polars recusa ("CSV malformed: expected N rows").
+            # paralelo do polars recusa ("CSV malformed: expected N rows"). Por
+            # último, sem tratar aspas: em revendas-glp elas fazem parte do texto
+            # (D"AGUA, "O EDGAR") e, lidas como delimitador, engolem linhas.
             logger.warning("%s: %s; relendo tolerante e sem paralelismo", path, exc2)
-            for enc in ("utf-8", "latin-1"):
+            attempts = [(q, enc) for q in ('"', None) for enc in ("utf-8", "latin-1")]
+            for quote, enc in attempts:
                 try:
                     return read_brazilian_csv(
                         path,
@@ -158,10 +161,11 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
                         decimal=",",
                         truncate_ragged_lines=True,
                         n_threads=1,
+                        quote_char=quote,
                         **kwargs,
                     )
                 except Exception:
-                    if enc == "latin-1":
+                    if (quote, enc) == attempts[-1]:
                         raise
             raise
 
@@ -247,6 +251,10 @@ def read_file(
     """
     suffix = path.suffix.lower()
     if suffix == ".csv":
+        with open(path, "rb") as fh:
+            # movterm.csv é um xlsx com a extensão trocada.
+            if fh.read(4) == b"PK\x03\x04":
+                return read_excel(path, spec)
         return read_csv(path, spec)
     if suffix in (".xls", ".xlsx"):
         return read_excel(path, spec)

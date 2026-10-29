@@ -14,6 +14,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   (assinatura `PK`), que antes falhavam com "Formato não suportado" e "Invalid OLE".
 - `read_csv` relê de forma tolerante (linhas com campo a mais, uma só thread) os CSVs
   que o leitor paralelo recusava.
+- `read_file` lê como planilha o `.csv` que é um xlsx (`movterm.csv`), e `read_csv`
+  tenta por último sem tratar aspas, que em `revendas-glp` fazem parte do nome
+  (`MINA D"AGUA`) e antes engoliam linhas ("CSV malformed").
 
 ## [2.0.0] - 2026-10-27
 
