@@ -152,7 +152,7 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
             # paralelo do polars recusa ("CSV malformed: expected N rows"). Por
             # último, sem tratar aspas: em revendas-glp elas fazem parte do texto
             # (D"AGUA, "O EDGAR") e, lidas como delimitador, engolem linhas.
-            logger.warning("%s: %s; relendo tolerante e sem paralelismo", path, exc2)
+            logger.warning("%s: %s; relendo de forma tolerante", path, exc2)
             attempts = [(q, enc) for q in ('"', None) for enc in ("utf-8", "latin-1")]
             for quote, enc in attempts:
                 try:
@@ -161,7 +161,6 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
                         encoding=enc,
                         decimal=",",
                         truncate_ragged_lines=True,
-                        n_threads=1,
                         quote_char=quote,
                         **kwargs,
                     )
