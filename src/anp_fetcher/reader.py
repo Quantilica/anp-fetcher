@@ -13,6 +13,7 @@ import logging
 import re
 import shutil
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -234,6 +235,9 @@ def read_excel(
         return pl.read_excel(source, sheet_id=sheet)
 
 
+_OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+
 def read_file(
     path: Path, spec: dict[str, Any]
 ) -> pl.DataFrame | dict[str, pl.DataFrame]:
@@ -250,11 +254,26 @@ def read_file(
         ValueError: Se o formato não for suportado.
     """
     suffix = path.suffix.lower()
+    with open(path, "rb") as fh:
+        head = fh.read(4096)
+    magic = head[:8]
+    if suffix in (".csv", ".xls", ".xlsx") and magic.startswith(b"PK\x03\x04"):
+        # A extensão nem sempre diz o conteúdo: movterm.csv é um xlsx, e
+        # shpc-ca_2014-01.csv é um ZIP com o CSV dentro.
+        with zipfile.ZipFile(path) as archive:
+            is_xlsx = "[Content_Types].xml" in archive.namelist()
+        if is_xlsx:
+            return read_excel(path, spec)
+        return read_file(decompress(path), spec)
+    separator = spec.get("separator", ";").encode()
+    if (
+        suffix in (".xls", ".xlsx")
+        and not magic.startswith(_OLE_MAGIC)
+        and separator in head
+    ):
+        # multas-2021.xlsx é um CSV de texto.
+        return read_csv(path, spec)
     if suffix == ".csv":
-        with open(path, "rb") as fh:
-            # movterm.csv é um xlsx com a extensão trocada.
-            if fh.read(4) == b"PK\x03\x04":
-                return read_excel(path, spec)
         return read_csv(path, spec)
     if suffix in (".xls", ".xlsx"):
         return read_excel(path, spec)

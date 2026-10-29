@@ -8,6 +8,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 ### Corrigido
+- `read_file` decide o leitor pelo conteúdo quando a extensão engana: `.csv` que é ZIP
+  (`shpc-ca_2014-01.csv`) é descompactado, e `.xlsx` que é texto com separador
+  (`multas-2021.xlsx`) é lido como CSV.
 - `convert` separa as granularidades de um mesmo grupo em datasets distintos: em
   `producao-terra`, `producao-fdp-terra` e `producao-poco-abertos` a série mensal fica com
   o nome do grupo e os arquivos anuais e históricos vão para `<grupo>-anual` e

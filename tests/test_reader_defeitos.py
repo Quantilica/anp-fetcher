@@ -57,3 +57,20 @@ def test_csv_com_aspas_no_texto(tmp_path: Path) -> None:
     assert df.height == 3000
     assert df["nome"][9] == '"O EDGAR'
     assert df["nome"][1999] == 'MINA D"AGUA'
+
+
+def test_xlsx_que_e_csv(tmp_path: Path) -> None:
+    src = tmp_path / "multas-2021.xlsx"
+    src.write_text("﻿uf;valor\nSP;10\n", encoding="utf-8")
+    assert read_file(src, {})["uf"].to_list() == ["SP"]
+
+
+def test_csv_que_e_zip(tmp_path: Path) -> None:
+    import zipfile
+
+    src = tmp_path / "shpc-ca_2014-01.csv"
+    with zipfile.ZipFile(src, "w") as archive:
+        archive.writestr(
+            "Precos semestrais - AUTOMOTIVOS_2014.01.csv", "uf;preco\nSP;3,1\n"
+        )
+    assert read_file(src, {})["uf"].to_list() == ["SP"]
