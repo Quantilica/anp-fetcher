@@ -5,7 +5,7 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [Unreleased]
+## [2.1.1] - 2026-10-29
 
 ### Corrigido
 - `read_csv` funciona com o polars 2, que removeu o argumento `n_threads` da leitura de
