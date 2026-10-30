@@ -13,7 +13,7 @@ import re
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import polars as pl
@@ -37,6 +37,9 @@ from anp_fetcher.reader import (
 from anp_fetcher.storage import _GROUP_DIRS
 from anp_fetcher.wrangling import _apply_contract, spec_for
 
+if TYPE_CHECKING:  # só tipagem: o core publicado antes do contrato não tem Planned
+    from quantilica.core.lake import Planned
+
 SOURCE_ID = "anp"
 
 _YM = re.compile(r"^(?P<ano>\d{4})-(?P<mes>\d{2})$")
@@ -56,6 +59,53 @@ class ConvertResult:
 # "pmqc-json_2024-01@..."); só um vira Parquet, nesta ordem de preferência.
 _FORMAT_TAG = re.compile(r"-(csv|json|xlsx?)(?=_|$)", re.IGNORECASE)
 _FORMAT_RANK = {".csv": 0, ".zip": 1, ".7z": 1, ".xlsx": 2, ".xls": 3, ".json": 4}
+# Formatos que o conversor sabe ler: direto (csv/json/xls/xlsx) ou depois de
+# descompactar (zip/7z com um deles dentro). O resto é documentação, mapa ou
+# imagem — o leitor não abre.
+_TABULAR_SUFFIXES = frozenset({".csv", ".json", ".xls", ".xlsx", ".zip", ".7z"})
+# Sidecar de manifest e resto de escrita interrompida: nunca dados brutos.
+_MANIFEST_SUFFIX = ".manifest.json"
+_TEMP_SUFFIX = ".tmp"
+
+
+def is_tabular(path: Path) -> bool:
+    """Se o conversor consegue ler o arquivo (``read_file`` ou ``decompress``)."""
+    return path.suffix.lower() in _TABULAR_SUFFIXES
+
+
+def _is_sidecar(path: Path) -> bool:
+    """Se o arquivo é sidecar de manifest ou resto ``.tmp``, não dado bruto."""
+    return path.name.endswith(_MANIFEST_SUFFIX) or path.name.endswith(_TEMP_SUFFIX)
+
+
+def raw_files(src_group_dir: Path) -> list[Path]:
+    """Arquivos de um diretório de grupo, sem sidecars nem restos ``.tmp``.
+
+    É a descoberta compartilhada por :meth:`LakeConverter.convert` e
+    :meth:`LakeConverter.inventory`, para os dois enxergarem o mesmo conjunto.
+    """
+    return sorted(
+        p for p in src_group_dir.iterdir() if p.is_file() and not _is_sidecar(p)
+    )
+
+
+def _format_rank(path: Path) -> tuple[str, int, str]:
+    """``(base, rank, stamp)`` de um arquivo: o conteúdo, o formato e a versão."""
+    base = _FORMAT_TAG.sub("", path.name.split("@", 1)[0].rsplit(".", 1)[0])
+    stamp = path.name.split("@", 1)[1] if "@" in path.name else ""
+    return base, _FORMAT_RANK.get(path.suffix.lower(), 5), stamp
+
+
+def _best_by_base(files: list[Path]) -> dict[str, tuple[int, str, Path]]:
+    """Arquivo escolhido de cada conteúdo: ``base -> (rank, stamp, path)``."""
+    best: dict[str, tuple[int, str, Path]] = {}
+    for path in files:
+        base, rank, stamp = _format_rank(path)
+        current = best.get(base)
+        # Formato preferido primeiro; no mesmo formato, a versão mais recente.
+        if current is None or (rank, current[1]) < (current[0], stamp):
+            best[base] = (rank, stamp, path)
+    return best
 
 
 def pick_one_format(files: list[Path]) -> list[Path]:
@@ -64,16 +114,7 @@ def pick_one_format(files: list[Path]) -> list[Path]:
     Arquivos da mesma pasta que diferem só no formato (sufixo ``-csv``/``-json`` na
     base e extensão) são o mesmo dado; converter todos duplica linhas no lake.
     """
-    best: dict[str, tuple[int, str, Path]] = {}
-    for path in files:
-        base = _FORMAT_TAG.sub("", path.name.split("@", 1)[0].rsplit(".", 1)[0])
-        stamp = path.name.split("@", 1)[1] if "@" in path.name else ""
-        rank = _FORMAT_RANK.get(path.suffix.lower(), 5)
-        current = best.get(base)
-        # Formato preferido primeiro; no mesmo formato, a versão mais recente.
-        if current is None or (rank, current[1]) < (current[0], stamp):
-            best[base] = (rank, stamp, path)
-    return sorted(path for _, _, path in best.values())
+    return sorted(path for _, _, path in _best_by_base(files).values())
 
 
 def resolve_partitions(meta: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
@@ -108,6 +149,61 @@ def dataset_for_granularity(group: str, part_keys: list[str], finest: int) -> st
         return group
     suffix = _COARSER_SUFFIX.get(tuple(part_keys), "-" + "-".join(part_keys))
     return group + suffix
+
+
+@dataclass(frozen=True)
+class Routed:
+    """Um arquivo bruto e o dataset/partição que ``convert`` lhe dá."""
+
+    path: Path
+    dataset_id: str
+    partition_keys: list[str]
+    partition_values: dict[str, str]
+
+
+def route_group(
+    group: str, src_group_dir: Path
+) -> tuple[list[Routed], list[tuple[Path, str]]]:
+    """Roteia os arquivos de um grupo: os convertidos e os ignorados, com motivo.
+
+    Regra única de :meth:`LakeConverter.convert` e :meth:`LakeConverter.inventory`:
+    um arquivo por conteúdo (:func:`pick_one_format`), partições pelo nome
+    (:func:`resolve_partitions`) e dataset pela granularidade do grupo
+    (:func:`dataset_for_granularity`). Os arquivos descartados voltam com o
+    motivo do inventário: ``"gemeo"`` (mesmo conteúdo em outro formato),
+    ``"nao_tabular"`` (formato que o leitor não abre) ou ``"superado"``
+    (versão anterior do mesmo formato).
+    """
+    files = raw_files(src_group_dir)
+    best = _best_by_base(files)
+
+    chosen = sorted(path for _, _, path in best.values())
+    resolved = [(f, *resolve_partitions(parse_filename(f))) for f in chosen]
+    finest = max((len(keys) for _, keys, _ in resolved), default=0)
+    routed = [
+        Routed(
+            path=path,
+            dataset_id=dataset_for_granularity(group, keys, finest),
+            partition_keys=keys,
+            partition_values=vals,
+        )
+        for path, keys, vals in resolved
+    ]
+
+    routed_paths = {item.path for item in routed}
+    ignored: list[tuple[Path, str]] = []
+    for path in files:
+        if path in routed_paths:
+            continue
+        if not is_tabular(path):
+            ignored.append((path, "nao_tabular"))
+            continue
+        chosen_path = best[_format_rank(path)[0]][2]
+        reason = (
+            "gemeo" if chosen_path.suffix.lower() != path.suffix.lower() else "superado"
+        )
+        ignored.append((path, reason))
+    return routed, ignored
 
 
 class LakeConverter:
@@ -161,26 +257,18 @@ class LakeConverter:
         writers: dict[str, LakeWriter] = {}
 
         for group in target_groups:
-            group_dir = _GROUP_DIRS[group]
-            src_group_dir = input_dir / group_dir
+            src_group_dir = input_dir / _GROUP_DIRS[group]
             if not src_group_dir.exists():
                 continue
 
             spec = spec_for(group)
+            routed, _ = route_group(group, src_group_dir)
 
-            raw_files = pick_one_format(
-                [
-                    p
-                    for p in src_group_dir.iterdir()
-                    if p.is_file() and not p.name.endswith(".manifest.json")
-                ]
-            )
-
-            resolved = [(f, *resolve_partitions(parse_filename(f))) for f in raw_files]
-            finest = max((len(keys) for _, keys, _ in resolved), default=0)
-
-            for raw_file, part_keys, part_vals in resolved:
-                dataset_id = dataset_for_granularity(group, part_keys, finest)
+            for item in routed:
+                raw_file = item.path
+                part_keys = item.partition_keys
+                part_vals = item.partition_values
+                dataset_id = item.dataset_id
 
                 writer_key = f"{dataset_id}:" + ",".join(part_keys)
                 if writer_key not in writers:
@@ -250,6 +338,57 @@ class LakeConverter:
                         tmp_dir.cleanup()
 
         return result
+
+    def inventory(self, input_dir: Path) -> list[Planned]:
+        """Um ``Planned`` por arquivo bruto: o dataset ou o motivo de ignorar.
+
+        Espelha a descoberta de :meth:`convert` (mesmas funções de roteamento):
+        um arquivo por conteúdo e um dataset por granularidade. Arquivos que o
+        leitor não abre (PDF, imagens, documentos, mapas) vêm como
+        ``"nao_tabular"``; os gêmeos de outro formato como ``"gemeo"``; as
+        versões anteriores do mesmo formato como ``"superado"``. Sidecars
+        ``*.manifest.json`` e restos ``*.tmp`` não entram no inventário.
+
+        Args:
+            input_dir: Raiz dos arquivos brutos da ANP (a mesma de ``convert``).
+
+        Returns:
+            list[Planned]: Um item por arquivo, na ordem dos grupos.
+        """
+        # Import local: o core publicado antes do contrato não tem ``Planned``.
+        from quantilica.core.lake import Planned
+
+        input_dir = Path(input_dir)
+        if not input_dir.is_dir():
+            return []
+
+        planned: list[Planned] = []
+        covered: set[Path] = set()
+        for group in self.datasets():
+            src_group_dir = input_dir / _GROUP_DIRS[group]
+            if not src_group_dir.is_dir():
+                continue
+            routed, ignored = route_group(group, src_group_dir)
+            for item in routed:
+                covered.add(item.path)
+                if is_tabular(item.path):
+                    planned.append(Planned(item.path, dataset=item.dataset_id))
+                else:
+                    planned.append(Planned(item.path, skip_reason="nao_tabular"))
+            for path, reason in ignored:
+                covered.add(path)
+                planned.append(Planned(path, skip_reason=reason))
+
+        # Fora dos diretórios de grupo o conversor não procura nada. O não
+        # tabular é documentação; o tabular fica sem destino para a auditoria
+        # apontar a lacuna em vez de supor um Parquet que nunca existirá.
+        for path in sorted(input_dir.rglob("*")):
+            if not path.is_file() or path in covered or _is_sidecar(path):
+                continue
+            planned.append(
+                Planned(path, skip_reason=None if is_tabular(path) else "nao_tabular")
+            )
+        return planned
 
 
 converter = LakeConverter()
