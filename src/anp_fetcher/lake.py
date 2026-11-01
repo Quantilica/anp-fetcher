@@ -18,7 +18,11 @@ from typing import TYPE_CHECKING, Any
 try:
     import polars as pl
     from quantilica.analytics.lake import LakeError, LakeWriter
-    from quantilica.core.lake import DatasetDescriptor
+    from quantilica.core.lake import (
+        DatasetDescriptor,
+        composite_file_key,
+        partition_types_for,
+    )
 except ImportError as exc:
     raise ImportError(
         "anp_fetcher.lake requer o extra 'analysis': "
@@ -43,6 +47,7 @@ if TYPE_CHECKING:  # só tipagem: o core publicado antes do contrato não tem Pl
 SOURCE_ID = "anp"
 
 _YM = re.compile(r"^(?P<ano>\d{4})-(?P<mes>\d{2})$")
+_YS = re.compile(r"^(?P<ano>\d{4})-S(?P<semestre>[12])$")
 _Y = re.compile(r"^(?P<ano>\d{4})$")
 
 
@@ -123,6 +128,13 @@ def resolve_partitions(meta: dict[str, Any]) -> tuple[list[str], dict[str, str]]
     if not partition:
         return [], {}
 
+    m_ys = _YS.match(partition)
+    if m_ys:
+        return ["ano", "semestre"], {
+            "ano": m_ys["ano"],
+            "semestre": f"S{m_ys['semestre']}",
+        }
+
     m_ym = _YM.match(partition)
     if m_ym:
         return ["ano", "mes"], {"ano": m_ym["ano"], "mes": m_ym["mes"]}
@@ -137,7 +149,12 @@ def resolve_partitions(meta: dict[str, Any]) -> tuple[list[str], dict[str, str]]
 _COARSER_SUFFIX = {("ano",): "-anual", (): "-historico"}
 
 
-def dataset_for_granularity(group: str, part_keys: list[str], finest: int) -> str:
+def dataset_for_granularity(
+    group: str,
+    part_keys: list[str],
+    finest: int,
+    path: Path | None = None,
+) -> str:
     """Dataset de um arquivo num grupo que mistura granularidades.
 
     Uma tabela Hive precisa da mesma profundidade de partições em todos os arquivos.
@@ -145,6 +162,16 @@ def dataset_for_granularity(group: str, part_keys: list[str], finest: int) -> st
     históricas (``-1941-1966``): a mais fina fica com o nome do grupo e as demais vão
     para ``<grupo>-anual`` ou ``<grupo>-historico``.
     """
+    if group == "royalties" and path is not None:
+        name = path.name.lower()
+        if "pe-" in name or "pe_" in name or "participacao" in name:
+            return "participacoes_especiais"
+        if "municipio" in name:
+            return "royalties_municipio"
+        if "uniao" in name:
+            return "royalties_uniao"
+        if "estado" in name:
+            return "royalties_estado"
     if len(part_keys) >= finest:
         return group
     suffix = _COARSER_SUFFIX.get(tuple(part_keys), "-" + "-".join(part_keys))
@@ -183,7 +210,7 @@ def route_group(
     routed = [
         Routed(
             path=path,
-            dataset_id=dataset_for_granularity(group, keys, finest),
+            dataset_id=dataset_for_granularity(group, keys, finest, path=path),
             partition_keys=keys,
             partition_values=vals,
         )
@@ -204,6 +231,20 @@ def route_group(
         )
         ignored.append((path, reason))
     return routed, ignored
+
+
+LAKE_DATASET_ALIASES: dict[str, str] = {
+    "royalties_municipio": "royalties",
+    "royalties-municipio": "royalties",
+    "royalties_uniao": "royalties",
+    "royalties-uniao": "royalties",
+    "royalties_estado": "royalties",
+    "royalties-estado": "royalties",
+    "participacoes_especiais": "royalties",
+    "participacoes-especiais": "royalties",
+    "participacao_especial": "royalties",
+    "participacao-especial": "royalties",
+}
 
 
 class LakeConverter:
@@ -242,9 +283,12 @@ class LakeConverter:
             return result
 
         target_groups: list[str] = []
+        target_datasets: set[str] | None = None
         if datasets:
+            target_datasets = set(datasets)
             for d in datasets:
-                resolved = resolve_group(d) or d
+                aliased = LAKE_DATASET_ALIASES.get(d, d)
+                resolved = resolve_group(aliased) or aliased
                 if resolved in _GROUP_DIRS and resolved not in target_groups:
                     target_groups.append(resolved)
                 elif resolved not in _GROUP_DIRS:
@@ -270,6 +314,14 @@ class LakeConverter:
                 part_vals = item.partition_values
                 dataset_id = item.dataset_id
 
+                if (
+                    target_datasets
+                    and dataset_id not in target_datasets
+                    and group not in target_datasets
+                    and LAKE_DATASET_ALIASES.get(dataset_id) not in target_datasets
+                ):
+                    continue
+
                 writer_key = f"{dataset_id}:" + ",".join(part_keys)
                 if writer_key not in writers:
                     writers[writer_key] = LakeWriter(
@@ -279,7 +331,7 @@ class LakeConverter:
                             dataset_id=dataset_id,
                             alias=dataset_id,
                             partition_keys=part_keys,
-                            partition_types={k: "varchar" for k in part_keys},
+                            partition_types=partition_types_for(part_keys),
                         ),
                         force=force,
                     )
@@ -307,9 +359,15 @@ class LakeConverter:
                     for sheet, frame in frames:
                         norm = normalize_dtypes(frame, spec)
                         norm = _apply_contract(group, norm, raw_file.name)
+                        part_keys_lower = [k.lower() for k in part_keys]
+                        drop_part_cols = [
+                            c for c in norm.columns if c.lower() in part_keys_lower
+                        ]
+                        if drop_part_cols:
+                            norm = norm.drop(drop_part_cols)
                         file_key_override = None
                         if sheet is not None:
-                            file_key_override = f"{raw_file.stem}_{sheet}"
+                            file_key_override = composite_file_key(raw_file, sheet)
 
                         written = writer.write_polars(
                             norm,

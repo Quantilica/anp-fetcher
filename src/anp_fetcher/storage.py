@@ -132,7 +132,7 @@ class DataRepository(BaseDataRepository):
         if year is None:
             filename = stamp_filename(base_id, ext, last_modified)
         elif semester is not None:
-            partition = f"{year}-{semester:02d}"
+            partition = f"{year}-S{int(semester)}"
             filename = build_stamped_filename(
                 base_id, partition, ext=ext, timestamp=last_modified
             )

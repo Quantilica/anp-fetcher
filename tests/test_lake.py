@@ -9,7 +9,7 @@ import pytest
 
 pytest.importorskip("quantilica.analytics.lake")
 pytest.importorskip("duckdb")
-
+import polars as pl  # noqa: E402
 from quantilica.analytics.lake import check_dataset, scan_dataset  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
 
@@ -77,7 +77,7 @@ def test_convert_end_to_end(tmp_path: Path) -> None:
     assert df.height == 1
     assert "ano" in df.columns
     assert "mes" in df.columns
-    assert df["ano"][0] == "2024"
+    assert df["ano"][0] == 2024
     assert df["mes"][0] == "05"
     assert "Regiao" in df.columns
 
@@ -149,3 +149,103 @@ def test_granularidades_misturadas_viram_datasets_separados(tmp_path: Path) -> N
         "ano",
         "mes",
     ]
+
+
+def test_semestral_lake_conversion(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group = "shpc-ca"
+    group_dir = raw_dir / _GROUP_DIRS[group]
+    group_dir.mkdir(parents=True)
+    raw_csv = group_dir / f"{group}_2024-S1@20240801.csv"
+    raw_csv.write_text(
+        "Regiao;Estado;Municipio;Produto;Valor de Venda;Valor de Compra\n"
+        "SE;SP;SAO PAULO;ETANOL;3,50;2,80\n",
+        encoding="utf-8",
+    )
+
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(raw_dir, lake_dir, datasets=[group])
+    assert not res.errors, res.errors
+    assert res.converted == 1
+
+    dataset_lake = lake_dir / SOURCE_ID / group
+    assert check_dataset(dataset_lake) == []
+    df = scan_dataset(dataset_lake).collect()
+    assert df.height == 1
+    assert "ano" in df.columns
+    assert "semestre" in df.columns
+    assert df["ano"][0] == 2024
+    assert df["semestre"][0] == "S1"
+
+
+def test_royalties_municipio_lake_conversion(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group = "royalties"
+    group_dir = raw_dir / _GROUP_DIRS[group]
+    group_dir.mkdir(parents=True)
+    raw_csv = group_dir / "royalties-municipio_2023@20240101.csv"
+    raw_csv.write_text(
+        "ANO;MES;UF;CODIGO_IBGE;MUNICIPIO;VALOR\n2023;12;RJ;3302403;MACAE;1250000,50\n",
+        encoding="utf-8",
+    )
+
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(raw_dir, lake_dir, datasets=[group])
+    assert not res.errors, res.errors
+    assert res.converted == 1
+
+    dataset_lake = lake_dir / SOURCE_ID / "royalties_municipio"
+    assert check_dataset(dataset_lake) == []
+    df = scan_dataset(dataset_lake).collect()
+    assert df.height == 1
+    assert "ano" in df.columns
+    assert df["ano"][0] == 2023
+    assert df["CODIGO_IBGE"].dtype == pl.String
+    assert df["CODIGO_IBGE"][0] == "3302403"
+
+
+def test_participacoes_especiais_lake_conversion(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group = "royalties"
+    group_dir = raw_dir / _GROUP_DIRS[group]
+    group_dir.mkdir(parents=True)
+    (group_dir / "pe_municipio@20240101.csv").write_text(
+        "ANO;UF;CODIGO_IBGE;MUNICIPIO;VALOR_PE\n2023;RJ;3302403;MACAE;5000000.00\n",
+        encoding="utf-8",
+    )
+    (group_dir / "pe_uniao@20240101.csv").write_text(
+        "ANO;VALOR_PE\n2023;15000000.00\n",
+        encoding="utf-8",
+    )
+
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(raw_dir, lake_dir, datasets=["participacoes_especiais"])
+    assert not res.errors, res.errors
+    assert res.converted == 2
+
+    pe_lake = lake_dir / SOURCE_ID / "participacoes_especiais"
+    assert check_dataset(pe_lake) == []
+    df = scan_dataset(pe_lake).collect()
+    assert df.height == 2
+
+
+def test_convert_by_canonical_alias_anp(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group = "royalties"
+    group_dir = raw_dir / _GROUP_DIRS[group]
+    group_dir.mkdir(parents=True)
+    (group_dir / "royalties-municipio_2022@20230101.csv").write_text(
+        "ANO;MES;UF;CODIGO_IBGE;MUNICIPIO;VALOR\n2022;12;RJ;3302403;MACAE;1000000,00\n",
+        encoding="utf-8",
+    )
+
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(raw_dir, lake_dir, datasets=["royalties_municipio"])
+    assert not res.errors, res.errors
+    assert res.converted == 1
+
+
+def test_convert_unknown_dataset_anp(tmp_path: Path) -> None:
+    res = converter.convert(tmp_path, tmp_path, datasets=["desconhecido_anp"])
+    assert len(res.errors) == 1
+    assert "dataset desconhecido: desconhecido_anp" in res.errors[0]

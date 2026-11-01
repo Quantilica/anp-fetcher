@@ -56,7 +56,7 @@ def test_path_for_semestral_entry(tmp_path):
     date = dt.date(2026, 6, 1)
     path = repo.path_for_entry(entry, last_modified=date)
     assert path.parent.name == "shpc-combustiveis-automotivos"
-    assert "shpc-ca_2024-01@20260601" in path.name
+    assert "shpc-ca_2024-S1@20260601" in path.name
     assert path.suffix == ".zip"
 
 
@@ -68,7 +68,7 @@ def test_path_for_semestral_entry_second_semester(tmp_path):
     date = dt.date(2026, 6, 1)
     path = repo.path_for_entry(entry, last_modified=date)
     assert path.parent.name == "shpc-glp"
-    assert "shpc-glp_2021-02@20260601" in path.name
+    assert "shpc-glp_2021-S2@20260601" in path.name
 
 
 def test_path_for_monthly_entry(tmp_path):
@@ -258,7 +258,7 @@ def test_path_for_producao_terra_semestral(tmp_path):
     )
     path = repo.path_for_entry(entry)
     assert path.parent.name == "producao-terra"
-    assert "producao-terra-s1_2010-01" in path.name
+    assert "producao-terra-s1_2010-S1" in path.name
 
 
 def test_path_for_reservas(tmp_path):

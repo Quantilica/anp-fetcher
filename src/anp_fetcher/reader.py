@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 #   {base_id}_{year}-{part:02d}[@{YYYYMMDD}].{ext} (mensal/semestral)
 _FILENAME_RE = re.compile(
     r"^(?P<base_id>.+?)"
-    r"(?:_(?P<year>\d{4})(?:-(?P<part>\d{2}))?)?"
+    r"(?:_(?P<year>\d{4})(?:-(?P<part>(?:S[12]|\d{2})))?)?"
     r"(?:@(?P<mod>\d{8}))?"
     r"\.(?P<ext>[a-z0-9]+)$"
 )
@@ -76,10 +76,19 @@ def parse_filename(path: Path) -> dict[str, Any]:
         }
     g = m.groupdict()
     year = int(g["year"]) if g["year"] else None
-    part = int(g["part"]) if g["part"] else None
+    part_raw = g.get("part")
     mod = int(g["mod"]) if g["mod"] else None
-    if part is not None:
-        partition = f"{year}-{part:02d}"
+
+    part: int | None = None
+    partition: str | None = None
+    if part_raw:
+        if part_raw.startswith("S") or part_raw.startswith("s"):
+            sem = int(part_raw[1:])
+            part = sem
+            partition = f"{year}-S{sem}"
+        else:
+            part = int(part_raw)
+            partition = f"{year}-{part:02d}"
     elif year is not None:
         partition = str(year)
     else:
@@ -306,6 +315,13 @@ def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
             if col not in numeric and df[col].dtype == pl.Utf8
         ]
     )
+    code_cols = [
+        c for c in df.columns if any(k in c.lower() for k in ("ibge", "cnpj", "poco"))
+    ]
+    if code_cols:
+        df = df.with_columns(
+            [pl.col(c).cast(pl.String) for c in code_cols if df.schema[c] != pl.String]
+        )
     return df
 
 
