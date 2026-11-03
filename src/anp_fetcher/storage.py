@@ -114,13 +114,11 @@ class DataRepository(BaseDataRepository):
     ) -> Path:
         """Compute the local path for a dataset entry.
 
-        Args:
-            entry (DatasetEntry): The dataset entry to process.
-            last_modified (dt.date | None, optional): The last modified date of
-                the dataset. Defaults to None.
-
-        Returns:
-            Path: The computed local path for the dataset.
+        For A7 sources (dynamic export without reliable HTTP metadata), the server
+        doesn't provide Last-Modified/ETag. Per ADR 2026-10-30 (F3: remote_only
+        + CAS sha256), we use the download date as the timestamp so that each
+        sync creates a new @YYYYMMDD version only when content actually changes
+        (download_with_manifest compares sha256 before atomic commit).
         """
         group_dir = _GROUP_DIRS[entry["group"]]
         ext = entry["ext"]
@@ -129,21 +127,24 @@ class DataRepository(BaseDataRepository):
         semester = entry["semester"]
         month = entry["month"]
 
+        # Fallback to today's date when server doesn't provide reliable metadata
+        timestamp = last_modified or dt.date.today()
+
         if year is None:
-            filename = stamp_filename(base_id, ext, last_modified)
+            filename = stamp_filename(base_id, ext, timestamp)
         elif semester is not None:
             partition = f"{year}-S{int(semester)}"
             filename = build_stamped_filename(
-                base_id, partition, ext=ext, timestamp=last_modified
+                base_id, partition, ext=ext, timestamp=timestamp
             )
         elif month is not None:
             partition = f"{year}-{month:02d}"
             filename = build_stamped_filename(
-                base_id, partition, ext=ext, timestamp=last_modified
+                base_id, partition, ext=ext, timestamp=timestamp
             )
         else:
             filename = build_stamped_filename(
-                base_id, year, ext=ext, timestamp=last_modified
+                base_id, year, ext=ext, timestamp=timestamp
             )
 
         return self.storage.path_for(f"{group_dir}/{filename}")
