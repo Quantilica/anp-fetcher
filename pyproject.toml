@@ -1,6 +1,6 @@
 [project]
 name = "anp-fetcher"
-version = "2.1.2"
+version = "2.2.0"
 description = "A commandline utility to download ANP (Agência Nacional do Petróleo) statistical data"
 readme = "README.md"
 authors = [

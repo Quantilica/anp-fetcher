@@ -5,6 +5,15 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [2.2.0] - 2026-11-04
+
+### Adicionado
+- O roteamento do Lake dá prioridade às participações especiais e passa a aceitar aliases canônicos de dataset.
+- Sem `Last-Modified` na resposta, o arquivo baixado recebe o carimbo da data do download no nome.
+
+### Alterado
+- Exige `quantilica-core>=0.16.0`.
+
 ## [2.1.2] - 2026-10-30
 
 ### Adicionado
