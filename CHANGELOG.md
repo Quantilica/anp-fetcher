@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.3.0] - 2026-11-04
+
 ### Alterado
 - Roteamento do grupo `royalties` explícito por `base_id` (`DATASET_ROUTES` em `lake.py`),
   no lugar de trechos do nome (`"pe_" in name`): `royalties-uniao|estado|municipio` vão para
