@@ -146,6 +146,22 @@ def resolve_partitions(meta: dict[str, Any]) -> tuple[list[str], dict[str, str]]
     return ["particao"], {"particao": partition}
 
 
+#: ``base_id`` do catálogo -> dataset do lake, para grupos cujos arquivos têm esquemas
+#: diferentes e precisam de datasets próprios. Fonte única do roteamento.
+DATASET_ROUTES: dict[str, dict[str, str]] = {
+    "royalties": {
+        "royalties-uniao": "royalties_uniao",
+        "royalties-estado": "royalties_estado",
+        "royalties-municipio": "royalties_municipio",
+        "pe-uniao": "participacoes_especiais",
+        "pe-estado": "participacoes_especiais",
+        "pe-municipio": "participacoes_especiais",
+        "pe-campo": "participacoes_especiais",
+        "preco-ref-gn": "preco_referencia_gn",
+        "preco-ref-petroleo": "preco_referencia_petroleo",
+    },
+}
+
 _COARSER_SUFFIX = {("ano",): "-anual", (): "-historico"}
 
 
@@ -162,16 +178,11 @@ def dataset_for_granularity(
     históricas (``-1941-1966``): a mais fina fica com o nome do grupo e as demais vão
     para ``<grupo>-anual`` ou ``<grupo>-historico``.
     """
-    if group == "royalties" and path is not None:
-        name = path.name.lower()
-        if "pe-" in name or "pe_" in name or "participacao" in name:
-            return "participacoes_especiais"
-        if "municipio" in name:
-            return "royalties_municipio"
-        if "uniao" in name:
-            return "royalties_uniao"
-        if "estado" in name:
-            return "royalties_estado"
+    routes = DATASET_ROUTES.get(group)
+    if routes is not None and path is not None:
+        # Explícito por ``base_id`` (o do catálogo), nunca por trecho do nome.
+        # Base não listada fica no dataset do grupo, sem adivinhação.
+        return routes.get(parse_filename(path)["base_id"], group)
     if len(part_keys) >= finest:
         return group
     suffix = _COARSER_SUFFIX.get(tuple(part_keys), "-" + "-".join(part_keys))
@@ -244,6 +255,10 @@ LAKE_DATASET_ALIASES: dict[str, str] = {
     "participacoes-especiais": "royalties",
     "participacao_especial": "royalties",
     "participacao-especial": "royalties",
+    "preco_referencia_gn": "royalties",
+    "preco-referencia-gn": "royalties",
+    "preco_referencia_petroleo": "royalties",
+    "preco-referencia-petroleo": "royalties",
 }
 
 
@@ -359,6 +374,13 @@ class LakeConverter:
                     for sheet, frame in frames:
                         norm = normalize_dtypes(frame, spec)
                         norm = _apply_contract(group, norm, raw_file.name)
+                        if dataset_id == "participacoes_especiais":
+                            # quatro recortes (uniao/estado/municipio/campo) com
+                            # colunas diferentes no mesmo dataset: a coluna os separa.
+                            recorte = parse_filename(raw_file)["base_id"].removeprefix(
+                                "pe-"
+                            )
+                            norm = norm.with_columns(pl.lit(recorte).alias("recorte"))
                         part_keys_lower = [k.lower() for k in part_keys]
                         drop_part_cols = [
                             c for c in norm.columns if c.lower() in part_keys_lower

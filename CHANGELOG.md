@@ -5,6 +5,28 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Alterado
+- Roteamento do grupo `royalties` explícito por `base_id` (`DATASET_ROUTES` em `lake.py`),
+  no lugar de trechos do nome (`"pe_" in name`): `royalties-uniao|estado|municipio` vão para
+  `royalties_*`, os quatro `pe-*` para `participacoes_especiais` (nova coluna `recorte`:
+  uniao/estado/municipio/campo, pois os esquemas diferem) e `preco-ref-gn|petroleo` para
+  `preco_referencia_gn`/`preco_referencia_petroleo`. Base fora da tabela fica no dataset do
+  grupo. Reconversão: os parquets `preco-ref-*` que antes caíam em `royalties/` devem ser
+  removidos de lá e reconvertidos com `--force`; `participacoes_especiais` ganha `recorte`.
+
+### Sondado e não implementado (TC-05, BDEP)
+- `pocos_exploratorios_bdep`: `bdep.gov.br`, `www.bdep.gov.br`, `bdep.anp.gov.br`,
+  `geo.anp.gov.br` e `sigep.anp.gov.br` não resolvem DNS (reverificado em 2026-11-04). A página
+  de shapefiles da ANP (`.../dados-tecnicos/shapefile-de-dados`) lista só rodadas/blocos
+  (`brc`, `op`, `a3`, `a4`), sem camada de poços; sem fonte, sem geometria L5 nem stub.
+  Pista: `situacao-pocos` já traz `Latitude_da_base`/`Longitude_da_base` em graus
+  `-18:22:40,186`, mas sem datum declarado (EPSG:4674 seria suposição); depende de decisão.
+- Os CSVs reais de royalties/PE têm `competencia`/`caixa` como data serial do Excel e nenhum
+  `codigo_ibge` (município só por nome minúsculo sem acento): a junção por IBGE não existe
+  na fonte.
+
 ## [2.2.0] - 2026-11-04
 
 ### Adicionado

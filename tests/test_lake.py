@@ -209,11 +209,11 @@ def test_participacoes_especiais_lake_conversion(tmp_path: Path) -> None:
     group = "royalties"
     group_dir = raw_dir / _GROUP_DIRS[group]
     group_dir.mkdir(parents=True)
-    (group_dir / "pe_municipio@20240101.csv").write_text(
+    (group_dir / "pe-municipio@20240101.csv").write_text(
         "ANO;UF;CODIGO_IBGE;MUNICIPIO;VALOR_PE\n2023;RJ;3302403;MACAE;5000000.00\n",
         encoding="utf-8",
     )
-    (group_dir / "pe_uniao@20240101.csv").write_text(
+    (group_dir / "pe-uniao@20240101.csv").write_text(
         "ANO;VALOR_PE\n2023;15000000.00\n",
         encoding="utf-8",
     )
@@ -227,6 +227,24 @@ def test_participacoes_especiais_lake_conversion(tmp_path: Path) -> None:
     assert check_dataset(pe_lake) == []
     df = scan_dataset(pe_lake).collect()
     assert df.height == 2
+    assert sorted(df["recorte"].to_list()) == ["municipio", "uniao"]
+    assert not (lake_dir / SOURCE_ID / "royalties").exists()
+
+
+def test_royalties_routing_is_explicit_by_base_id(tmp_path: Path) -> None:
+    from anp_fetcher.lake import dataset_for_granularity
+
+    def route(name: str) -> str:
+        return dataset_for_granularity("royalties", ["ano"], 1, path=Path(name))
+
+    assert route("royalties-uniao_2024@20240101.csv") == "royalties_uniao"
+    assert route("royalties-estado_2024@20240101.csv") == "royalties_estado"
+    assert route("royalties-municipio_2024@20240101.csv") == "royalties_municipio"
+    assert route("preco-ref-gn_2024@20240101.csv") == "preco_referencia_gn"
+    assert route("preco-ref-petroleo_2024@20240101.csv") == "preco_referencia_petroleo"
+    # base fora da tabela: dataset do grupo, sem adivinhar por trecho do nome
+    assert route("royalties-pe-municipio_2024@20240101.csv") == "royalties"
+    assert route("outro_municipio_2024@20240101.csv") == "royalties"
 
 
 def test_convert_by_canonical_alias_anp(tmp_path: Path) -> None:
