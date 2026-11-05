@@ -7,8 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.4.0] - 2026-11-05
+
 ### Corrigido
 
+- `anp convert` sem o extra `analysis` agora explica como instalá-lo
+  (`quantilica install anp --extra analysis`) em vez de um `ImportError` cru.
 - `reader.normalize_dtypes`: valor não vazio que não converte para número ou
   data agora levanta `ValueError` com a coluna e exemplos; antes virava nulo
   sem aviso. Valor vazio continua nulo.
@@ -26,6 +30,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- Saída padrão do plugin fixa em `/data/anp`.
 - SHPC: `Data da Coleta` passa a `Date` (formato `dd/mm/aaaa`), na
   especificação e no `DataContract`, que sobe para a versão 2. Com isso o lake
   reconverte os arquivos SHPC já convertidos; sem a versão nova eles seriam
