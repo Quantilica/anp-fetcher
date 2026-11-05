@@ -61,7 +61,10 @@ def path_builder(
     return DataRepository(output_dir).path_for_entry(entry, last_modified=last_modified)
 
 
+_DEFAULT_OUTPUT = Path("/data/anp")
+
 fetcher = FetcherApp(
+    default_output=_DEFAULT_OUTPUT,
     name="anp-fetcher",
     help="Dados da ANP (Agência Nacional do Petróleo).",
     groups_dict=GROUPS,
@@ -80,7 +83,13 @@ def convert(
     force: bool = False,
 ) -> Any:
     """Converte arquivos brutos da ANP para o lake Hive (Parquet)."""
-    from anp_fetcher import lake
+    try:
+        from anp_fetcher import lake
+    except ImportError as exc:
+        raise ImportError(
+            "Conversão para o lake requer o extra 'analysis'. "
+            "Instale com: quantilica install anp --extra analysis"
+        ) from exc
 
     return lake.converter.convert(input_dir, lake_dir, datasets=dataset, force=force)
 
