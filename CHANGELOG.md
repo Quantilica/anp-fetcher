@@ -7,6 +7,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- Dados abertos: URLs renomeadas pela ANP. `vdpb-a-segmento` passa a
+  `vendas-combustiveis-segmento-m3.csv` (sem sufixo de anos) e
+  `pp-a-outros-produtores` a `producao-derivados-outros-produtores-m3-2001-2026.csv`;
+  ambas davam 404.
+
 ## [2.4.0] - 2026-11-05
 
 ### Corrigido
