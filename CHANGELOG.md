@@ -18,7 +18,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   grupo. Reconversão: os parquets `preco-ref-*` que antes caíam em `royalties/` devem ser
   removidos de lá e reconvertidos com `--force`; `participacoes_especiais` ganha `recorte`.
 
-### Sondado e não implementado (TC-05, BDEP)
+**Sondado e não implementado (TC-05, BDEP):**
+
 - `pocos_exploratorios_bdep`: `bdep.gov.br`, `www.bdep.gov.br`, `bdep.anp.gov.br`,
   `geo.anp.gov.br` e `sigep.anp.gov.br` não resolvem DNS (reverificado em 2026-11-04). A página
   de shapefiles da ANP (`.../dados-tecnicos/shapefile-de-dados`) lista só rodadas/blocos
@@ -80,9 +81,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [2.0.0] - 2026-10-27
 
-### Quebras de Compatibilidade
-- Transição da saída analítica legada para o lake Parquet particionado no formato Hive (`ano=/mes=` para séries mensais como Preços de Combustíveis, `ano=` para anuais e sem partição para cadastros estáticos), com descritores `_dataset.json` e locks cooperativos.
-- Substituição das rotinas e flags analíticas anteriores pelos comandos padronizados `convert` e `pipeline` integrados via SDK do `FetcherApp` (`--lake`, `--dataset`, `--force`).
+### Alterado
+- **Quebra de compatibilidade:** transição da saída analítica legada para o lake Parquet particionado no formato Hive (`ano=/mes=` para séries mensais como Preços de Combustíveis, `ano=` para anuais e sem partição para cadastros estáticos), com descritores `_dataset.json` e locks cooperativos.
+- **Quebra de compatibilidade:** substituição das rotinas e flags analíticas anteriores pelos comandos padronizados `convert` e `pipeline` integrados via SDK do `FetcherApp` (`--lake`, `--dataset`, `--force`).
 
 ### Adicionado
 - Módulo `anp_fetcher.lake` e entry point `quantilica.lake`: conversão direta dos arquivos abertos da ANP para o lake Parquet particionado no formato Hive.
