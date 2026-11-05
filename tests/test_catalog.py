@@ -904,3 +904,17 @@ def test_reservas_nacionais_catalog():
 def test_reservas_aliases():
     assert resolve_group("reservas") == "reservas-nacionais"
     assert resolve_group("bar") == "reservas-nacionais"
+
+
+def test_urls_renomeadas_pela_anp_nao_regridem() -> None:
+    """Os arquivos de segmento e outros produtores mudaram de nome na ANP."""
+    urls = {
+        e["id"] if isinstance(e, dict) else e.id: (
+            e["url"] if isinstance(e, dict) else e.url
+        )
+        for e in list_datasets()
+    }
+    assert urls["vdpb-a-segmento"].endswith("/vcs/vendas-combustiveis-segmento-m3.csv")
+    assert urls["pp-a-outros-produtores"].endswith(
+        "/pppd/producao-derivados-outros-produtores-m3-2001-2026.csv"
+    )

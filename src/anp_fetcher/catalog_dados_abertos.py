@@ -294,8 +294,8 @@ _vdpb_abertos_entries: list[DatasetEntry] = [
         "vdpb-abertos",
         _SOURCE,
         "vdpb-a-segmento",
-        "Vendas de combustíveis por segmento (m³) 2012-2025",
-        f"{_VDPB}/vcs/vendas-combustiveis-segmento-m3-2012-2025.csv",
+        "Vendas de combustíveis por segmento (m³)",
+        f"{_VDPB}/vcs/vendas-combustiveis-segmento-m3.csv",
         "csv",
     ),
     _static(
@@ -517,8 +517,8 @@ _pp_abertos_entries: list[DatasetEntry] = [
         "pp-abertos",
         _SOURCE,
         "pp-a-outros-produtores",
-        "Produção de derivados por outros produtores (m³) 2003-2025",
-        f"{_PPPD}/producao-derivados-outros-produtores-m3-2001-2025.csv",
+        "Produção de derivados por outros produtores (m³) 2001-2026",
+        f"{_PPPD}/producao-derivados-outros-produtores-m3-2001-2026.csv",
         "csv",
     ),
 ]
