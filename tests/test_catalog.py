@@ -268,9 +268,17 @@ def test_shpc_glp_url_exceptions():
 
 
 def test_shpc_monthly_count():
-    # 12+12+12+5 = 41 months per product
+    # 2023 a 2025 (36 meses) + jan. a set. de 2026 = 45 meses por produto
     for group_id in ("shpc-diesel-gnv", "shpc-gasolina-etanol", "shpc-glp-mensal"):
-        assert len(GROUPS[group_id]["entries"]) == 39, f"{group_id} count wrong"
+        assert len(GROUPS[group_id]["entries"]) == 45, f"{group_id} count wrong"
+
+
+def test_shpc_monthly_2026_irregular_names():
+    urls = {e["month"]: e["url"] for e in GROUPS["shpc-glp-mensal"]["entries"]
+            if e["year"] == 2026}  # fmt: skip
+    assert urls[4].endswith("/2026/04-dados-abertos-precos-glp")
+    assert urls[5].endswith("/2026/05-dados-abertos-precos-glp.csv")
+    assert urls[9].endswith("/2026/09-dados-abertos-precos-2026-09-glp.csv")
 
 
 def test_shpc_monthly_has_month_field():

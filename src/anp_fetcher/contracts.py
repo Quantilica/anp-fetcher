@@ -17,6 +17,10 @@ except ImportError as exc:
         "--index https://index.quantilica.com/simple/"
     ) from exc
 
+# Versão 2: `Data da Coleta` passou de texto a `Date`; a versão nova força o
+# lake a reconverter os arquivos já convertidos com a versão 1.
+_SHPC_VERSION = 2
+
 _SHPC_FIELDS = [
     Field("Regiao - Sigla", pl.Utf8),
     Field("Estado - Sigla", pl.Utf8),
@@ -29,7 +33,7 @@ _SHPC_FIELDS = [
     Field("Bairro", pl.Utf8),
     Field("Cep", pl.Utf8),
     Field("Produto", pl.Utf8),
-    Field("Data da Coleta", pl.Utf8),
+    Field("Data da Coleta", pl.Date),
     Field("Valor de Venda", pl.Float64),
     Field("Valor de Compra", pl.Float64),
     Field("Unidade de Medida", pl.Utf8),
@@ -50,11 +54,16 @@ _RESERVAS_FIELDS = [
 ]
 
 CONTRACTS: dict[str, DataContract] = {
-    "shpc-ca": DataContract("shpc-ca", _SHPC_FIELDS),
-    "shpc-glp": DataContract("shpc-glp", _SHPC_FIELDS),
-    "shpc-diesel-gnv": DataContract("shpc-diesel-gnv", _SHPC_FIELDS),
-    "shpc-gasolina-etanol": DataContract("shpc-gasolina-etanol", _SHPC_FIELDS),
-    "shpc-glp-mensal": DataContract("shpc-glp-mensal", _SHPC_FIELDS),
-    "shpc-4s": DataContract("shpc-4s", _SHPC_FIELDS),
+    **{
+        group: DataContract(group, _SHPC_FIELDS, version=_SHPC_VERSION)
+        for group in (
+            "shpc-ca",
+            "shpc-glp",
+            "shpc-diesel-gnv",
+            "shpc-gasolina-etanol",
+            "shpc-glp-mensal",
+            "shpc-4s",
+        )
+    },
     "reservas-nacionais": DataContract("reservas-nacionais", _RESERVAS_FIELDS),
 }

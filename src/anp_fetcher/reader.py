@@ -129,6 +129,27 @@ def decompress(path: Path) -> Path:
         raise RuntimeError(f"falha ao descompactar {path}: {exc}") from exc
 
 
+def _sniff_separator(path: Path, default: str) -> str:
+    """Troca ``;`` por ``,`` quando o cabeçalho só tem vírgulas.
+
+    A maioria dos CSV da ANP usa ``;``, mas alguns arquivos do mesmo grupo
+    usam ``,`` (ex.: ``vendas-biodiesel-b100-m3.csv``); lidos com ``;`` eles
+    viram uma coluna só.
+
+    Args:
+        path (Path): Caminho do arquivo CSV.
+        default (str): O separador da especificação do grupo.
+
+    Returns:
+        str: O separador a usar.
+    """
+    with path.open("rb") as fh:
+        header = fh.readline()
+    if default.encode() not in header and b"," in header:
+        return ","
+    return default
+
+
 def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     """Lê um CSV da ANP (utf-8 com fallback latin-1).
 
@@ -140,7 +161,7 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
         pl.DataFrame: O DataFrame lido com tipos inferidos.
     """
     kwargs: dict[str, Any] = {
-        "separator": spec.get("separator", ";"),
+        "separator": _sniff_separator(path, spec.get("separator", ";")),
         "infer_schema_length": spec.get("infer_schema_length", 0),
     }
     if spec.get("skip_rows"):
@@ -265,7 +286,8 @@ def read_file(
     with open(path, "rb") as fh:
         head = fh.read(4096)
     magic = head[:8]
-    if suffix in (".csv", ".xls", ".xlsx") and magic.startswith(b"PK\x03\x04"):
+    # Os semestres SHPC de 2022 em diante vêm em .zip com um CSV dentro.
+    if suffix in (".zip", ".csv", ".xls", ".xlsx") and magic.startswith(b"PK\x03\x04"):
         # A extensão nem sempre diz o conteúdo: movterm.csv é um xlsx, e
         # shpc-ca_2014-01.csv é um ZIP com o CSV dentro.
         with zipfile.ZipFile(path) as archive:
@@ -291,30 +313,52 @@ def read_file(
 
 
 def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
-    """Normaliza dtypes: números com vírgula decimal e strings sem espaços.
+    """Normaliza dtypes: strings sem espaços, números e datas tipados.
 
     A conversão de números brasileiros (``,`` decimal, ``.`` de milhar) é
     delegada a ``quantilica.analytics.reader.normalize_brazilian_numbers``;
-    colunas ausentes no DataFrame são ignoradas (best-effort).
+    as datas usam o formato de ``date_columns``. Colunas ausentes no
+    DataFrame são ignoradas. Valor vazio vira nulo; valor não vazio que não
+    converte levanta erro.
 
     Args:
         df (pl.DataFrame): O DataFrame a normalizar.
-        spec (dict[str, Any]): Especificação com ``numeric_columns``.
+        spec (dict[str, Any]): Especificação com ``numeric_columns`` e
+            ``date_columns`` (coluna → formato ``strptime``).
 
     Returns:
         pl.DataFrame: O DataFrame normalizado.
+
+    Raises:
+        ValueError: Se um valor não vazio não converter.
     """
     numeric = list(spec.get("numeric_columns", []))
-    df = normalize_brazilian_numbers(
-        df, [c for c in numeric if c in df.columns and df[c].dtype == pl.Utf8]
-    )
+    dates = dict(spec.get("date_columns", {}))
     df = df.with_columns(
         [
             pl.col(col).str.strip_chars()
             for col in df.columns
-            if col not in numeric and df[col].dtype == pl.Utf8
+            if df[col].dtype == pl.Utf8
         ]
     )
+    # Vazio é ausência; qualquer outro valor que não converta é erro, não nulo.
+    df = df.with_columns(
+        [
+            pl.when(pl.col(col) == "").then(None).otherwise(pl.col(col)).alias(col)
+            for col in [*numeric, *dates]
+            if col in df.columns and df[col].dtype == pl.Utf8
+        ]
+    )
+    to_number = [c for c in numeric if c in df.columns and df[c].dtype == pl.Utf8]
+    before = {c: df[c] for c in to_number}
+    df = normalize_brazilian_numbers(df, to_number)
+    for col, raw in before.items():
+        _check_conversion(col, raw, df[col])
+    for col, fmt in dates.items():
+        if col in df.columns and df[col].dtype == pl.Utf8:
+            raw = df[col]
+            df = df.with_columns(pl.col(col).str.strptime(pl.Date, fmt, strict=False))
+            _check_conversion(col, raw, df[col])
     code_cols = [
         c for c in df.columns if any(k in c.lower() for k in ("ibge", "cnpj", "poco"))
     ]
@@ -323,6 +367,20 @@ def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
             [pl.col(c).cast(pl.String) for c in code_cols if df.schema[c] != pl.String]
         )
     return df
+
+
+def _check_conversion(col: str, raw: pl.Series, converted: pl.Series) -> None:
+    """Falha se algum valor não vazio virou nulo na conversão.
+
+    Raises:
+        ValueError: Com a coluna, a quantidade e até cinco exemplos.
+    """
+    lost = raw.filter(raw.is_not_null() & converted.is_null())
+    if lost.len():
+        examples = lost.unique().head(5).to_list()
+        raise ValueError(
+            f"Coluna {col!r}: {lost.len()} valor(es) não convertido(s), ex.: {examples}"
+        )
 
 
 def provenance_metadata(path: Path) -> dict[str, str]:

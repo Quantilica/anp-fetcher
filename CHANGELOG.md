@@ -7,6 +7,36 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- `reader.normalize_dtypes`: valor não vazio que não converte para número ou
+  data agora levanta `ValueError` com a coluna e exemplos; antes virava nulo
+  sem aviso. Valor vazio continua nulo.
+- `reader.read_csv`: arquivo separado por vírgula num grupo de `;` (ex.:
+  `vendas-biodiesel-b100-m3.csv`) era lido como uma coluna só; o separador
+  agora é detectado pelo cabeçalho.
+- `reader.read_file`: lê o `.zip` com um arquivo de dados (SHPC semestral de
+  2022 em diante); antes só o ZIP com nome `.csv`, `.xls` ou `.xlsx` era aberto e
+  o `.zip` falhava com "Formato não suportado".
+- Catálogo SHPC mensal: acrescenta abril a setembro de 2026 com os nomes que a
+  ANP publicou (abril sem extensão; junho, agosto e setembro com `2026-MM` no
+  nome), conferidos na página da série histórica em 26/10/2026. O catálogo é
+  fixo e para de acompanhar a fonte a cada mês novo; descobrir os links na
+  própria página evitaria isso.
+
+### Alterado
+
+- SHPC: `Data da Coleta` passa a `Date` (formato `dd/mm/aaaa`), na
+  especificação e no `DataContract`, que sobe para a versão 2. Com isso o lake
+  reconverte os arquivos SHPC já convertidos; sem a versão nova eles seriam
+  pulados e o dataset ficaria com a data ora texto, ora `Date`.
+- `vdpb-abertos`, `ie-abertos`, `pp-abertos` e `pb-abertos`: colunas de valor
+  (`VENDAS`, `PRODUÇÃO`, `PROCESSADO`, `IMPORTADO / EXPORTADO`,
+  `DISPÊNDIO / RECEITA`, `P13`, `OUTROS` e afins) convertidas para número;
+  antes ficavam como texto com vírgula decimal.
+  Esses grupos não têm contrato: reconverta-os uma vez com `--force` para
+  que os arquivos antigos do lake também fiquem numéricos.
+
 ## [2.3.0] - 2026-11-04
 
 ### Alterado

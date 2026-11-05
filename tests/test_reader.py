@@ -1,10 +1,12 @@
 """Tests for anp_fetcher.reader."""
 
+import datetime as dt
 import json
 import zipfile
 from pathlib import Path
 
 import polars as pl
+import pytest
 
 from anp_fetcher.reader import (
     decompress,
@@ -13,6 +15,7 @@ from anp_fetcher.reader import (
     provenance_metadata,
     read_csv,
     read_excel,
+    read_file,
     write_parquet,
 )
 
@@ -63,7 +66,7 @@ def test_parse_filename_unrecognized():
 def test_normalize_dtypes(tmp_path):
     df = pl.DataFrame(
         {
-            "Valor de Venda": ["1.234,56", "2,5", "abc"],
+            "Valor de Venda": ["1.234,56", "2,5", "  "],
             "Municipio": ["  SAO PAULO ", "  RIO  ", "  SP  "],
             "Ano": [2020, 2021, 2022],
         }
@@ -75,6 +78,46 @@ def test_normalize_dtypes(tmp_path):
     assert out["Municipio"].dtype == pl.Utf8
     assert out["Municipio"].to_list() == ["SAO PAULO", "RIO", "SP"]
     assert out["Ano"].dtype == pl.Int64
+
+
+def test_normalize_dtypes_rejects_unparsable_number():
+    df = pl.DataFrame({"VENDAS": ["10,5", "abc"]})
+    with pytest.raises(ValueError, match="VENDAS"):
+        normalize_dtypes(df, {"numeric_columns": ["VENDAS"]})
+
+
+def test_normalize_dtypes_dates():
+    df = pl.DataFrame({"Data da Coleta": ["03/01/2019", " 31/12/2019 ", ""]})
+    out = normalize_dtypes(df, {"date_columns": {"Data da Coleta": "%d/%m/%Y"}})
+    assert out["Data da Coleta"].dtype == pl.Date
+    assert out["Data da Coleta"].to_list() == [
+        dt.date(2019, 1, 3),
+        dt.date(2019, 12, 31),
+        None,
+    ]
+
+
+def test_normalize_dtypes_rejects_unparsable_date():
+    df = pl.DataFrame({"Data da Coleta": ["2019-01-03"]})
+    with pytest.raises(ValueError, match="Data da Coleta"):
+        normalize_dtypes(df, {"date_columns": {"Data da Coleta": "%d/%m/%Y"}})
+
+
+def test_read_csv_comma_separated_file_in_semicolon_group(tmp_path):
+    path = tmp_path / "vendas-biodiesel-b100-m3.csv"
+    path.write_text(
+        "Mês/Ano,Região Origem,Região Destino,Vendas de Biodiesel\n"
+        '08/2026,SUL,NORTE,"2243,443"\n',
+        encoding="utf-8",
+    )
+    df = read_csv(path, {"separator": ";"})
+    assert df.columns == [
+        "Mês/Ano",
+        "Região Origem",
+        "Região Destino",
+        "Vendas de Biodiesel",
+    ]
+    assert df["Vendas de Biodiesel"][0] == "2243,443"
 
 
 def test_read_csv_utf8(tmp_path):
@@ -175,3 +218,16 @@ def test_write_parquet(tmp_path):
     assert result.exists()
     read = pl.read_parquet(target)
     assert read.shape == (2, 2)
+
+
+@pytest.mark.parametrize("name", ["shpc-ca_2014-01.csv", "shpc-ca_2023-01.zip"])
+def test_read_file_zip(tmp_path, name):
+    path = tmp_path / name
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr(
+            "Preços semestrais - AUTOMOTIVOS_2014.01.csv",
+            "produto;valor\nGasolina;5,49\n",
+        )
+    df = read_file(path, {"separator": ";", "encoding": "utf-8"})
+    assert df.shape == (1, 2)
+    assert df["valor"][0] == "5,49"

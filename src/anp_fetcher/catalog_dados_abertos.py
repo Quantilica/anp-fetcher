@@ -140,11 +140,25 @@ _shpc_glp_entries: list[DatasetEntry] = [
 # ---------------------------------------------------------------------------
 
 
+# Nomes de 2026 fora do padrão, conferidos na página "Série histórica de preços
+# de combustíveis" em 26/10/2026: abril sem extensão; junho, agosto e setembro
+# com o ano e o mês repetidos no nome.
+_DSAN_2026_NAMES: dict[int, str] = {
+    4: "04-dados-abertos-precos-{product}",
+    6: "06-dados-abertos-precos-2026-06-{product}.csv",
+    8: "08-dados-abertos-precos-2026-08-{product}.csv",
+    9: "09-dados-abertos-precos-2026-09-{product}.csv",
+}
+
+
 def _dsan_url(
     year: int, month: int, product_old: str, product_new: str
 ) -> tuple[str, str, list[str]]:
     if year <= 2025:
         return f"{_SHPC_DSAN}/{year}/precos-{product_old}-{month:02d}.csv", "csv", []
+    if year == 2026 and month in _DSAN_2026_NAMES:
+        name = _DSAN_2026_NAMES[month].format(product=product_new)
+        return f"{_SHPC_DSAN}/{year}/{name}", "csv", []
     # For 2026 onwards, default to csv but add xlsx as fallback (and vice versa)
     ext = "csv"
     fallback_ext = "xlsx"
@@ -158,13 +172,11 @@ def _dsan_url(
 
 _MONTHLY_DATES: list[tuple[int, int]] = [
     (y, m) for y in (2023, 2024, 2025) for m in range(1, 13)
-] + [(2026, m) for m in range(1, 6)]
+] + [(2026, m) for m in range(1, 10)]
 
 # shpc-diesel-gnv
 _shpc_diesel_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
-    if (_y, _m) >= (2026, 4):
-        continue  # Not published yet
     _url, _ext, _fallbacks = _dsan_url(_y, _m, "diesel-gnv", "diesel-gnv")
     _shpc_diesel_entries.append(
         _mon_entry(
@@ -183,8 +195,6 @@ for _y, _m in _MONTHLY_DATES:
 # shpc-gasolina-etanol
 _shpc_gas_etanol_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
-    if (_y, _m) >= (2026, 4):
-        continue  # Not published yet
     _fallbacks = []
     if (_y, _m) == (2026, 2):
         _url = f"{_SHPC_DSAN}/2026/02-cados-abertos-preco-gasolina-etanol.csv"
@@ -208,8 +218,6 @@ for _y, _m in _MONTHLY_DATES:
 # shpc-glp-mensal
 _shpc_glp_mensal_entries: list[DatasetEntry] = []
 for _y, _m in _MONTHLY_DATES:
-    if (_y, _m) >= (2026, 4):
-        continue  # Not published yet
     _url, _ext, _fallbacks = _dsan_url(_y, _m, "glp", "glp")
     _shpc_glp_mensal_entries.append(
         _mon_entry(

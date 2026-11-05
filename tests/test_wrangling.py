@@ -1,5 +1,6 @@
 """Tests for anp_fetcher.wrangling."""
 
+import datetime as dt
 from pathlib import Path
 
 import polars as pl
@@ -23,7 +24,7 @@ def test_apply_contract_on_shpc(tmp_path):
                 "Data da Coleta;Valor de Venda;Valor de Compra;"
                 "Unidade de Medida;Bandeira\n"
                 "SE;SP;SAO PAULO;POSTO X;123;RUA A;10;;CENTRO;01000;GASOLINA;"
-                "2025-05-01;5,49;4,99;R$/l;BR\n"
+                "01/05/2025;5,49;4,99;R$/l;BR\n"
             )
         },
     )
@@ -34,6 +35,8 @@ def test_apply_contract_on_shpc(tmp_path):
     assert df["Valor de Venda"].dtype == pl.Float64
     assert df["Valor de Venda"][0] == 5.49
     assert df["Regiao - Sigla"][0] == "SE"
+    assert df["Data da Coleta"].dtype == pl.Date
+    assert df["Data da Coleta"][0] == dt.date(2025, 5, 1)
 
 
 def _make_group_input(tmp_path: Path, group_dir: str, files: dict[str, str]) -> Path:
@@ -55,6 +58,7 @@ def test_spec_for_shpc_override():
     spec = spec_for("shpc-ca")
     assert spec["encoding"] == "utf-8"
     assert spec["numeric_columns"] == ["Valor de Venda", "Valor de Compra"]
+    assert spec["date_columns"] == {"Data da Coleta": "%d/%m/%Y"}
     # defaults preservados
     assert spec["separator"] == ";"
 
@@ -124,3 +128,11 @@ def test_extract_schema(tmp_path):
     assert "shpc-ca" in lines[1]
     assert "Municipio" in lines[1]
     assert '"Valor de Venda"' in lines[2] or "Valor de Venda" in lines[2]
+
+
+def test_shpc_contracts_version_forces_reconversion():
+    from anp_fetcher.contracts import CONTRACTS
+
+    shpc = {k: v for k, v in CONTRACTS.items() if k.startswith("shpc-")}
+    assert len(shpc) == 6
+    assert all(c.version == 2 for c in shpc.values())

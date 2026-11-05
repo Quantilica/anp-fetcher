@@ -45,31 +45,38 @@ DEFAULT_SPEC: dict[str, Any] = {
 }
 
 # Overrides por grupo. O padrão sãos cobre a maioria (CSV `;` latin-1).
+_SHPC_SPEC: dict[str, Any] = {
+    "encoding": "utf-8",
+    "numeric_columns": ["Valor de Venda", "Valor de Compra"],
+    "date_columns": {"Data da Coleta": "%d/%m/%Y"},
+}
+
+# Colunas de valor dos CSV de dados abertos de vendas, comércio exterior e
+# produção; cada arquivo tem só algumas delas.
+_ABERTOS_NUMERIC = [
+    "VENDAS",
+    "Vendas de Biodiesel",
+    "P13",
+    "OUTROS",
+    "PRODUÇÃO",
+    "PROCESSADO",
+    "IMPORTADO",
+    "IMPORTADO / EXPORTADO",
+    "DISPÊNDIO",
+    "DISPÊNDIO / RECEITA",
+]
+
 PROCESSING_SPECS: dict[str, dict[str, Any]] = {
-    "shpc-ca": {
-        "encoding": "utf-8",
-        "numeric_columns": ["Valor de Venda", "Valor de Compra"],
-    },
-    "shpc-glp": {
-        "encoding": "utf-8",
-        "numeric_columns": ["Valor de Venda", "Valor de Compra"],
-    },
-    "shpc-diesel-gnv": {
-        "encoding": "utf-8",
-        "numeric_columns": ["Valor de Venda", "Valor de Compra"],
-    },
-    "shpc-gasolina-etanol": {
-        "encoding": "utf-8",
-        "numeric_columns": ["Valor de Venda", "Valor de Compra"],
-    },
-    "shpc-glp-mensal": {
-        "encoding": "utf-8",
-        "numeric_columns": ["Valor de Venda", "Valor de Compra"],
-    },
-    "shpc-4s": {
-        "encoding": "utf-8",
-        "numeric_columns": ["Valor de Venda", "Valor de Compra"],
-    },
+    "shpc-ca": _SHPC_SPEC,
+    "shpc-glp": _SHPC_SPEC,
+    "shpc-diesel-gnv": _SHPC_SPEC,
+    "shpc-gasolina-etanol": _SHPC_SPEC,
+    "shpc-glp-mensal": _SHPC_SPEC,
+    "shpc-4s": _SHPC_SPEC,
+    "vdpb-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
+    "ie-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
+    "pp-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
+    "pb-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
 }
 
 
