@@ -13,7 +13,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   HTTP 404 (a ANP provavelmente mudou o endereço e o grupo parou de ser coletado
   sem ninguém notar). Vale para o sync completo e para `sync --from-plan`. O
   `check` registra o aviso mas mantém o código 0, para não derrubar o modo de
-  plano. `ANP_DEAD_GROUP_EXIT=0` deixa só o aviso, sem o código.
+  plano. `ANP_DEAD_GROUP_EXIT=0` deixa só o aviso, sem o código. Grupo que só
+  tem entradas do ano corrente não alerta (o primeiro mês do ano ainda não saiu).
 - `reader.read_file` lê ZIP com vários CSV (um por mês), empilhando-os em ordem
   de nome; os JSON gêmeos do ZIP são ignorados.
 
@@ -24,12 +25,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   CSV e JSON de cada mês) e um por mês em 2026 (`pmqc_2026_MM.zip`). Os ids
   (`pmqc-csv-AAAA-MM`) e o prefixo `pmqc-csv` dos arquivos do mês seguem os mesmos;
   os ZIP anuais entram como `pmqc-csv-AAAA`. O JSON deixa de ser baixado à parte
-  (vem dentro do ZIP). O ZIP anual cobre meses que o lake já tem a partir dos
-  arquivos antigos: ele é convertido como dataset anual, sem substituir os mensais.
+  (vem dentro do ZIP).
+- `anp convert`: o ZIP anual do `pmqc` vira os meses do dataset `pmqc` (partições
+  `ano=/mes=` iguais às dos mensais, um Parquet por CSV do ZIP). Mês que já existe
+  como arquivo mensal avulso fica com o avulso, sem duplicar linhas.
 - Listas fixas no catálogo agora acompanham a data: `pmqc` (meses do ano
   corrente, com defasagem de um mês), `producao-terra` (trimestres encerrados do
   ano corrente) e `reservas-nacionais` (um boletim por ano até o anterior ao
   corrente). O que a ANP ainda não publicou continua sendo 404 pulado.
+- Mais listas fixas passam a seguir a data, sem mudar ids nem caminhos:
+  SHPC mensal (diesel-GNV, gasolina-etanol e GLP, até o mês anterior),
+  `producao-zona` (até dois meses atrás), `producao-mar` (um arquivo por ano até o
+  corrente), `sondas-operacao`, `intervencoes-pocos` (novo biênio a cada dois
+  anos) e `situacao-pocos`, cujo arquivo traz o ano no nome
+  (`situacao-pocos-1939-AAAA.csv`; os dois anos anteriores ficam como alternativa).
+- `tancagem`: acrescenta 2026-09 (`maio-a-setembro.csv`, que a ANP publicou num
+  arquivo só para maio a setembro).
 
 ## [2.4.1] - 2026-11-05
 

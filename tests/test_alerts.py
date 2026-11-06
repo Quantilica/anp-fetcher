@@ -1,5 +1,6 @@
 """Aviso de grupo inteiro em HTTP 404 (alerts + plugin)."""
 
+import datetime as dt
 import json
 from types import SimpleNamespace
 
@@ -10,8 +11,10 @@ from typer.testing import CliRunner
 from anp_fetcher import alerts, plugin
 
 
-def _item(group, action, reason):
-    return SimpleNamespace(dataset=group, action=action, reason=reason)
+def _item(group, action, reason, year=None):
+    return SimpleNamespace(
+        dataset=group, action=action, reason=reason, entry={"year": year}
+    )
 
 
 def test_dead_groups_from_plan_so_grupo_inteiro_em_404():
@@ -23,6 +26,22 @@ def test_dead_groups_from_plan_so_grupo_inteiro_em_404():
         _item("ie", "skip-up-to-date", "fresh"),
     ]
     assert alerts.dead_groups_from_plan(items) == ["pmqc"]
+
+
+def test_grupo_so_do_ano_corrente_nao_alerta():
+    today = dt.date(2027, 1, 10)
+    novos = [_item("g", "skip-unavailable", "remote-404", 2027)]
+    assert alerts.dead_groups_from_plan(novos, today) == []
+    com_historico = novos + [_item("g", "skip-unavailable", "remote-404", 2026)]
+    assert alerts.dead_groups_from_plan(com_historico, today) == ["g"]
+    estatico = [_item("h", "skip-unavailable", "remote-404", None)]
+    assert alerts.dead_groups_from_plan(estatico, today) == ["h"]
+
+
+def test_dead_groups_from_errors_ignora_inicio_de_ano():
+    entries = [{"id": "x1", "group": "g", "year": 2027, "month": 1}]
+    errors = [("x1", "HTTP 404 while fetching u")]
+    assert alerts.dead_groups_from_errors(entries, errors, dt.date(2027, 1, 5)) == []
 
 
 def test_dead_groups_from_errors():

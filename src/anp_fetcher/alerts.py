@@ -13,6 +13,7 @@ no modo de plano um ``check`` com código diferente de zero faz o cron cair num
 
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import os
 import re
@@ -38,30 +39,66 @@ def exit_code() -> int:
         return DEAD_GROUP_EXIT_CODE
 
 
-def dead_groups_from_plan(items: Iterable[Any]) -> list[str]:
-    """Grupos cujas entradas do plano são todas ``skip-unavailable``/``remote-404``."""
+def _settled(year: Any, today: dt.date) -> bool:
+    """Se a entrada não é do ano corrente (estática ou de ano já encerrado).
+
+    Um grupo que só tem entradas do ano corrente e todas em 404 é, em geral, o
+    início do ano (o primeiro mês ainda não saiu) e não mudança de endereço.
+    """
+    return not isinstance(year, int) or year < today.year
+
+
+def _dead(pairs: Iterable[tuple[str, Any, bool]], today: dt.date) -> list[str]:
     total: dict[str, int] = defaultdict(int)
     dead: dict[str, int] = defaultdict(int)
-    for item in items:
-        total[item.dataset] += 1
-        if item.action == "skip-unavailable" and item.reason == "remote-404":
-            dead[item.dataset] += 1
-    return sorted(g for g, n in total.items() if g and dead[g] == n)
+    settled_dead: set[str] = set()
+    for group, year, is_404 in pairs:
+        total[group] += 1
+        if is_404:
+            dead[group] += 1
+            if _settled(year, today):
+                settled_dead.add(group)
+    return sorted(
+        g for g, n in total.items() if g and dead[g] == n and g in settled_dead
+    )
+
+
+def dead_groups_from_plan(
+    items: Iterable[Any], today: dt.date | None = None
+) -> list[str]:
+    """Grupos cujas entradas do plano são todas ``skip-unavailable``/``remote-404``.
+
+    Só conta se o grupo tem ao menos uma entrada estática ou de ano encerrado.
+    """
+    today = today or dt.date.today()
+    return _dead(
+        (
+            (
+                item.dataset,
+                (item.entry or {}).get("year"),
+                item.action == "skip-unavailable" and item.reason == "remote-404",
+            )
+            for item in items
+        ),
+        today,
+    )
 
 
 def dead_groups_from_errors(
-    entries: Iterable[dict[str, Any]], errors: Iterable[tuple[str, str]]
+    entries: Iterable[dict[str, Any]],
+    errors: Iterable[tuple[str, str]],
+    today: dt.date | None = None,
 ) -> list[str]:
     """Grupos em que todas as entradas tentadas falharam com HTTP 404."""
-    group_of = {str(e.get("id")): str(e.get("group")) for e in entries}
-    total: dict[str, int] = defaultdict(int)
-    for group in group_of.values():
-        total[group] += 1
-    dead: dict[str, int] = defaultdict(int)
-    for eid, message in errors:
-        if _HTTP_404.search(message) and eid in group_of:
-            dead[group_of[eid]] += 1
-    return sorted(g for g, n in total.items() if g and dead[g] == n)
+    today = today or dt.date.today()
+    failed = {eid for eid, message in errors if _HTTP_404.search(message)}
+    return _dead(
+        (
+            (str(e.get("group")), e.get("year"), str(e.get("id")) in failed)
+            for e in entries
+        ),
+        today,
+    )
 
 
 def report(groups: Iterable[str]) -> list[str]:
