@@ -10,7 +10,9 @@ Data contracts are validated and cast when available.
 from __future__ import annotations
 
 import re
+import shutil
 import tempfile
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -197,6 +199,26 @@ class Routed:
     dataset_id: str
     partition_keys: list[str]
     partition_values: dict[str, str]
+    #: membro do ZIP que este item converte (ZIP anual do PMQC); ``None`` = arquivo todo
+    member: str | None = None
+
+
+_PMQC_MEMBER = re.compile(r"(?P<ano>\d{4})_(?P<mes>\d{2})\.csv$", re.IGNORECASE)
+
+
+def _pmqc_zip_members(path: Path) -> list[tuple[str, dict[str, str]]]:
+    """CSV mensais de um ZIP anual do PMQC: ``(membro, {"ano":…, "mes":…})``."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = sorted(archive.namelist())
+    except (OSError, zipfile.BadZipFile):
+        return []
+    members = []
+    for name in names:
+        m = _PMQC_MEMBER.search(name)
+        if m:
+            members.append((name, {"ano": m["ano"], "mes": m["mes"]}))
+    return members
 
 
 def route_group(
@@ -216,22 +238,57 @@ def route_group(
     best = _best_by_base(files)
 
     chosen = sorted(path for _, _, path in best.values())
-    resolved = [(f, *resolve_partitions(parse_filename(f))) for f in chosen]
-    finest = max((len(keys) for _, keys, _ in resolved), default=0)
+    resolved: list[tuple[Path, list[str], dict[str, str], str | None]] = [
+        (f, *resolve_partitions(parse_filename(f)), None) for f in chosen
+    ]
+    expanded_away: set[Path] = set()
+    if group == "pmqc":
+        # ZIP anual (um CSV por mês): vira os meses do mesmo dataset dos mensais.
+        # Mês que já existe como arquivo mensal avulso fica com o avulso, para não
+        # duplicar linhas na partição.
+        monthly = {
+            (vals["ano"], vals["mes"])
+            for _, keys, vals, _ in resolved
+            if keys == ["ano", "mes"]
+        }
+        expanded: list[tuple[Path, list[str], dict[str, str], str | None]] = []
+        for path, keys, vals, member in resolved:
+            members = (
+                _pmqc_zip_members(path)
+                if keys == ["ano"] and path.suffix.lower() == ".zip"
+                else []
+            )
+            if not members:
+                expanded.append((path, keys, vals, member))
+                continue
+            kept = [
+                (path, ["ano", "mes"], mvals, name)
+                for name, mvals in members
+                if (mvals["ano"], mvals["mes"]) not in monthly
+            ]
+            if not kept:
+                expanded_away.add(path)
+            expanded.extend(kept)
+        resolved = expanded
+    finest = max((len(keys) for _, keys, _, _ in resolved), default=0)
     routed = [
         Routed(
             path=path,
             dataset_id=dataset_for_granularity(group, keys, finest, path=path),
             partition_keys=keys,
             partition_values=vals,
+            member=member,
         )
-        for path, keys, vals in resolved
+        for path, keys, vals, member in resolved
     ]
 
     routed_paths = {item.path for item in routed}
     ignored: list[tuple[Path, str]] = []
     for path in files:
         if path in routed_paths:
+            continue
+        if path in expanded_away:
+            ignored.append((path, "gemeo"))
             continue
         if not is_tabular(path):
             ignored.append((path, "nao_tabular"))
@@ -355,7 +412,24 @@ class LakeConverter:
                 # Decompress if compressed
                 source_path = raw_file
                 tmp_dir: tempfile.TemporaryDirectory[str] | None = None
-                if raw_file.suffix.lower() in (".zip", ".7z"):
+                if item.member is not None:
+                    # membro de um ZIP anual: extrai só ele, com nome neutro
+                    tmp_dir = tempfile.TemporaryDirectory()
+                    source_path = Path(tmp_dir.name) / "membro.csv"
+                    try:
+                        with (
+                            zipfile.ZipFile(raw_file) as archive,
+                            archive.open(item.member) as src,
+                            open(source_path, "wb") as dst,
+                        ):
+                            shutil.copyfileobj(src, dst)
+                    except (OSError, KeyError, zipfile.BadZipFile) as exc:
+                        tmp_dir.cleanup()
+                        result.errors.append(
+                            f"{raw_file.name}: erro ao extrair {item.member}: {exc}"
+                        )
+                        continue
+                elif raw_file.suffix.lower() in (".zip", ".7z"):
                     try:
                         inner = decompress(raw_file)
                         source_path = inner
@@ -388,7 +462,11 @@ class LakeConverter:
                         if drop_part_cols:
                             norm = norm.drop(drop_part_cols)
                         file_key_override = None
-                        if sheet is not None:
+                        if item.member is not None:
+                            file_key_override = composite_file_key(
+                                raw_file, Path(item.member).name
+                            )
+                        elif sheet is not None:
                             file_key_override = composite_file_key(raw_file, sheet)
 
                         written = writer.write_polars(
@@ -450,6 +528,8 @@ class LakeConverter:
                 continue
             routed, ignored = route_group(group, src_group_dir)
             for item in routed:
+                if item.path in covered:  # ZIP anual: um item por mês
+                    continue
                 covered.add(item.path)
                 if is_tabular(item.path):
                     planned.append(Planned(item.path, dataset=item.dataset_id))

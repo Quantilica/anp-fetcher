@@ -267,3 +267,75 @@ def test_convert_unknown_dataset_anp(tmp_path: Path) -> None:
     res = converter.convert(tmp_path, tmp_path, datasets=["desconhecido_anp"])
     assert len(res.errors) == 1
     assert "dataset desconhecido: desconhecido_anp" in res.errors[0]
+
+
+def _pmqc_zip(path: Path, year: int, months: list[int]) -> None:
+    import zipfile
+
+    with zipfile.ZipFile(path, "w") as zf:
+        for m in months:
+            zf.writestr(
+                f"{year}/PMQC_{year}_{m:02d}.csv",
+                "DataColeta;Produto;Resultado\n"
+                f"{year}-{m:02d}-01;GASOLINA C COMUM;72.3\n",
+            )
+            zf.writestr(f"{year}/PMQC_{year}_{m:02d}.json", '{"UF": {}}')
+
+
+def test_pmqc_zip_anual_vira_meses_do_dataset_pmqc(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group_dir = raw_dir / _GROUP_DIRS["pmqc"]
+    group_dir.mkdir(parents=True)
+    _pmqc_zip(group_dir / "pmqc-csv_2024@20261105.zip", 2024, [1, 2, 3])
+
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(raw_dir, lake_dir, datasets=["pmqc"])
+    assert not res.errors, res.errors
+    assert res.converted == 3
+
+    assert not (lake_dir / SOURCE_ID / "pmqc-anual").exists()
+    dataset_lake = lake_dir / SOURCE_ID / "pmqc"
+    assert check_dataset(dataset_lake) == []
+    df = scan_dataset(dataset_lake).collect()
+    assert df.height == 3
+    assert sorted(df["mes"].to_list()) == ["01", "02", "03"]
+
+    res2 = converter.convert(raw_dir, lake_dir, datasets=["pmqc"])
+    assert res2.converted == 0 and res2.skipped == 3
+
+
+def test_pmqc_zip_anual_nao_duplica_mes_avulso(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group_dir = raw_dir / _GROUP_DIRS["pmqc"]
+    group_dir.mkdir(parents=True)
+    _pmqc_zip(group_dir / "pmqc-csv_2024@20261105.zip", 2024, [1, 2])
+    # mês 01 já existe como arquivo mensal avulso (coleta anterior à mudança da ANP)
+    (group_dir / "pmqc-csv_2024-01@20240210.csv").write_text(
+        "DataColeta;Produto;Resultado\n2024-01-01;GASOLINA C COMUM;72.3\n",
+        encoding="utf-8",
+    )
+
+    lake_dir = tmp_path / "lake"
+    res = converter.convert(raw_dir, lake_dir, datasets=["pmqc"])
+    assert not res.errors, res.errors
+    assert res.converted == 2  # avulso de janeiro + fevereiro do ZIP
+    df = scan_dataset(lake_dir / SOURCE_ID / "pmqc").collect()
+    assert df.height == 2
+    assert sorted(df["mes"].to_list()) == ["01", "02"]
+
+    planned = converter.inventory(raw_dir)
+    zip_items = [p for p in planned if p.path.suffix == ".zip"]
+    assert len(zip_items) == 1 and zip_items[0].dataset == "pmqc"
+
+
+def test_pmqc_zip_anual_totalmente_coberto_e_ignorado(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group_dir = raw_dir / _GROUP_DIRS["pmqc"]
+    group_dir.mkdir(parents=True)
+    _pmqc_zip(group_dir / "pmqc-csv_2024@20261105.zip", 2024, [1])
+    (group_dir / "pmqc-csv_2024-01@20240210.csv").write_text(
+        "DataColeta;Produto;Resultado\n2024-01-01;X;1\n", encoding="utf-8"
+    )
+    planned = converter.inventory(raw_dir)
+    (z,) = [p for p in planned if p.path.suffix == ".zip"]
+    assert z.dataset is None and z.skip_reason == "gemeo"
