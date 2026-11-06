@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import datetime as dt
+import functools
+import sys
 from pathlib import Path
 from typing import Any
 
 import typer
-from quantilica.cli.sdk import FetcherApp, make_resolve_groups
+from quantilica.cli.sdk import CheckPlan, FetcherApp, make_resolve_groups
 from quantilica.core.sync import FreshnessPolicy
 
+from . import alerts
 from .catalog import GROUP_ALIASES, GROUPS, list_datasets
 from .storage import DataRepository
 
@@ -63,7 +66,64 @@ def path_builder(
 
 _DEFAULT_OUTPUT = Path("/data/anp")
 
-fetcher = FetcherApp(
+
+class AnpFetcherApp(FetcherApp):
+    """``FetcherApp`` que avisa quando um grupo inteiro responde HTTP 404."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._dead_groups: set[str] = set()
+        super().__init__(*args, **kwargs)
+        self._wrap_sync()
+
+    def download_datasets(self, entries, output_dir, workers=4, *, force=False):
+        """Baixa e guarda os grupos em que toda entrada deu HTTP 404."""
+        result = super().download_datasets(
+            entries, output_dir, workers=workers, force=force
+        )
+        self._dead_groups.update(alerts.dead_groups_from_errors(entries, result[2]))
+        return result
+
+    def check_datasets(self, entries, output_dir, workers=4):
+        """Verifica o frescor e avisa dos grupos mortos (exit code inalterado)."""
+        plan = super().check_datasets(entries, output_dir, workers=workers)
+        alerts.report(alerts.dead_groups_from_plan(plan.items))
+        return plan
+
+    def _wrap_sync(self) -> None:
+        """Faz o ``sync`` sair com código != 0 se houver grupo morto."""
+        for command in self.app.registered_commands:
+            if command.name == "sync" and command.callback is not None:
+                command.callback = self._sync_with_alert(command.callback)
+
+    def _sync_with_alert(self, original: Any) -> Any:
+        @functools.wraps(original)
+        def sync(*args: Any, **kwargs: Any) -> None:
+            self._dead_groups.clear()
+            plan_path = kwargs.get("from_plan")
+            if plan_path is not None:
+                try:
+                    plan = CheckPlan.from_json(
+                        Path(plan_path).read_text(encoding="utf-8")
+                    )
+                except (OSError, ValueError):
+                    pass  # o sync original reporta o plano inválido
+                else:
+                    self._dead_groups.update(alerts.dead_groups_from_plan(plan.items))
+            original(*args, **kwargs)
+            dead = alerts.report(self._dead_groups)
+            code = alerts.exit_code()
+            if dead and code:
+                print(
+                    f"[Alerta] grupo(s) inteiro(s) em 404: {', '.join(dead)} "
+                    f"(exit {code})",
+                    file=sys.stderr,
+                )
+                raise typer.Exit(code)
+
+        return sync
+
+
+fetcher = AnpFetcherApp(
     default_output=_DEFAULT_OUTPUT,
     name="anp-fetcher",
     help="Dados da ANP (Agência Nacional do Petróleo).",
