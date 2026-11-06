@@ -1,5 +1,7 @@
 """Tests for anp_fetcher.catalog."""
 
+import datetime as dt
+
 import pytest
 
 from anp_fetcher.catalog import (
@@ -9,6 +11,9 @@ from anp_fetcher.catalog import (
     list_datasets,
     resolve_group,
 )
+from anp_fetcher.catalog_dados_abertos import _pmqc_entries_list
+from anp_fetcher.catalog_fase_producao import _terra_entries
+from anp_fetcher.catalog_reservas import _reservas_entries_list
 
 _DE_GROUPS = {"ie", "pp", "pb", "ppg", "vdpb", "reservas-nacionais"}
 _DA_GROUPS = {
@@ -609,15 +614,37 @@ def test_tancagem_catalog():
 
 
 def test_pmqc_catalog():
-    entries = GROUPS["pmqc"]["entries"]
-    assert len(entries) == 244  # 124 months * 2 (csv + json)
-    csv_entries = [e for e in entries if e["base_id"] == "pmqc-csv"]
-    json_entries = [e for e in entries if e["base_id"] == "pmqc-json"]
-    assert len(csv_entries) == 122
-    assert len(json_entries) == 122
-    # check custom extensions
-    assert any(e["ext"] == "zip" for e in json_entries)
-    assert any(e["ext"] == "csv" for e in json_entries)
+    """ZIP anual até 2025 e mensal em 2026; ids e base_id do lake preservados."""
+    entries = _pmqc_entries_list(dt.date(2026, 11, 5))
+    assert all(e["base_id"] == "pmqc-csv" and e["ext"] == "zip" for e in entries)
+    annual = [e for e in entries if e["month"] is None]
+    monthly = [e for e in entries if e["month"] is not None]
+    assert [e["year"] for e in annual] == list(range(2016, 2026))
+    assert annual[0]["id"] == "pmqc-csv-2016"
+    assert annual[0]["url"].endswith("/arquivos/pmqc/pmqc_2016.zip")
+    # novembro: publicado até outubro (defasagem de 1 mês; outubro dá 404 e é pulado)
+    assert [e["month"] for e in monthly] == list(range(1, 11))
+    assert monthly[0]["id"] == "pmqc-csv-2026-01"
+    assert monthly[8]["url"].endswith("/arquivos/pmqc/pmqc_2026_09.zip")
+    assert len({e["id"] for e in entries}) == len(entries)
+    # o catálogo importado usa o mesmo construtor
+    assert {e["id"] for e in GROUPS["pmqc"]["entries"]} >= {e["id"] for e in annual}
+
+
+def test_pmqc_catalog_acompanha_a_data():
+    def months(today):
+        return [
+            e["month"]
+            for e in _pmqc_entries_list(today)
+            if e["year"] == today.year and e["month"] is not None
+        ]
+
+    assert months(dt.date(2026, 1, 20)) == []
+    assert months(dt.date(2026, 2, 1)) == [1]
+    # virada de ano: 2026 completo e 2027 ainda vazio
+    jan27 = _pmqc_entries_list(dt.date(2027, 1, 10))
+    assert [e["month"] for e in jan27 if e["year"] == 2026] == list(range(1, 13))
+    assert not [e for e in jan27 if e["year"] == 2027]
 
 
 def test_movimentacao_derivados_catalog():
@@ -808,13 +835,32 @@ def test_producao_mar_catalog():
 
 
 def test_producao_terra_catalog():
-    entries = GROUPS["producao-terra"]["entries"]
-    assert len(entries) == 82
+    entries = _terra_entries(dt.date(2026, 11, 5))
+    assert len(entries) == 83
     assert all(e["ext"] == "csv" for e in entries)
     # tem entradas semestrais com semester preenchido
     assert any(e["semester"] is not None for e in entries)
     # faixas históricas com year=None
     assert any(e["year"] is None for e in entries)
+
+
+def test_producao_terra_trimestres_acompanham_a_data():
+    def quarters(today, year):
+        return sorted(
+            int(e["url"].rsplit("_", 2)[1])
+            for e in _terra_entries(today)
+            if e["year"] == year and "producao_por_poco_terra_" in e["url"]
+        )
+
+    assert quarters(dt.date(2026, 3, 31), 2026) == []
+    assert quarters(dt.date(2026, 4, 1), 2026) == [1]
+    assert quarters(dt.date(2026, 11, 5), 2026) == [1, 2, 3]
+    assert quarters(dt.date(2027, 1, 5), 2026) == [1, 2, 3, 4]
+    assert quarters(dt.date(2027, 1, 5), 2027) == []
+    url = next(
+        e["url"] for e in _terra_entries(dt.date(2027, 5, 1)) if e["year"] == 2027
+    )
+    assert url.endswith("producao_por_poco_terra_2027_1_trim.csv")
 
 
 def test_producao_terra_2020_removed_dead_urls():
@@ -888,7 +934,7 @@ def test_fase_producao_aliases():
 
 
 def test_reservas_nacionais_catalog():
-    entries = GROUPS["reservas-nacionais"]["entries"]
+    entries = _reservas_entries_list(dt.date(2026, 11, 5))
     assert len(entries) == 6
     assert all(e["ext"] == "xlsx" for e in entries)
     years = {e["year"] for e in entries}
@@ -899,6 +945,16 @@ def test_reservas_nacionais_catalog():
     # demais: tabela-dados-bar-{year}.xlsx
     e2024 = next(e for e in entries if e["year"] == 2024)
     assert e2024["url"].endswith("tabela-dados-bar-2024.xlsx")
+
+
+def test_reservas_anos_acompanham_a_data():
+    def years(today):
+        return {e["year"] for e in _reservas_entries_list(today)}
+
+    assert max(years(dt.date(2026, 12, 31))) == 2025
+    assert max(years(dt.date(2027, 1, 2))) == 2026
+    assert max(years(dt.date(2028, 6, 1))) == 2027
+    assert len(GROUPS["reservas-nacionais"]["entries"]) >= 6
 
 
 def test_reservas_aliases():

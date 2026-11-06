@@ -2,8 +2,10 @@
 
 Tabelas de dados BAR (Boletim Anual de Reservas) em XLSX, publicadas em
 ``gov.br/anp/.../dados-estatisticos/arquivos-reservas-nacionais...``.
-Apenas 2020–2025 têm tabela tabular (XLSX); anos anteriores são PDF-only.
+Apenas 2020 em diante têm tabela tabular (XLSX); anos anteriores são PDF-only.
 """
+
+import datetime as dt
 
 from ._catalog_base import DatasetEntry, GroupInfo
 
@@ -29,11 +31,22 @@ def _reserva_entry(year: int, filename: str) -> DatasetEntry:
     )
 
 
-_reservas_entries: list[DatasetEntry] = [
-    _reserva_entry(year, f"tabela-dados-bar-{year}.xlsx")
-    for year in (2021, 2022, 2023, 2024, 2025)
-]
-_reservas_entries.append(_reserva_entry(2020, "tabela-de-dados-bar-2020.xlsx"))
+def _reservas_entries_list(today: dt.date | None = None) -> list[DatasetEntry]:
+    """Boletim de cada ano de 2021 até o ano anterior ao corrente.
+
+    O BAR de um ano sai no ano seguinte; o ainda não publicado dá 404, tratado
+    como pulado no sync.
+    """
+    today = today or dt.date.today()
+    entries = [
+        _reserva_entry(year, f"tabela-dados-bar-{year}.xlsx")
+        for year in range(2021, max(2021, today.year - 1) + 1)
+    ]
+    entries.append(_reserva_entry(2020, "tabela-de-dados-bar-2020.xlsx"))
+    return entries
+
+
+_reservas_entries: list[DatasetEntry] = _reservas_entries_list()
 
 GROUPS_RESERVAS: dict[str, GroupInfo] = {
     "reservas-nacionais": {

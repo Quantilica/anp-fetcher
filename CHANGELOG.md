@@ -7,6 +7,30 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- `sync` avisa e sai com código 3 quando todas as entradas de um grupo respondem
+  HTTP 404 (a ANP provavelmente mudou o endereço e o grupo parou de ser coletado
+  sem ninguém notar). Vale para o sync completo e para `sync --from-plan`. O
+  `check` registra o aviso mas mantém o código 0, para não derrubar o modo de
+  plano. `ANP_DEAD_GROUP_EXIT=0` deixa só o aviso, sem o código.
+- `reader.read_file` lê ZIP com vários CSV (um por mês), empilhando-os em ordem
+  de nome; os JSON gêmeos do ZIP são ignorados.
+
+### Corrigido
+
+- `pmqc`: a ANP mudou o endereço e todos os arquivos antigos davam 404. O catálogo
+  passa a usar os ZIP atuais: um por ano de 2016 a 2025 (`pmqc_AAAA.zip`, com os
+  CSV e JSON de cada mês) e um por mês em 2026 (`pmqc_2026_MM.zip`). Os ids
+  (`pmqc-csv-AAAA-MM`) e o prefixo `pmqc-csv` dos arquivos do mês seguem os mesmos;
+  os ZIP anuais entram como `pmqc-csv-AAAA`. O JSON deixa de ser baixado à parte
+  (vem dentro do ZIP). O ZIP anual cobre meses que o lake já tem a partir dos
+  arquivos antigos: ele é convertido como dataset anual, sem substituir os mensais.
+- Listas fixas no catálogo agora acompanham a data: `pmqc` (meses do ano
+  corrente, com defasagem de um mês), `producao-terra` (trimestres encerrados do
+  ano corrente) e `reservas-nacionais` (um boletim por ano até o anterior ao
+  corrente). O que a ANP ainda não publicou continua sendo 404 pulado.
+
 ## [2.4.1] - 2026-11-05
 
 ### Corrigido

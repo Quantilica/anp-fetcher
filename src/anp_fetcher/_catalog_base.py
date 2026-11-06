@@ -1,5 +1,6 @@
 """Shared types and helper constructors for ANP dataset catalogs."""
 
+import datetime as dt
 from typing import NotRequired, TypedDict
 
 
@@ -79,3 +80,25 @@ def _annual(
             )
         )
     return entries
+
+
+def _last_published_month(today: dt.date, year: int, *, lag_months: int) -> int:
+    """Último mês (1-12) de ``year`` que já deveria estar publicado em ``today``.
+
+    Devolve 12 para anos anteriores ao corrente e 0 para anos posteriores. No ano
+    corrente, é o mês de ``today`` menos ``lag_months`` (mínimo 0).
+    """
+    if year < today.year:
+        return 12
+    if year > today.year:
+        return 0
+    return max(0, today.month - lag_months)
+
+
+def _quarters_ended(today: dt.date, year: int) -> int:
+    """Trimestres (0-4) de ``year`` que já terminaram em ``today``."""
+    if year < today.year:
+        return 4
+    if year > today.year:
+        return 0
+    return (today.month - 1) // 3

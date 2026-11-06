@@ -9,7 +9,15 @@ A nomenclatura muda por era (ex.: produção em terra) — o catálogo usa
 listas literais verificadas no HTML do portal.
 """
 
-from ._catalog_base import DatasetEntry, GroupInfo, _annual, _static
+import datetime as dt
+
+from ._catalog_base import (
+    DatasetEntry,
+    GroupInfo,
+    _annual,
+    _quarters_ended,
+    _static,
+)
 
 _SOURCE = "dados-abertos"
 _BASE = (
@@ -95,21 +103,19 @@ def _terra_entry(year: int, quarter: int | None, filename: str) -> DatasetEntry:
     )
 
 
-def _terra_entries() -> list[DatasetEntry]:
+def _terra_entries(today: dt.date | None = None) -> list[DatasetEntry]:
     entries: list[DatasetEntry] = []
-    # 2025/2026: producao_por_poco_terra_{YYYY}_{N}_trim.csv (2026: 1º-2º trim.)
-    for quarter in range(1, 5):
-        entries.append(
-            _terra_entry(
-                2025, quarter, f"producao_por_poco_terra_2025_{quarter}_trim.csv"
+    # 2025 em diante: producao_por_poco_terra_{YYYY}_{N}_trim.csv. O ano
+    # corrente vai até o último trimestre encerrado; o que a ANP ainda não
+    # publicou dá 404, tratado como pulado no sync.
+    today = today or dt.date.today()
+    for year in range(2025, max(2025, today.year) + 1):
+        for quarter in range(1, _quarters_ended(today, year) + 1):
+            entries.append(
+                _terra_entry(
+                    year, quarter, f"producao_por_poco_terra_{year}_{quarter}_trim.csv"
+                )
             )
-        )
-    for quarter in (1, 2):
-        entries.append(
-            _terra_entry(
-                2026, quarter, f"producao_por_poco_terra_2026_{quarter}_trim.csv"
-            )
-        )
     # 2024: Q4 producao_por_poco_terra_trim_4.csv; Q1–Q3
     # producao-por-poco-terra-trim-{N}.csv
     entries.append(_terra_entry(2024, 4, "producao_por_poco_terra_trim_4.csv"))

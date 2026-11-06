@@ -3,9 +3,10 @@
 Covers all datasets published under "dados abertos" at the ANP website.
 """
 
+import datetime as dt
 from collections.abc import Callable
 
-from ._catalog_base import DatasetEntry, GroupInfo, _static
+from ._catalog_base import DatasetEntry, GroupInfo, _last_published_month, _static
 
 _SOURCE = "dados-abertos"
 _BASE = "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos"
@@ -1406,131 +1407,55 @@ _tancagem_entries = _tancagem_entries_list()
 
 _PMQC_BASE = f"{_BASE}/pmqc"
 
+# Desde nov/2026 a ANP publica o PMQC em ZIP: um por ano (2016-2025, com os CSV e
+# JSON de cada mês dentro) e um por mês em 2026 (um CSV e um JSON). Antes eram
+# arquivos mensais soltos, hoje todos em 404. O ZIP mensal mantém o ``base_id``
+# ``pmqc-csv`` (e o caminho ``pmqc-csv_AAAA-MM``) para o lake seguir o mesmo layout.
+_PMQC_FIRST_YEAR = 2016
+_PMQC_LAST_ZIP_YEAR = 2025  # a partir de 2026 o arquivo é mensal
+_PMQC_PUBLICATION_LAG_MONTHS = 1  # o mês corrente ainda não foi publicado
 
-def _pmqc_entries_list() -> list[DatasetEntry]:
-    entries = []
-    for y in range(2016, 2027):
-        max_m = 4 if y == 2026 else 12
-        for m in range(1, max_m + 1):
-            csv_ext = "csv"
-            fallback_csv = None
-            if y == 2026:
-                csv_url = f"{_PMQC_BASE}/2026/pmqc_2026_{m:02d}.csv"
-                fallback_csv = f"{_PMQC_BASE}/2026/pmqc-{m:02d}.csv"
-            elif y == 2025:
-                if m in (1, 2, 3):
-                    csv_url = f"{_PMQC_BASE}/2025/pmqc-{m:02d}.csv"
-                elif m in (4, 5, 6):
-                    csv_url = f"{_PMQC_BASE}/2025/pmqc_2025_{m:02d}.csv"
-                else:
-                    csv_url = f"{_PMQC_BASE}/2025/pmqc-2025-m:02d.csv".replace(
-                        "m:02d", f"{m:02d}"
-                    )
-            elif y == 2024:
-                if m in (11, 12):
-                    continue  # Not published yet
-                csv_url = f"{_PMQC_BASE}/{y}/pmqc-{m:02d}.csv"
-                fallback_csv = f"{_PMQC_BASE}/{y}/pmqc_{y}_{m:02d}.csv"
-            elif y == 2023:
-                csv_url = f"{_PMQC_BASE}/{y}/pmqc-{m:02d}.csv"
-            elif y == 2022:
-                if m <= 6:
-                    csv_url = f"{_PMQC_BASE}/2022/2022-{m:02d}-pmqc.csv"
-                else:
-                    csv_url = f"{_PMQC_BASE}/2022/pmqc_2022_{m:02d}.csv"
-            elif y == 2021:
-                if m in (4, 5):
-                    csv_url = f"{_PMQC_BASE}/2021/2021-{m:02d}-pmqc-csv.csv"
-                else:
-                    csv_url = f"{_PMQC_BASE}/2021/2021-{m:02d}-pmqc.csv"
-            elif y in (2020, 2019):
-                csv_url = f"{_PMQC_BASE}/{y}/{y}-{m:02d}-pmqc.csv"
-                fallback_csv = f"{_PMQC_BASE}/{y}/pmqc_{y}_{m:02d}.csv"
-            elif y == 2018:
-                csv_url = f"{_PMQC_BASE}/2018/pmqc_2018_{m:02d}.csv"
-                fallback_csv = f"{_PMQC_BASE}/2018/pmqc-{m:02d}.csv"
-            elif y == 2017:
-                if m == 8:
-                    csv_url = f"{_PMQC_BASE}/2017/pmqc_2017_08-1.csv"
-                else:
-                    csv_url = f"{_PMQC_BASE}/2017/pmqc_2017_{m:02d}.csv"
-            else:  # 2016
-                csv_url = f"{_PMQC_BASE}/2016/pmqc_2016_{m:02d}.csv"
 
-            e_csv = _mon_entry(
-                "pmqc",
-                "pmqc-csv",
-                "Qualidade combustíveis PMQC (CSV)",
-                y,
-                m,
-                csv_url,
-                csv_ext,
+def _pmqc_entries_list(today: dt.date | None = None) -> list[DatasetEntry]:
+    """Entradas do PMQC: ZIP anual até 2025 e ZIP mensal do ano corrente.
+
+    O ano corrente vai até ``hoje - defasagem`` meses; um mês ainda não publicado
+    dá 404, que o sync trata como pulado.
+    """
+    today = today or dt.date.today()
+    entries: list[DatasetEntry] = []
+    for year in range(_PMQC_FIRST_YEAR, _PMQC_LAST_ZIP_YEAR + 1):
+        entries.append(
+            DatasetEntry(
+                id=f"pmqc-csv-{year}",
+                base_id="pmqc-csv",
+                name=f"Qualidade combustíveis PMQC (CSV e JSON, ano) — {year}",
+                url=f"{_PMQC_BASE}/pmqc_{year}.zip",
+                ext="zip",
+                group="pmqc",
+                source=_SOURCE,
+                year=year,
+                semester=None,
+                month=None,
             )
-            if fallback_csv:
-                e_csv["fallback_urls"] = [fallback_csv]
-            entries.append(e_csv)
-
-            json_ext = "json"
-            fallback_json = None
-            if y == 2026:
-                json_url = f"{_PMQC_BASE}/2026/pmqc_2026_{m:02d}.json"
-                fallback_json = f"{_PMQC_BASE}/2026/pmqc-{m:02d}.json"
-            elif y == 2025:
-                if m <= 6:
-                    json_url = f"{_PMQC_BASE}/2025/pmqc_2025_{m:02d}.json"
-                else:
-                    json_url = f"{_PMQC_BASE}/2025/pmqc-2025-{m:02d}.json"
-            elif y == 2024:
-                if m in (11, 12):
-                    continue  # Not published yet
-                if m == 1:
-                    json_url = f"{_PMQC_BASE}/2024/pmqc_2024_01.json"
-                elif m == 2:
-                    json_url = f"{_PMQC_BASE}/2024/pmqc-02_json.zip"
-                    json_ext = "zip"
-                else:
-                    json_url = f"{_PMQC_BASE}/2024/pmqc-{m:02d}.json"
-                    fallback_json = f"{_PMQC_BASE}/2024/pmqc_{y}_{m:02d}.json"
-            elif y == 2023:
-                if m >= 10:
-                    json_url = f"{_PMQC_BASE}/2023/pmqc_2023_{m:02d}.json"
-                else:
-                    json_url = f"{_PMQC_BASE}/2023/pmqc-{m:02d}.json"
-            elif y == 2022:
-                if m <= 6:
-                    json_url = f"{_PMQC_BASE}/2022/2022-{m:02d}-pmqc.json"
-                else:
-                    json_url = f"{_PMQC_BASE}/2022/pmqc_2022_{m:02d}.json"
-            elif y == 2021:
-                if m == 6:
-                    json_url = f"{_PMQC_BASE}/2021/202106pmqc.csv"
-                    json_ext = "csv"
-                else:
-                    json_url = f"{_PMQC_BASE}/2021/2021-{m:02d}-pmqc.json"
-            elif y in (2020, 2019):
-                json_url = f"{_PMQC_BASE}/{y}/{y}-{m:02d}-pmqc.json"
-            elif y == 2018:
-                json_url = f"{_PMQC_BASE}/2018/{y}-{m:02d}-pmqc.json"
-            elif y == 2017:
-                json_url = f"{_PMQC_BASE}/2017/pmqc_2017_{m:02d}.json"
-            else:  # 2016
-                if m == 12:
-                    json_url = f"{_PMQC_BASE}/2016/pmqc_2016_12-1.json"
-                else:
-                    json_url = f"{_PMQC_BASE}/2016/pmqc_2016_{m:02d}.json"
-
-            e_json = _mon_entry(
-                "pmqc",
-                "pmqc-json",
-                "Qualidade combustíveis PMQC (JSON)",
-                y,
-                m,
-                json_url,
-                json_ext,
+        )
+    last_month = _last_published_month(
+        today, today.year, lag_months=_PMQC_PUBLICATION_LAG_MONTHS
+    )
+    for year in range(_PMQC_LAST_ZIP_YEAR + 1, today.year + 1):
+        max_month = last_month if year == today.year else 12
+        for month in range(1, max_month + 1):
+            entries.append(
+                _mon_entry(
+                    "pmqc",
+                    "pmqc-csv",
+                    "Qualidade combustíveis PMQC (CSV e JSON)",
+                    year,
+                    month,
+                    f"{_PMQC_BASE}/pmqc_{year}_{month:02d}.zip",
+                    "zip",
+                )
             )
-            if fallback_json:
-                e_json["fallback_urls"] = [fallback_json]
-            entries.append(e_json)
     return entries
 
 
