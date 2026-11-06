@@ -231,3 +231,16 @@ def test_read_file_zip(tmp_path, name):
     df = read_file(path, {"separator": ";", "encoding": "utf-8"})
     assert df.shape == (1, 2)
     assert df["valor"][0] == "5,49"
+
+
+def test_read_file_zip_anual_com_varios_csv(tmp_path):
+    """ZIP anual do PMQC: um CSV (e um JSON gêmeo) por mês; só os CSV entram."""
+    zpath = tmp_path / "pmqc-csv_2024@20261105.zip"
+    with zipfile.ZipFile(zpath, "w") as zf:
+        zf.writestr("2024/PMQC_2024_02.csv", "DataColeta;Produto\n2024-02-01;B\n")
+        zf.writestr("2024/PMQC_2024_02.json", '{"UF": {}}')
+        zf.writestr("2024/PMQC_2024_01.csv", "DataColeta;Produto\n2024-01-01;A\n")
+        zf.writestr("2024/PMQC_2024_01.json", '{"UF": {}}')
+    df = read_file(zpath, {"separator": ";", "infer_schema_length": 0})
+    assert df.columns == ["DataColeta", "Produto"]
+    assert df["Produto"].to_list() == ["A", "B"]  # em ordem de nome

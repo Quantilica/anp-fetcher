@@ -291,9 +291,12 @@ def read_file(
         # A extensão nem sempre diz o conteúdo: movterm.csv é um xlsx, e
         # shpc-ca_2014-01.csv é um ZIP com o CSV dentro.
         with zipfile.ZipFile(path) as archive:
-            is_xlsx = "[Content_Types].xml" in archive.namelist()
-        if is_xlsx:
+            names = archive.namelist()
+        if "[Content_Types].xml" in names:
             return read_excel(path, spec)
+        csv_members = sorted(n for n in names if n.lower().endswith(".csv"))
+        if len(csv_members) > 1:
+            return _read_zip_csvs(path, csv_members, spec)
         return read_file(decompress(path), spec)
     separator = spec.get("separator", ";").encode()
     if (
@@ -310,6 +313,24 @@ def read_file(
     if suffix == ".json":
         return read_json(path)
     raise ValueError(f"Formato não suportado: {suffix}")
+
+
+def _read_zip_csvs(
+    path: Path, members: list[str], spec: dict[str, Any]
+) -> pl.DataFrame:
+    """Lê e empilha os CSV de um ZIP (ex.: ZIP anual do PMQC, um CSV por mês).
+
+    Os membros entram em ordem de nome; os JSON gêmeos do ZIP são ignorados.
+    """
+    frames = []
+    with zipfile.ZipFile(path) as archive, tempfile.TemporaryDirectory() as tmp:
+        for i, member in enumerate(members):
+            # nome neutro: evita path traversal e colisão entre pastas do ZIP
+            target = Path(tmp) / f"{i:04d}.csv"
+            with archive.open(member) as src, open(target, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            frames.append(read_csv(target, spec))
+    return pl.concat(frames, how="vertical_relaxed")
 
 
 def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
