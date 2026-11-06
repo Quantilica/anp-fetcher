@@ -15,6 +15,7 @@ from ._catalog_base import (
     DatasetEntry,
     GroupInfo,
     _annual,
+    _last_published_month,
     _quarters_ended,
     _static,
 )
@@ -41,23 +42,36 @@ def _csv(
 # ---------------------------------------------------------------------------
 _PM = f"{_PROD}/pm"
 
-_producao_mar_entries: list[DatasetEntry] = [
-    _csv(
-        "producao-mar",
-        f"producao-mar-{year}",
-        f"Produção em Mar — {year}",
-        f"{_PM}/producao-mar-{year}.csv",
+
+def _producao_mar_anuais(today: dt.date | None = None) -> list[DatasetEntry]:
+    """Um arquivo por ano de 2019 até o corrente (2024 tem nome próprio).
+
+    O ano corrente aparece desde janeiro; antes de a ANP publicá-lo dá 404,
+    tratado como pulado no sync.
+    """
+    today = today or dt.date.today()
+    entries = [
+        _csv(
+            "producao-mar",
+            f"producao-mar-{year}",
+            f"Produção em Mar — {year}",
+            f"{_PM}/producao-mar-{year}.csv",
+        )
+        for year in range(2019, max(2025, today.year) + 1)
+        if year != 2024
+    ]
+    entries.append(
+        _csv(
+            "producao-mar",
+            "producao-mar-2024",
+            "Produção em Mar — 2024",
+            f"{_PM}/producao_por_poco_2024.csv",
+        )
     )
-    for year in (2019, 2020, 2021, 2022, 2023, 2025, 2026)
-]
-_producao_mar_entries.append(
-    _csv(
-        "producao-mar",
-        "producao-mar-2024",
-        "Produção em Mar — 2024",
-        f"{_PM}/producao_por_poco_2024.csv",
-    )
-)
+    return entries
+
+
+_producao_mar_entries: list[DatasetEntry] = _producao_mar_anuais()
 for y1, y2 in (
     (2016, 2018),
     (2013, 2015),
@@ -224,15 +238,23 @@ _PZ_OVERRIDES: dict[tuple[int, int], str] = {
 }
 
 
-def _producao_zona_entries() -> list[DatasetEntry]:
+_ZONA_PUBLICATION_LAG_MONTHS = 2  # jun/2026 era o último mês em ago/2026
+
+
+def _producao_zona_entries(today: dt.date | None = None) -> list[DatasetEntry]:
+    today = today or dt.date.today()
     entries: list[DatasetEntry] = []
-    for year in range(2014, 2027):
+    for year in range(2014, max(2026, today.year) + 1):
         if year == 2014:
             months = range(10, 13)  # out/2014
-        elif year == 2026:
-            months = range(1, 7)  # até jun/2026 (scraping 2026-08-29)
         else:
-            months = range(1, 13)
+            months = range(
+                1,
+                _last_published_month(
+                    today, year, lag_months=_ZONA_PUBLICATION_LAG_MONTHS
+                )
+                + 1,
+            )
         for month in months:
             filename = _PZ_OVERRIDES.get(
                 (year, month), f"producao_zona_{month:02d}-{year}.csv"
@@ -293,14 +315,28 @@ _campos_entries = [
     ),
 ]
 
-_situacao_pocos_entries = [
-    _csv(
+
+def _situacao_pocos_lista(today: dt.date | None = None) -> list[DatasetEntry]:
+    """Arquivo único cujo nome traz o ano final (``situacao-pocos-1939-AAAA``).
+
+    O ano corrente é o endereço principal; os dois anteriores entram como
+    alternativa até a ANP publicar o do ano novo. O id não muda.
+    """
+    today = today or dt.date.today()
+    entry = _csv(
         "situacao-pocos",
         "situacao-pocos",
-        "Situação de Poços (1939–2026)",
-        f"{_BASE}/informacoes-sobre-pocos/situacao-pocos-1939-2026.csv",
+        f"Situação de Poços (1939–{today.year})",
+        f"{_BASE}/informacoes-sobre-pocos/situacao-pocos-1939-{today.year}.csv",
     )
-]
+    entry["fallback_urls"] = [
+        f"{_BASE}/informacoes-sobre-pocos/situacao-pocos-1939-{year}.csv"
+        for year in (today.year - 1, today.year - 2)
+    ]
+    return [entry]
+
+
+_situacao_pocos_entries = _situacao_pocos_lista()
 
 _sondas_entries = _annual(
     "sondas-operacao",
@@ -308,27 +344,26 @@ _sondas_entries = _annual(
     "sondas-operacao",
     "Sondas em Operação",
     f"{_BASE}/informacoes-sobre-pocos/sondas_em_operacao_por_periodo_{{year}}.csv",
-    list(range(2013, 2026)),
+    list(range(2013, max(2026, dt.date.today().year))),
     "csv",
 )
 
-_intervencoes_entries = [
-    _csv(
-        "intervencoes-pocos",
-        f"intervencoes-pocos-{y1}-{y2}",
-        f"Intervenções em Poços — {y1} a {y2}",
-        f"{_BASE}/informacoes-sobre-pocos/intervencao_em_pocos_{y1}-{y2}.csv",
-    )
-    for y1, y2 in (
-        (2013, 2014),
-        (2015, 2016),
-        (2017, 2018),
-        (2019, 2020),
-        (2021, 2022),
-        (2023, 2024),
-        (2025, 2026),
-    )
-]
+
+def _intervencoes_lista(today: dt.date | None = None) -> list[DatasetEntry]:
+    """Um arquivo por biênio ímpar-par (2013-2014, 2015-2016, ...) até o corrente."""
+    today = today or dt.date.today()
+    return [
+        _csv(
+            "intervencoes-pocos",
+            f"intervencoes-pocos-{y1}-{y1 + 1}",
+            f"Intervenções em Poços — {y1} a {y1 + 1}",
+            f"{_BASE}/informacoes-sobre-pocos/intervencao_em_pocos_{y1}-{y1 + 1}.csv",
+        )
+        for y1 in range(2013, max(2025, today.year) + 1, 2)
+    ]
+
+
+_intervencoes_entries = _intervencoes_lista()
 
 _previsao_entries = [
     _csv(

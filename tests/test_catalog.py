@@ -11,8 +11,14 @@ from anp_fetcher.catalog import (
     list_datasets,
     resolve_group,
 )
-from anp_fetcher.catalog_dados_abertos import _pmqc_entries_list
-from anp_fetcher.catalog_fase_producao import _terra_entries
+from anp_fetcher.catalog_dados_abertos import _monthly_dates, _pmqc_entries_list
+from anp_fetcher.catalog_fase_producao import (
+    _intervencoes_lista,
+    _producao_mar_anuais,
+    _producao_zona_entries,
+    _situacao_pocos_lista,
+    _terra_entries,
+)
 from anp_fetcher.catalog_reservas import _reservas_entries_list
 
 _DE_GROUPS = {"ie", "pp", "pb", "ppg", "vdpb", "reservas-nacionais"}
@@ -273,9 +279,18 @@ def test_shpc_glp_url_exceptions():
 
 
 def test_shpc_monthly_count():
-    # 2023 a 2025 (36 meses) + jan. a set. de 2026 = 45 meses por produto
+    # 2023 a 2025 (36 meses) + jan. a out. de 2026 (defasagem de 1 mês em 5/11)
+    dates = _monthly_dates(dt.date(2026, 11, 5))
+    assert len(dates) == 46
+    assert dates[0] == (2023, 1) and dates[-1] == (2026, 10)
     for group_id in ("shpc-diesel-gnv", "shpc-gasolina-etanol", "shpc-glp-mensal"):
-        assert len(GROUPS[group_id]["entries"]) == 45, f"{group_id} count wrong"
+        assert len(GROUPS[group_id]["entries"]) >= 45, f"{group_id} count wrong"
+
+
+def test_shpc_monthly_acompanha_a_data():
+    assert _monthly_dates(dt.date(2026, 1, 20))[-1] == (2025, 12)
+    assert _monthly_dates(dt.date(2027, 1, 20))[-1] == (2026, 12)
+    assert _monthly_dates(dt.date(2027, 3, 1))[-2:] == [(2027, 1), (2027, 2)]
 
 
 def test_shpc_monthly_2026_irregular_names():
@@ -605,10 +620,13 @@ def test_movimentacao_gn_catalog():
 
 def test_tancagem_catalog():
     entries = GROUPS["tancagem"]["entries"]
-    assert len(entries) == 36
+    assert len(entries) == 37
     csv_entries = [e for e in entries if e["ext"] == "csv"]
     xlsx_entries = [e for e in entries if e["ext"] == "xlsx"]
-    assert len(csv_entries) == 35
+    assert len(csv_entries) == 36
+    # 2026: maio a setembro num arquivo só, no mês 9 (como julho-agosto em 2025)
+    e0926 = next(e for e in entries if e["id"] == "tancagem-2026-09")
+    assert e0926["url"].endswith("/2026/maio-a-setembro.csv")
     assert len(xlsx_entries) == 1
     assert xlsx_entries[0]["year"] == 2022 and xlsx_entries[0]["month"] == 10
 
@@ -825,9 +843,19 @@ def test_fase_exploracao_aliases():
 # ---------------------------------------------------------------------------
 
 
+def test_producao_mar_acompanha_o_ano():
+    def ids(today):
+        return {e["id"] for e in _producao_mar_anuais(today)}
+
+    assert "producao-mar-2027" not in ids(dt.date(2026, 12, 31))
+    assert "producao-mar-2027" in ids(dt.date(2027, 1, 2))
+    assert "producao-mar-2024" in ids(dt.date(2027, 1, 2))
+
+
 def test_producao_mar_catalog():
+    assert len(_producao_mar_anuais(dt.date(2026, 11, 5))) == 8  # 2019-2026
     entries = GROUPS["producao-mar"]["entries"]
-    assert len(entries) == 18
+    assert len(entries) >= 18
     assert all(e["ext"] == "csv" for e in entries)
     # 2024 é outlier (nome de poço, não producao-mar-2024.csv)
     e2024 = next(e for e in entries if e["id"] == "producao-mar-2024")
@@ -879,7 +907,7 @@ def test_producao_terra_2020_removed_dead_urls():
 
 
 def test_producao_zona_catalog():
-    entries = GROUPS["producao-zona"]["entries"]
+    entries = _producao_zona_entries(dt.date(2026, 8, 29))
     assert len(entries) == 141
     assert min((e["year"], e["month"]) for e in entries) == (2014, 10)
     assert all(e["ext"] == "csv" for e in entries)
@@ -888,6 +916,33 @@ def test_producao_zona_catalog():
     assert mar_2026["url"].endswith("Produo_Zona_032026.csv")
     fev_2022 = next(e for e in entries if e["year"] == 2022 and e["month"] == 2)
     assert fev_2022["url"].endswith("producao_zona_03-2022.csv")
+
+
+def test_producao_zona_acompanha_a_data():
+    def last(today):
+        e = _producao_zona_entries(today)[-1]
+        return (e["year"], e["month"])
+
+    assert last(dt.date(2026, 11, 5)) == (2026, 9)
+    assert last(dt.date(2027, 1, 10)) == (2026, 12)
+    assert last(dt.date(2027, 3, 10)) == (2027, 1)
+    # ids e URLs de entradas existentes não mudam
+    ids = [e["id"] for e in _producao_zona_entries(dt.date(2027, 3, 10))]
+    assert "producao-zona-2026-03" in ids and len(ids) == len(set(ids))
+
+
+def test_situacao_pocos_acompanha_o_ano():
+    (e,) = _situacao_pocos_lista(dt.date(2027, 1, 5))
+    assert e["id"] == "situacao-pocos"
+    assert e["url"].endswith("situacao-pocos-1939-2027.csv")
+    assert e["fallback_urls"][0].endswith("situacao-pocos-1939-2026.csv")
+
+
+def test_sondas_e_intervencoes_acompanham_o_ano():
+    assert len(_intervencoes_lista(dt.date(2026, 11, 5))) == 7
+    novas = _intervencoes_lista(dt.date(2027, 3, 1))
+    assert novas[-1]["id"] == "intervencoes-pocos-2027-2028"
+    assert novas[-1]["url"].endswith("intervencao_em_pocos_2027-2028.csv")
 
 
 def test_fase_producao_snapshots():

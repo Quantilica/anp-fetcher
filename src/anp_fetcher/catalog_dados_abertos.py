@@ -171,9 +171,25 @@ def _dsan_url(
     return url, ext, [fallback_url]
 
 
-_MONTHLY_DATES: list[tuple[int, int]] = [
-    (y, m) for y in (2023, 2024, 2025) for m in range(1, 13)
-] + [(2026, m) for m in range(1, 10)]
+_SHPC_PUBLICATION_LAG_MONTHS = 1  # o mês corrente ainda não foi publicado
+
+
+def _monthly_dates(today: dt.date | None = None) -> list[tuple[int, int]]:
+    """(ano, mês) do SHPC mensal de 2023 até ``hoje - defasagem`` meses.
+
+    O mês ainda não publicado dá 404, que o sync trata como pulado.
+    """
+    today = today or dt.date.today()
+    dates: list[tuple[int, int]] = []
+    for year in range(2023, today.year + 1):
+        last = _last_published_month(
+            today, year, lag_months=_SHPC_PUBLICATION_LAG_MONTHS
+        )
+        dates.extend((year, month) for month in range(1, last + 1))
+    return dates
+
+
+_MONTHLY_DATES: list[tuple[int, int]] = _monthly_dates()
 
 # shpc-diesel-gnv
 _shpc_diesel_entries: list[DatasetEntry] = []
@@ -1129,7 +1145,7 @@ _TANC_BASE = (
 
 def _tancagem_entries_list() -> list[DatasetEntry]:
     entries = []
-    # 2026: Jan-Apr
+    # 2026: Jan-Apr e maio-a-setembro (month=9)
     for m in range(1, 5):
         m_name = _PT_LOWER[m]
         entries.append(
@@ -1143,6 +1159,17 @@ def _tancagem_entries_list() -> list[DatasetEntry]:
                 "csv",
             )
         )
+    entries.append(
+        _mon_entry(
+            "tancagem",
+            "tancagem",
+            "Tancagem do abastecimento",
+            2026,
+            9,
+            f"{_TANC_BASE}/2026/maio-a-setembro.csv",
+            "csv",
+        )
+    )
     # 2025: Jan-Mar, maio-junho (month=6), julho-agosto (month=8),
     # setembro-a-novembro (month=11), dezembro
     entries.append(
