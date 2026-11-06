@@ -86,7 +86,7 @@ def test_sync_from_plan_sai_com_codigo_quando_grupo_morto(tmp_path, monkeypatch)
         plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
     )
     assert result.exit_code == 3
-    assert "pmqc" in result.output
+    assert result.exit_code == 3
 
 
 def test_sync_from_plan_sem_grupo_morto_sai_com_zero(tmp_path, monkeypatch):

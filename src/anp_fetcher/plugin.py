@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import functools
-import sys
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +64,8 @@ def path_builder(
     return DataRepository(output_dir).path_for_entry(entry, last_modified=last_modified)
 
 
+logger = logging.getLogger(__name__)
+
 _DEFAULT_OUTPUT = Path("/data/anp")
 
 
@@ -113,10 +115,10 @@ class AnpFetcherApp(FetcherApp):
             dead = alerts.report(self._dead_groups)
             code = alerts.exit_code()
             if dead and code:
-                print(
-                    f"[Alerta] grupo(s) inteiro(s) em 404: {', '.join(dead)} "
-                    f"(exit {code})",
-                    file=sys.stderr,
+                logger.error(
+                    "[Alerta] grupo(s) inteiro(s) em 404: %s (exit %d)",
+                    ", ".join(dead),
+                    code,
                 )
                 raise typer.Exit(code)
 
