@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.5.0] - 2026-11-06
+
 ### Adicionado
 
 - `sync` avisa e sai com código 3 quando todas as entradas de um grupo respondem
