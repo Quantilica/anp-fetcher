@@ -10,6 +10,7 @@ from typing import Any
 
 import typer
 from quantilica.cli.sdk import CheckPlan, FetcherApp, make_resolve_groups
+from quantilica.core.registry import FetcherInfo
 from quantilica.core.sync import FreshnessPolicy
 
 from . import alerts
@@ -129,6 +130,14 @@ fetcher = AnpFetcherApp(
     default_output=_DEFAULT_OUTPUT,
     name="anp-fetcher",
     help="Dados da ANP (Agência Nacional do Petróleo).",
+    info=FetcherInfo(
+        id="anp",
+        nome="ANP - Dados Estatísticos e Dados Abertos",
+        orgao="Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP)",
+        homepage="https://www.gov.br/anp/",
+        cadencia="monthly",
+        dominio="energia",
+    ),
     groups_dict=GROUPS,
     aliases_dict=GROUP_ALIASES,
     list_datasets=list_datasets,
