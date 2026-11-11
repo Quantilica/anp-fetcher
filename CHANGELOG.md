@@ -13,6 +13,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### Alterado
 - Requer `quantilica-core>=0.19.0` (e `quantilica-cli>=0.17.0` como host).
 
+### Corrigido
+- O aviso de grupo inteiro em HTTP 404 continua saindo quando o `sync` do host termina com erro de arquivo (código 3, parte baixou, ou 1, nada baixou), e o código do `sync` é preservado. Se o `sync` sai com 1 e há grupo morto, vale o código do grupo morto (padrão 3), como antes.
+
 ## [2.5.0] - 2026-11-06
 
 ### Adicionado

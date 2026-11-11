@@ -185,3 +185,80 @@ def test_check_registra_aviso(group, caplog):
     caplog.set_level("WARNING")
     alerts.report([group])
     assert any(group in r.getMessage() for r in caplog.records)
+
+
+def _plan_com_grupo_morto_e_download(tmp_path):
+    return _plan(
+        tmp_path,
+        [
+            ("pmqc", "pmqc-csv-2026-01", "skip-unavailable", "remote-404"),
+            ("pmqc", "pmqc-csv-2026-02", "skip-unavailable", "remote-404"),
+            ("ie", "ie-1", "download", "new"),
+            ("ie", "ie-2", "download", "new"),
+        ],
+    )
+
+
+def test_sync_parcial_preserva_o_codigo_e_ainda_reporta_grupo_morto(
+    tmp_path, monkeypatch, caplog
+):
+    """Exit 3 do sync (parte baixou) não pode esconder o aviso de grupo morto."""
+    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
+    # Mesmo com o código de grupo morto desligado, o do sync é preservado.
+    monkeypatch.setenv("ANP_DEAD_GROUP_EXIT", "0")
+    monkeypatch.setattr(
+        plugin.AnpFetcherApp,
+        "download_datasets",
+        lambda self, entries, output_dir, workers=4, *, force=False: (
+            1,
+            2,
+            [("ie-2", "boom")],
+        ),
+    )
+    path = _plan_com_grupo_morto_e_download(tmp_path)
+    with caplog.at_level("WARNING"):
+        result = CliRunner().invoke(
+            plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
+        )
+    assert result.exit_code == 3, result.output
+    assert "pmqc" in result.output + caplog.text
+
+
+def test_sync_sem_nada_baixado_com_grupo_morto_sai_com_o_codigo_do_grupo(
+    tmp_path, monkeypatch, caplog
+):
+    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
+    monkeypatch.setattr(
+        plugin.AnpFetcherApp,
+        "download_datasets",
+        lambda self, entries, output_dir, workers=4, *, force=False: (
+            0,
+            2,
+            [("ie-1", "boom"), ("ie-2", "boom")],
+        ),
+    )
+    path = _plan_com_grupo_morto_e_download(tmp_path)
+    with caplog.at_level("WARNING"):
+        result = CliRunner().invoke(
+            plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
+        )
+    assert result.exit_code == 3, result.output
+    assert "pmqc" in result.output + caplog.text
+
+
+def test_sync_sem_nada_baixado_sem_grupo_morto_sai_com_1(tmp_path, monkeypatch):
+    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
+    monkeypatch.setattr(
+        plugin.AnpFetcherApp,
+        "download_datasets",
+        lambda self, entries, output_dir, workers=4, *, force=False: (
+            0,
+            1,
+            [("ie-1", "boom")],
+        ),
+    )
+    path = _plan(tmp_path, [("ie", "ie-1", "download", "new")])
+    result = CliRunner().invoke(
+        plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
+    )
+    assert result.exit_code == 1, result.output

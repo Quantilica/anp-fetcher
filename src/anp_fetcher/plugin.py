@@ -93,7 +93,7 @@ class AnpFetcherApp(FetcherApp):
         return plan
 
     def _wrap_sync(self) -> None:
-        """Faz o ``sync`` sair com código != 0 se houver grupo morto."""
+        """``sync`` sai != 0 com grupo morto, preservando o código do ``sync``."""
         for command in self.app.registered_commands:
             if command.name == "sync" and command.callback is not None:
                 command.callback = self._sync_with_alert(command.callback)
@@ -112,9 +112,33 @@ class AnpFetcherApp(FetcherApp):
                     pass  # o sync original reporta o plano inválido
                 else:
                     self._dead_groups.update(alerts.dead_groups_from_plan(plan.items))
-            original(*args, **kwargs)
-            dead = alerts.report(self._dead_groups)
+            original_exit: typer.Exit | None = None
+            try:
+                original(*args, **kwargs)
+            except typer.Exit as exc:
+                # Erro de arquivo (3 parcial, 1 nada baixou) ou outro código: o
+                # aviso de grupo morto sai de qualquer jeito, e o código original
+                # é preservado (o grupo morto define o código se o sync saiu 0 ou 1).
+                original_exit = exc
+            finally:
+                dead = alerts.report(self._dead_groups)
             code = alerts.exit_code()
+            original_code = original_exit.exit_code if original_exit else 0
+            # 1 = nada baixou: com grupo morto é o caso do contrato do ANP (os 404
+            # viram erros de arquivo), então vale o código do grupo morto. Qualquer
+            # outro código do sync (3 parcial, 130...) é preservado.
+            if (
+                original_exit is not None
+                and original_code
+                and not (original_code == 1 and dead and code)
+            ):
+                if dead:
+                    logger.error(
+                        "[Alerta] grupo(s) inteiro(s) em 404: %s (exit %d)",
+                        ", ".join(dead),
+                        original_code,
+                    )
+                raise original_exit
             if dead and code:
                 logger.error(
                     "[Alerta] grupo(s) inteiro(s) em 404: %s (exit %d)",
