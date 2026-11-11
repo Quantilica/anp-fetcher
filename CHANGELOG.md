@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.6.1] - 2026-11-11
+
 ### Alterado
 - Os testes exigem `quantilica-cli>=0.19.0`, a versão em que o `sync` sai com código diferente de zero quando algum arquivo falha; o aviso de grupo removido depende desse comportamento do host.
 
