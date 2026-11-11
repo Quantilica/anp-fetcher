@@ -158,6 +158,10 @@ fetcher = AnpFetcherApp(
         id="anp",
         nome="ANP - Dados Estatísticos e Dados Abertos",
         orgao="Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP)",
+        licenca=(
+            "Sem licença declarada; dados públicos pela Lei 12.527/2011 (LAI) "
+            "e Decreto 8.777/2016"
+        ),
         homepage="https://www.gov.br/anp/",
         cadencia="monthly",
         dominio="energia",
