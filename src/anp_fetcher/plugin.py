@@ -69,6 +69,9 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_OUTPUT = Path("/data/anp")
 
+# Exit do ``sync`` do host quando parte dos arquivos baixou e parte falhou.
+_SYNC_PARTIAL = 3
+
 
 class AnpFetcherApp(FetcherApp):
     """``FetcherApp`` que avisa quando um grupo inteiro responde HTTP 404."""
@@ -118,23 +121,18 @@ class AnpFetcherApp(FetcherApp):
             except typer.Exit as exc:
                 # Erro de arquivo (3 parcial, 1 nada baixou) ou outro código: o
                 # aviso de grupo morto sai de qualquer jeito, e o código original
-                # é preservado (o grupo morto define o código se o sync saiu 0 ou 1).
+                # é preservado conforme a precedência abaixo.
                 original_exit = exc
             finally:
                 dead = alerts.report(self._dead_groups)
             code = alerts.exit_code()
             original_code = original_exit.exit_code if original_exit else 0
-            # 1 = nada baixou: com grupo morto é o caso do contrato do ANP (os 404
-            # viram erros de arquivo), então vale o código do grupo morto. Qualquer
-            # outro código do sync (3 parcial, 130...) é preservado.
-            if (
-                original_exit is not None
-                and original_code
-                and not (original_code == 1 and dead and code)
-            ):
+            # Precedência: 1 (nada baixou) e outros códigos (sinais etc.) do sync >
+            # 4 (grupo morto) > 3 (download parcial) > 0.
+            if original_exit is not None and original_code not in (0, _SYNC_PARTIAL):
                 if dead:
                     logger.error(
-                        "[Alerta] grupo(s) inteiro(s) em 404: %s (exit %d)",
+                        "[Alerta] grupo(s) inteiro(s) em 404: %s (sync saiu com %d)",
                         ", ".join(dead),
                         original_code,
                     )
@@ -146,6 +144,8 @@ class AnpFetcherApp(FetcherApp):
                     code,
                 )
                 raise typer.Exit(code)
+            if original_exit is not None and original_code:
+                raise original_exit
 
         return sync
 

@@ -5,7 +5,7 @@ Quando **todas** as entradas de um grupo dão 404 a ANP quase certamente mudou o
 endereço e o grupo parou de ser coletado sem ninguém notar (foi o que aconteceu
 com o ``pmqc``). Este módulo detecta o caso e deixa o aviso visível no log.
 
-O ``sync`` sai com :data:`DEAD_GROUP_EXIT_CODE` (padrão 3) quando há grupo morto,
+O ``sync`` sai com :data:`DEAD_GROUP_EXIT_CODE` (padrão 4) quando há grupo morto,
 depois de terminar o trabalho; o ``check`` só registra o aviso e sai com 0, porque
 no modo de plano um ``check`` com código diferente de zero faz o cron cair num
 ``sync`` completo. ``ANP_DEAD_GROUP_EXIT=0`` mantém o aviso e desliga o código.
@@ -23,7 +23,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-DEAD_GROUP_EXIT_CODE = 3
+# 4 e não 3: o 3 é o "download parcial" do ``sync`` do host (quantilica-cli), que o
+# cron trata como alerta; o grupo morto é falha. Precedência no ``sync``:
+# 1 (nada baixou) > 4 (grupo morto) > 3 (parcial) > 0.
+DEAD_GROUP_EXIT_CODE = 4
 _ENV_EXIT = "ANP_DEAD_GROUP_EXIT"
 _HTTP_404 = re.compile(r"\bHTTP 404\b")
 

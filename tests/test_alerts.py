@@ -62,11 +62,11 @@ def test_dead_groups_from_errors():
 
 def test_exit_code_env(monkeypatch):
     monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
-    assert alerts.exit_code() == 3
+    assert alerts.exit_code() == 4  # 3 é o "download parcial" do sync do host
     monkeypatch.setenv("ANP_DEAD_GROUP_EXIT", "0")
     assert alerts.exit_code() == 0
     monkeypatch.setenv("ANP_DEAD_GROUP_EXIT", "lixo")
-    assert alerts.exit_code() == 3
+    assert alerts.exit_code() == 4
 
 
 def _plan(tmp_path, items):
@@ -104,8 +104,7 @@ def test_sync_from_plan_sai_com_codigo_quando_grupo_morto(tmp_path, monkeypatch)
     result = CliRunner().invoke(
         plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
     )
-    assert result.exit_code == 3
-    assert result.exit_code == 3
+    assert result.exit_code == 4
 
 
 def test_sync_from_plan_sem_grupo_morto_sai_com_zero(tmp_path, monkeypatch):
@@ -142,7 +141,8 @@ def test_sync_completo_detecta_grupo_inteiro_em_404(tmp_path, monkeypatch):
 
     monkeypatch.setattr(plugin.AnpFetcherApp, "download_entry", fake_download)
     result = CliRunner().invoke(plugin.app, ["sync", "reservas", "-o", str(tmp_path)])
-    assert result.exit_code == 3
+    # todas as entradas deram 404: nada baixou (1) vence o grupo morto (4)
+    assert result.exit_code == 1
     assert "reservas-nacionais" in result.output
 
 
@@ -199,66 +199,66 @@ def _plan_com_grupo_morto_e_download(tmp_path):
     )
 
 
-def test_sync_parcial_preserva_o_codigo_e_ainda_reporta_grupo_morto(
+def _fake_download(downloaded, total, errors):
+    return lambda self, entries, output_dir, workers=4, *, force=False: (
+        downloaded,
+        total,
+        errors,
+    )
+
+
+def _invoca_sync(tmp_path, monkeypatch, caplog, downloaded, total, errors, dead=True):
+    monkeypatch.setattr(
+        plugin.AnpFetcherApp,
+        "download_datasets",
+        _fake_download(downloaded, total, errors),
+    )
+    if dead:
+        path = _plan_com_grupo_morto_e_download(tmp_path)
+    else:
+        path = _plan(
+            tmp_path,
+            [("ie", "ie-1", "download", "new"), ("ie", "ie-2", "download", "new")],
+        )
+    with caplog.at_level("WARNING"):
+        return CliRunner().invoke(
+            plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
+        )
+
+
+def test_precedencia_1_vence_4_vence_3_vence_0(tmp_path, monkeypatch, caplog):
+    """1 (nada baixou) > 4 (grupo morto) > 3 (parcial) > 0; o aviso sai sempre."""
+    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
+    parcial = [("ie-2", "boom")]
+    tudo = [("ie-1", "boom"), ("ie-2", "boom")]
+    # nada baixou + grupo morto -> 1
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 0, 2, tudo)
+    assert r.exit_code == 1, r.output
+    assert "pmqc" in r.output + caplog.text
+    # parcial + grupo morto -> 4
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 1, 2, parcial)
+    assert r.exit_code == 4, r.output
+    assert "pmqc" in r.output + caplog.text
+    # só grupo morto -> 4
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 2, 2, [])
+    assert r.exit_code == 4, r.output
+    # parcial sem grupo morto -> 3
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 1, 2, parcial, dead=False)
+    assert r.exit_code == 3, r.output
+    # nada baixou sem grupo morto -> 1
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 0, 2, tudo, dead=False)
+    assert r.exit_code == 1, r.output
+    # tudo certo e sem grupo morto -> 0
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 2, 2, [], dead=False)
+    assert r.exit_code == 0, r.output
+
+
+def test_grupo_morto_desligado_preserva_o_parcial_e_ainda_reporta(
     tmp_path, monkeypatch, caplog
 ):
-    """Exit 3 do sync (parte baixou) não pode esconder o aviso de grupo morto."""
-    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
-    # Mesmo com o código de grupo morto desligado, o do sync é preservado.
     monkeypatch.setenv("ANP_DEAD_GROUP_EXIT", "0")
-    monkeypatch.setattr(
-        plugin.AnpFetcherApp,
-        "download_datasets",
-        lambda self, entries, output_dir, workers=4, *, force=False: (
-            1,
-            2,
-            [("ie-2", "boom")],
-        ),
-    )
-    path = _plan_com_grupo_morto_e_download(tmp_path)
-    with caplog.at_level("WARNING"):
-        result = CliRunner().invoke(
-            plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
-        )
-    assert result.exit_code == 3, result.output
-    assert "pmqc" in result.output + caplog.text
-
-
-def test_sync_sem_nada_baixado_com_grupo_morto_sai_com_o_codigo_do_grupo(
-    tmp_path, monkeypatch, caplog
-):
-    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
-    monkeypatch.setattr(
-        plugin.AnpFetcherApp,
-        "download_datasets",
-        lambda self, entries, output_dir, workers=4, *, force=False: (
-            0,
-            2,
-            [("ie-1", "boom"), ("ie-2", "boom")],
-        ),
-    )
-    path = _plan_com_grupo_morto_e_download(tmp_path)
-    with caplog.at_level("WARNING"):
-        result = CliRunner().invoke(
-            plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
-        )
-    assert result.exit_code == 3, result.output
-    assert "pmqc" in result.output + caplog.text
-
-
-def test_sync_sem_nada_baixado_sem_grupo_morto_sai_com_1(tmp_path, monkeypatch):
-    monkeypatch.delenv("ANP_DEAD_GROUP_EXIT", raising=False)
-    monkeypatch.setattr(
-        plugin.AnpFetcherApp,
-        "download_datasets",
-        lambda self, entries, output_dir, workers=4, *, force=False: (
-            0,
-            1,
-            [("ie-1", "boom")],
-        ),
-    )
-    path = _plan(tmp_path, [("ie", "ie-1", "download", "new")])
-    result = CliRunner().invoke(
-        plugin.app, ["sync", "--from-plan", str(path), "-o", str(tmp_path)]
-    )
-    assert result.exit_code == 1, result.output
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 1, 2, [("ie-2", "boom")])
+    assert r.exit_code == 3, r.output
+    assert "pmqc" in r.output + caplog.text
+    r = _invoca_sync(tmp_path, monkeypatch, caplog, 2, 2, [])
+    assert r.exit_code == 0, r.output

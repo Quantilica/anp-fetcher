@@ -14,13 +14,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Requer `quantilica-core>=0.19.0` (e `quantilica-cli>=0.17.0` como host).
 
 ### Corrigido
-- O aviso de grupo inteiro em HTTP 404 continua saindo quando o `sync` do host termina com erro de arquivo (código 3, parte baixou, ou 1, nada baixou), e o código do `sync` é preservado. Se o `sync` sai com 1 e há grupo morto, vale o código do grupo morto (padrão 3), como antes.
+- O aviso de grupo inteiro em HTTP 404 continua saindo quando o `sync` do host termina com erro de arquivo. **Mudança de contrato:** o código de saída do `sync` com grupo morto passa de 3 para **4** (`ANP_DEAD_GROUP_EXIT` continua valendo; `0` deixa só o aviso), porque o `quantilica-cli` passa a usar o 3 para "download parcial" (parte dos arquivos baixou e parte falhou). Precedência: 1 (nada baixou) > 4 (grupo morto) > 3 (parcial) > 0. Instale este fetcher antes ou junto do `quantilica-cli` 0.19.0: o cli novo com este fetcher antigo perde o alerta de grupo morto quando há erro de arquivo.
 
 ## [2.5.0] - 2026-11-06
 
 ### Adicionado
 
-- `sync` avisa e sai com código 3 quando todas as entradas de um grupo respondem
+- `sync` avisa e sai com código 3 (a partir da próxima versão, 4) quando todas as entradas de um grupo respondem
   HTTP 404 (a ANP provavelmente mudou o endereço e o grupo parou de ser coletado
   sem ninguém notar). Vale para o sync completo e para `sync --from-plan`. O
   `check` registra o aviso mas mantém o código 0, para não derrubar o modo de
