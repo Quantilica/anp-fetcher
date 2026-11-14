@@ -991,3 +991,49 @@ def test_membro_com_cabecalho_nao_muda(tmp_path: Path) -> None:
         / "movimentacao-derivados-liquidos-vendas-historico"
     )
     assert scan_dataset(historico).collect().height == 3
+
+
+def test_membro_sem_cabecalho_de_mesma_largura_usa_os_nomes_do_irmao(
+    tmp_path: Path,
+) -> None:
+    cabecalho = "Ano;Mês;Agente Regulado;Quantidade\n"
+    _zip(
+        _group_dir(tmp_path, "movimentacao-derivados") / "mdpg-liquidos@20261104.zip",
+        {
+            "Liquidos_Vendas_Historico_2018_a_2023.csv": cabecalho
+            + "2018;1;A;1,5\n2018;2;B;2,5\n",
+            "Liquidos_Vendas_Historico_2007_a_2017.csv": "2007;1;ABENGOA;1,98\n",
+        },
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.errors == []
+    historico = (
+        tmp_path
+        / "lake"
+        / SOURCE_ID
+        / "movimentacao-derivados-liquidos-vendas-historico"
+    )
+    todos = scan_dataset(historico).collect()
+    assert todos.height == 3
+    assert todos.filter(pl.col("Ano") == "2007")["Agente Regulado"].to_list() == [
+        "ABENGOA"
+    ]
+
+
+def test_membro_sem_cabecalho_de_mesma_largura_com_ordem_trocada_e_erro(
+    tmp_path: Path,
+) -> None:
+    cabecalho = "Ano;Mês;Agente Regulado;Quantidade\n"
+    _zip(
+        _group_dir(tmp_path, "movimentacao-derivados") / "mdpg-liquidos@20261104.zip",
+        {
+            "Liquidos_Vendas_Historico_2018_a_2023.csv": cabecalho
+            + "2018;1;A;1,5\n2018;2;B;2,5\n",
+            # quantidade antes do agente: o tipo de cada posição não bate
+            "Liquidos_Vendas_Historico_2007_a_2017.csv": "2007;1;1,98;ABENGOA\n",
+        },
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert len(res.errors) == 1
+    assert "2007_a_2017" in res.errors[0]
+    assert "a ordem das colunas não bate" in res.errors[0]

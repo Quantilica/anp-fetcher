@@ -86,7 +86,13 @@ _VENDAS_SPEC: dict[str, Any] = {
         "levels": 1,  # só o ``IBGE`` repetido; a linha de baixo já é o 1º estado
         "drop_blank": True,
     },
-    # colunas literais do preâmbulo das planilhas municipais (valor como vem)
+    # nomes canônicos: a fonte alterna Município/Municípios e Vendas/Total/TOTAL GERAL
+    "rename": {
+        "Município": r"munic[ií]pios?",
+        "Vendas": r"vendas|total|total geral",
+    },
+    # produto (slug do nome do arquivo, estável), produto_fonte e unidade (o texto
+    # do preâmbulo da planilha, como vem)
     "preamble": {
         "produto": r"^vendas de (.+?)(?: por .*)?$",
         "unidade": r"^unidade de medida:\s*(.+)$",

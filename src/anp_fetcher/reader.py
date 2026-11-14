@@ -18,11 +18,13 @@ import os
 import re
 import shutil
 import tempfile
+import unicodedata
 import zipfile
 from pathlib import Path
 from typing import Any
 
 try:
+    import fastexcel
     import polars as pl
     from quantilica.analytics.reader import (
         normalize_brazilian_numbers,
@@ -496,51 +498,128 @@ _NOT_A_TITLE = re.compile(
     re.IGNORECASE,
 )
 _TITLE_MIN_CHARS = 25
+# rótulos de uma linha de tabela de painel: os meses e os totais (sem acento)
+_ROW_LABELS = frozenset(
+    {
+        "janeiro",
+        "fevereiro",
+        "marco",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+        "total do ano",
+        "media do ano",
+    }
+)
+# célula que diz "sem valor" no lugar de um número
+_NULL_TOKENS = frozenset(
+    {"-", "--", "–", "—", "...", "…", "n/d", "(n/d)", "n/a", "nd", "n.d.", "(n.d.)"}
+)
+
+
+def _plain(text: str) -> str:
+    """Texto sem acento, em minúsculas e com espaços normalizados."""
+    folded = unicodedata.normalize("NFKD", text)
+    stripped = "".join(c for c in folded if not unicodedata.combining(c))
+    return re.sub(r"\s+", " ", stripped).strip().casefold()
+
+
+def _is_table_row(row: list[str]) -> bool:
+    """Linha de dado de uma tabela de painel.
+
+    É a que tem rótulo de mês ou de total (mesmo com todos os anos em branco) ou
+    duas ou mais células preenchidas (o mês grafado errado, ``Feveiro``), fora a
+    faixa de ``xxxx`` com que a planilha separa as tabelas.
+    """
+    cells = [c for c in row if c]
+    if not cells or all(_FILLER_ROW.fullmatch(c) for c in cells):
+        return False
+    return _plain(cells[0]) in _ROW_LABELS or len(cells) >= 2
 
 
 def _block_end(rows: list[list[str]], start: int) -> int:
-    """Primeira linha, a partir de ``start``, que já não é dado da tabela.
-
-    Dado é a linha com duas ou mais células preenchidas que não seja a faixa de
-    ``xxxx`` com que a planilha separa as tabelas.
-    """
+    """Primeira linha, a partir de ``start``, que já não é dado da tabela."""
     end = start
-    while end < len(rows):
-        cells = [c for c in rows[end] if c]
-        if len(cells) < 2 or all(_FILLER_ROW.fullmatch(c) for c in cells):
-            break
+    while end < len(rows) and _is_table_row(rows[end]):
         end += 1
     return end
+
+
+def _title_candidates(rows: list[list[str]], start: int, stop: int) -> list[str]:
+    """Linhas de uma célula só, de texto longo, que não sejam nota nem filtro."""
+    found = []
+    for i in range(start, stop):
+        cells = [c for c in rows[i] if c]
+        if (
+            len(cells) == 1
+            and len(cells[0]) >= _TITLE_MIN_CHARS
+            and not _NOT_A_TITLE.match(cells[0])
+        ):
+            found.append(cells[0])
+    return found
 
 
 def _block_title(rows: list[list[str]], start: int, header: int) -> str | None:
     """Título da tabela cujo cabeçalho está em ``header``.
 
-    Candidata a título é a linha de uma célula só, de texto longo, que não seja
-    nota nem filtro. Depois do ``Voltar ao índice`` da tabela anterior o título é
-    a primeira candidata (as notas ``ATENÇÃO`` vêm depois dele); na primeira tabela,
-    antes da qual há o índice e as notas da planilha, é a última candidata.
+    Depois do ``Voltar ao índice`` da tabela anterior o título é a primeira
+    candidata (as notas ``ATENÇÃO`` vêm depois dele). Na primeira tabela, antes da
+    qual há o índice e as notas da planilha, é a candidata que repete uma entrada
+    do ``Índice:`` (o título é uma delas); sem repetição, a que vem logo antes do
+    ``Selecione...``; sem isso, a última.
     """
-    candidates: list[str] = []
-    after_back = False
-    for i in range(start, header):
-        cells = [c for c in rows[i] if c]
-        if cells and cells[0].casefold().startswith("voltar"):
-            candidates, after_back = [], True
-        elif (
-            len(cells) == 1
-            and len(cells[0]) >= _TITLE_MIN_CHARS
-            and not _NOT_A_TITLE.match(cells[0])
-        ):
-            candidates.append(cells[0])
-    if not candidates:
-        return None
-    return candidates[0] if after_back else candidates[-1]
+    back = [
+        i
+        for i in range(start, header)
+        if (cells := [c for c in rows[i] if c])
+        and _plain(cells[0]).startswith("voltar")
+    ]
+    if back:
+        titles = _title_candidates(rows, back[-1] + 1, header)
+        return titles[0] if titles else None
+    titles = _title_candidates(rows, start, header)
+    seen: set[str] = set()
+    for title in titles:
+        key = _plain(_FOOTNOTE_ANYWHERE.sub("", title))
+        if key in seen:
+            return title
+        seen.add(key)
+    select = next(
+        (
+            i
+            for i in range(start, header)
+            if (cells := [c for c in rows[i] if c])
+            and _plain(cells[0]).startswith("selecione")
+        ),
+        None,
+    )
+    if select is not None:
+        before = _title_candidates(rows, start, select)
+        if before:
+            return before[-1]
+    return titles[-1] if titles else None
 
 
 _FOOTNOTE_MARK = re.compile(r"\s*[¹²³⁴⁵⁶⁷⁸⁹⁰]+$")
+# marca de nota, menos o expoente de unidade (``m³``, ``10³ m³``)
+_FOOTNOTE_ANYWHERE = re.compile(r"(?<!\bm)(?<!10)[¹²³⁴⁵⁶⁷⁸⁹⁰]+")
 _YEAR_PAIR = re.compile(r"\s*\d{4}\s*/\s*\d{4}")
+_YEAR_RANGE = re.compile(r"\s*-\s*\d{4}\s*-\s*\d{4}")
 _YEAR_COLUMN = re.compile(r"ANO (\d{4})$")
+
+
+def _clean_title(title: str | None) -> str | None:
+    """Título sem marcas de nota nem o período (``- 2000-2026``) de cada ano."""
+    if title is None:
+        return None
+    title = _YEAR_RANGE.sub("", _FOOTNOTE_ANYWHERE.sub("", title))
+    return re.sub(r"\s+", " ", title).strip()
 
 
 def _table_names(rows: list[list[str]], header: int, width: int) -> list[str]:
@@ -567,7 +646,23 @@ def _table_names(rows: list[list[str]], header: int, width: int) -> list[str]:
     return _unique(names)
 
 
-def _stacked_tables(df: pl.DataFrame, anchor: str) -> pl.DataFrame | None:
+def _number(text: str | None) -> float | None:
+    """Número de uma célula de texto; ``None`` se vazia, sem valor ou não numérica."""
+    if text is None or text.strip().casefold() in _NULL_TOKENS:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _stacked_tables(
+    df: pl.DataFrame,
+    anchor: str,
+    *,
+    numbers: pl.DataFrame | None = None,
+    origin: str | None = None,
+) -> pl.DataFrame | None:
     """Empilha as tabelas de uma planilha de painel da ANP; ``None`` se não há.
 
     Os painéis estatísticos (``ie``, ``pp``, ``pb``, ``ppg``, ``vdpb``) são uma
@@ -577,10 +672,19 @@ def _stacked_tables(df: pl.DataFrame, anchor: str) -> pl.DataFrame | None:
     cuja primeira célula casa ``anchor`` (às vezes na segunda coluna, como em
     ``vendas``) e entra com as suas linhas de dado e os seus próprios nomes: as
     tabelas começam em anos diferentes (``ANO 2012``) e as colunas se juntam pelo
-    nome, em vez de pela posição. A coluna ``tabela`` diz de qual veio a linha.
-    Colunas só com números viram ``Float64``.
+    nome, em vez de pela posição.
+
+    Colunas à frente do dado: ``planilha`` (``origin``: a planilha de onde veio, já
+    que ``ie-b`` e ``ie-m3`` repetem as tabelas em US$), ``tabela`` (o título sem
+    marcas de nota nem período) e ``tabela_fonte`` (o título como vem). Colunas só
+    com números viram ``Float64``; ``-``, ``...`` e ``n/d`` são nulos. Com
+    ``numbers`` (a mesma planilha lida com tipos, alinhada célula a célula) os
+    valores são os do arquivo, não o texto arredondado do leitor.
     """
     rows = [[_cell(v) for v in row] for row in df.rows()]
+    typed = (
+        numbers.rows() if numbers is not None and numbers.shape == df.shape else None
+    )
     pattern = re.compile(anchor, re.IGNORECASE)
     headers: list[tuple[int, int]] = []  # (linha, coluna da célula ``Mês``)
     for i, row in enumerate(rows):
@@ -588,42 +692,68 @@ def _stacked_tables(df: pl.DataFrame, anchor: str) -> pl.DataFrame | None:
         if (
             left is not None
             and pattern.search(row[left])
-            and sum(1 for c in row if c) >= 3  # ``Mês`` e ao menos dois anos
+            and sum(1 for c in row if c) >= 2  # ``Mês`` e ao menos um ano
         ):
             headers.append((i, left))
     if not headers:
         return None
     order: list[str] = []
-    records: list[dict[str, str | None]] = []
+    records: list[dict[str, Any]] = []
     previous_end = 0
     for header, left in headers:
         table = [row[left:] for row in rows]
         names = _table_names(table, header, len(table[0]))
         end = _block_end(table, header + 1)
-        title = _block_title(rows, previous_end, header)
+        source = _block_title(rows, previous_end, header)
         order.extend(n for n in names if n not in order)
-        records.extend(
-            {"tabela": title, **{n: c or None for n, c in zip(names, row, strict=True)}}
-            for row in table[header + 1 : end]
-        )
+        for i in range(header + 1, end):
+            values: dict[str, Any] = {}
+            for j, (name, cell) in enumerate(zip(names, table[i], strict=True)):
+                value: Any = cell or None
+                if j and value is not None:
+                    exact = typed[i][left + j] if typed is not None else None
+                    value = exact if isinstance(exact, float) else value
+                values[name] = value
+            records.append(
+                {
+                    "planilha": origin,
+                    "tabela": _clean_title(source),
+                    "tabela_fonte": source,
+                    **values,
+                }
+            )
         previous_end = end
     if not records:
         return None
     years = sorted((n for n in order if _YEAR_COLUMN.fullmatch(n)), key=lambda n: n[4:])
-    columns = ["tabela", "Mês", *years, *(n for n in order[1:] if n not in years)]
-    frame: dict[str, pl.Series] = {}
+    columns = ["Mês", *years, *(n for n in order[1:] if n not in years)]
+    frame: dict[str, pl.Series] = {
+        name: pl.Series(name, [r[name] for r in records], pl.String)
+        for name in ("planilha", "tabela", "tabela_fonte")
+    }
     for name in columns:
-        series = pl.Series(name, [r.get(name) for r in records], pl.String)
-        if name not in ("tabela", "Mês"):
-            number = series.cast(pl.Float64, strict=False)
-            if number.null_count() == series.null_count():
-                series = number
-        frame[name] = series
+        values = [r.get(name) for r in records]
+        if name == "Mês":
+            frame[name] = pl.Series(name, values, pl.String)
+            continue
+        parsed = [v if isinstance(v, float) else _number(v) for v in values]
+        blank = [v is None or str(v).strip().casefold() in _NULL_TOKENS for v in values]
+        if all(p is not None or b for p, b in zip(parsed, blank, strict=True)):
+            frame[name] = pl.Series(name, parsed, pl.Float64)
+        else:
+            frame[name] = pl.Series(
+                name,
+                [None if b else str(v) for v, b in zip(values, blank, strict=True)],
+            )
     return pl.DataFrame(frame)
 
 
 def _real_header(
-    df: pl.DataFrame, *, headerless: bool, options: dict[str, Any]
+    df: pl.DataFrame,
+    *,
+    headerless: bool,
+    options: dict[str, Any],
+    numbers: pl.DataFrame | None = None,
 ) -> pl.DataFrame:
     """Põe o cabeçalho de verdade nos nomes e tira o resto do topo.
 
@@ -645,13 +775,17 @@ def _real_header(
             três, ou o número máximo), ``drop_blank`` (descarta linhas sem nenhuma
             célula preenchida) e ``tables``
             (regex do cabeçalho de planilha de painel, com várias tabelas
-            empilhadas: :func:`_stacked_tables`).
+            empilhadas: :func:`_stacked_tables`), com ``origin`` (nome da planilha).
+        numbers (pl.DataFrame | None): A mesma planilha lida com tipos, para os
+            valores de painel sem o arredondamento do texto.
     """
     width = df.width
     if width < 2 or not all(t == pl.String for t in df.schema.values()):
         return df
     if headerless and options.get("tables"):
-        stacked = _stacked_tables(df, options["tables"])
+        stacked = _stacked_tables(
+            df, options["tables"], numbers=numbers, origin=options.get("origin")
+        )
         if stacked is not None:
             return stacked
     names = [] if headerless else [None if _blank_name(c) else c for c in df.columns]
@@ -889,7 +1023,8 @@ def headerless_columns(
     (``..._2018_a_2023``, do mesmo dataset) dá os nomes. Quando o irmão tem colunas
     a mais (``Descrição do Produto``), vale o alinhamento que casa na posição o
     tipo (número ou texto) e os valores de cada coluna com os do irmão. Largura
-    que não fecha, ou alinhamento sem vencedor claro, é erro.
+    que não fecha, ordem que não bate (mesma largura) ou alinhamento sem vencedor
+    claro é erro.
 
     Args:
         path (Path): O CSV a conferir.
@@ -914,10 +1049,17 @@ def headerless_columns(
             f"CSV sem cabeçalho com {width} colunas; o irmão {reference.name} tem "
             f"{ref_width}: nomes não inferíveis"
         )
-    if width == ref_width:
-        return names
     head = _read_csv_text(path, spec, has_header=False, n_rows=2000)
     ref = _read_csv_text(reference, spec, n_rows=sample)
+    if width == ref_width:
+        # mesma largura: os nomes valem se o tipo de cada coluna bate na posição
+        if _alignment_score(head, ref, tuple(range(width))) < 0:
+            raise ValueError(
+                f"CSV sem cabeçalho com {width} colunas, como o irmão "
+                f"{reference.name}, mas a ordem das colunas não bate: nomes não "
+                "inferíveis"
+            )
+        return names
     scored = sorted(
         (
             (_alignment_score(head, ref, kept), kept)
@@ -1000,33 +1142,45 @@ def _excel_path(path: Path, tmp_dir: Path) -> Path:
 def _with_preamble(
     frame: pl.DataFrame, raw: pl.DataFrame, path: Path, spec: dict[str, Any]
 ) -> pl.DataFrame:
-    """Acrescenta ao dado colunas literais tiradas do preâmbulo da planilha.
+    """Nomes canônicos e colunas literais de uma planilha municipal.
 
     As planilhas municipais abrem com o título (``VENDAS DE ASFALTO POR ESTADO E
-    MUNICÍPIO``) e a unidade (``UNIDADE DE MEDIDA: QUILO``); tirados do dado,
-    ficariam só no nome do arquivo. ``spec["preamble"]`` mapeia o nome da coluna
-    para uma regex cujo 1º grupo é o valor, aplicada às primeiras linhas do
-    topo; o valor sai como vem. Sem casar, vale ``spec["preamble_from_name"]``
-    (regex no ``base_id`` do arquivo) e o fato é avisado; sem nenhum dos dois, a
-    coluna fica nula, também com aviso.
+    MUNICÍPIO``) e a unidade (``UNIDADE DE MEDIDA: QUILO``), e o nome das colunas
+    muda de ano para ano (``Município``/``Municípios``, ``Vendas``/``Total``/
+    ``TOTAL GERAL``). ``spec["rename"]`` mapeia o nome canônico para a regex dos
+    nomes da fonte.
+
+    ``spec["preamble"]`` mapeia o nome da coluna literal para uma regex cujo 1º
+    grupo é o valor, aplicada às primeiras linhas do topo; o valor sai como vem. Com
+    ``spec["preamble_from_name"]`` (coluna -> regex no ``base_id`` do arquivo), a
+    coluna é o grupo da regex no nome do arquivo (``produto``: o slug estável) e o
+    texto do preâmbulo vai para ``<coluna>_fonte``. Dado que não consta do
+    preâmbulo (ou do nome) fica nulo, com aviso.
     """
+    renames = {}
+    for canonical, pattern in spec.get("rename", {}).items():
+        for col in frame.columns:
+            if re.fullmatch(pattern, col.strip(), re.IGNORECASE):
+                renames[col] = canonical
+    if renames:
+        frame = frame.rename(renames)
     top = [c for row in raw.head(_HEADER_SCAN).rows() for v in row if (c := _cell(v))]
     from_name = spec.get("preamble_from_name", {})
+    base_id = parse_filename(path)["base_id"]
     columns = []
     for name, pattern in spec["preamble"].items():
         match = next((m for t in top if (m := re.search(pattern, t, re.I))), None)
         value = match.group(1).strip() if match else None
         if value is None:
-            named = re.search(
-                from_name.get(name, "(?!)"), parse_filename(path)["base_id"]
+            logger.warning("%s: %s não consta do preâmbulo", path.name, name)
+        if name in from_name:
+            named = re.search(from_name[name], base_id)
+            if named is None:
+                logger.warning("%s: %s não consta do nome do arquivo", path.name, name)
+            columns.append(
+                pl.lit(named.group(1) if named else None, dtype=pl.String).alias(name)
             )
-            value = named.group(1).replace("-", " ").upper() if named else None
-            logger.warning(
-                "%s: %s não consta do preâmbulo; %s",
-                path.name,
-                name,
-                f"tirado do nome do arquivo ({value})" if value else "ficou nulo",
-            )
+            name = f"{name}_fonte"
         columns.append(pl.lit(value, dtype=pl.String).alias(name))
     return frame.with_columns(columns)
 
@@ -1052,10 +1206,17 @@ def read_excel(
     extra: dict[str, Any] = {"has_header": False, "infer_schema_length": 0}
     kwargs = extra if header else {}
 
-    def tidy(frame: pl.DataFrame) -> pl.DataFrame:
+    def tidy(frame: pl.DataFrame, source: Path, index: int) -> pl.DataFrame:
         if header:
             raw = frame
-            frame = _real_header(frame, headerless=True, options=header)
+            options = header
+            numbers = None
+            if header.get("tables"):
+                options = {**header, "origin": parse_filename(path)["base_id"]}
+                numbers = _typed_sheet(source, index)
+            frame = _real_header(
+                frame, headerless=True, options=options, numbers=numbers
+            )
             if spec.get("preamble") and "tabela" not in frame.columns:
                 frame = _with_preamble(frame, raw, path, spec)
         return _clean_columns(frame)
@@ -1067,10 +1228,36 @@ def read_excel(
         if sheet == "all":
             frames = pl.read_excel(source, sheet_id=0, **kwargs)
             assert isinstance(frames, dict), "sheet_id=0 deve retornar dict"
-            return {name: tidy(f) for name, f in frames.items()}
+            return {
+                name: tidy(f, source, i) for i, (name, f) in enumerate(frames.items())
+            }
         if sheet is None:
-            return tidy(pl.read_excel(source, sheet_id=None, **kwargs))
-        return tidy(pl.read_excel(source, sheet_id=sheet, **kwargs))
+            return tidy(pl.read_excel(source, sheet_id=None, **kwargs), source, 0)
+        return tidy(pl.read_excel(source, sheet_id=sheet, **kwargs), source, sheet - 1)
+
+
+def _typed_sheet(source: Path, index: int) -> pl.DataFrame | None:
+    """A aba lida com tipos (célula numérica = ``Float64``), alinhada à lida como texto.
+
+    O leitor de texto arredonda os números a nove casas (``-37.605363514`` para
+    ``-37.605363514406264``). Aqui cada célula numérica vem inteira e a que não é
+    número vem nula; as linhas e colunas vazias saem como no leitor de texto, para
+    as duas leituras terem as mesmas células nas mesmas posições.
+    """
+    try:
+        reader = fastexcel.read_excel(str(source))
+        text = reader.load_sheet(index, header_row=None, dtypes="string").to_polars()
+        typed = reader.load_sheet(
+            index, header_row=None, dtypes="float", dtype_coercion="coerce"
+        ).to_polars()
+    except Exception as exc:  # sem a leitura tipada, vale o texto
+        logger.debug("leitura tipada de %s falhou: %s", source.name, exc)
+        return None
+    if text.shape != typed.shape:
+        return None
+    rows = text.select(pl.any_horizontal(pl.all().is_not_null())).to_series()
+    cols = [c for c in text.columns if text[c].null_count() < text.height]
+    return typed.filter(rows).select(cols)
 
 
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
