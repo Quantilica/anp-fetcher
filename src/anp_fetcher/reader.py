@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import codecs
 import csv
+import difflib
 import io
 import itertools
 import logging
@@ -20,6 +21,7 @@ import shutil
 import tempfile
 import unicodedata
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -530,17 +532,35 @@ def _plain(text: str) -> str:
     return re.sub(r"\s+", " ", stripped).strip().casefold()
 
 
+def _is_row_label(label: str) -> bool:
+    """Rótulo de linha de tabela de painel: mês, ``Total do Ano`` ou ``Média do Ano``.
+
+    Aceita a grafia errada da fonte (``Feveiro``) por semelhança com o rótulo.
+    """
+    plain = _plain(label)
+    return plain in _ROW_LABELS or bool(
+        difflib.get_close_matches(plain, _ROW_LABELS, n=1, cutoff=0.8)
+    )
+
+
 def _is_table_row(row: list[str]) -> bool:
     """Linha de dado de uma tabela de painel.
 
-    É a que tem rótulo de mês ou de total (mesmo com todos os anos em branco) ou
-    duas ou mais células preenchidas (o mês grafado errado, ``Feveiro``), fora a
-    faixa de ``xxxx`` com que a planilha separa as tabelas.
+    É a de rótulo reconhecido (mês, ``Total do Ano``, ``Média do Ano``, mesmo com
+    todos os anos em branco). Sem rótulo reconhecido, só se as demais células forem
+    número ou marcador de "sem valor" (``-``, ``n/d``): filtro (``REFINARIA |
+    (Tudo)``) e nota (``Fonte: ANP | x``) não entram. A faixa de ``xxxx`` com que a
+    planilha separa as tabelas nunca é dado.
     """
     cells = [c for c in row if c]
     if not cells or all(_FILLER_ROW.fullmatch(c) for c in cells):
         return False
-    return _plain(cells[0]) in _ROW_LABELS or len(cells) >= 2
+    if _is_row_label(cells[0]):
+        return True
+    rest = cells[1:]
+    return bool(rest) and all(
+        c.casefold() in _NULL_TOKENS or _number(c) is not None for c in rest
+    )
 
 
 def _block_end(rows: list[list[str]], start: int) -> int:
@@ -608,7 +628,7 @@ def _block_title(rows: list[list[str]], start: int, header: int) -> str | None:
 
 _FOOTNOTE_MARK = re.compile(r"\s*[¹²³⁴⁵⁶⁷⁸⁹⁰]+$")
 # marca de nota, menos o expoente de unidade (``m³``, ``10³ m³``)
-_FOOTNOTE_ANYWHERE = re.compile(r"(?<!\bm)(?<!10)[¹²³⁴⁵⁶⁷⁸⁹⁰]+")
+_FOOTNOTE_ANYWHERE = re.compile(r"(?<![mM])(?<!10)[¹²³⁴⁵⁶⁷⁸⁹⁰]+")
 _YEAR_PAIR = re.compile(r"\s*\d{4}\s*/\s*\d{4}")
 _YEAR_RANGE = re.compile(r"\s*-\s*\d{4}\s*-\s*\d{4}")
 _YEAR_COLUMN = re.compile(r"ANO (\d{4})$")
@@ -660,7 +680,7 @@ def _stacked_tables(
     df: pl.DataFrame,
     anchor: str,
     *,
-    numbers: pl.DataFrame | None = None,
+    numbers: Callable[[], pl.DataFrame | None] | None = None,
     origin: str | None = None,
 ) -> pl.DataFrame | None:
     """Empilha as tabelas de uma planilha de painel da ANP; ``None`` se não há.
@@ -682,9 +702,6 @@ def _stacked_tables(
     valores são os do arquivo, não o texto arredondado do leitor.
     """
     rows = [[_cell(v) for v in row] for row in df.rows()]
-    typed = (
-        numbers.rows() if numbers is not None and numbers.shape == df.shape else None
-    )
     pattern = re.compile(anchor, re.IGNORECASE)
     headers: list[tuple[int, int]] = []  # (linha, coluna da célula ``Mês``)
     for i, row in enumerate(rows):
@@ -697,6 +714,8 @@ def _stacked_tables(
             headers.append((i, left))
     if not headers:
         return None
+    exact = numbers() if numbers is not None else None
+    typed = exact.rows() if exact is not None and exact.shape == df.shape else None
     order: list[str] = []
     records: list[dict[str, Any]] = []
     previous_end = 0
@@ -753,7 +772,7 @@ def _real_header(
     *,
     headerless: bool,
     options: dict[str, Any],
-    numbers: pl.DataFrame | None = None,
+    numbers: Callable[[], pl.DataFrame | None] | None = None,
 ) -> pl.DataFrame:
     """Põe o cabeçalho de verdade nos nomes e tira o resto do topo.
 
@@ -776,8 +795,8 @@ def _real_header(
             célula preenchida) e ``tables``
             (regex do cabeçalho de planilha de painel, com várias tabelas
             empilhadas: :func:`_stacked_tables`), com ``origin`` (nome da planilha).
-        numbers (pl.DataFrame | None): A mesma planilha lida com tipos, para os
-            valores de painel sem o arredondamento do texto.
+        numbers (Callable | None): Lê a mesma planilha com tipos (só se há tabela de
+            painel), para os valores sem o arredondamento do texto.
     """
     width = df.width
     if width < 2 or not all(t == pl.String for t in df.schema.values()):
@@ -1052,8 +1071,16 @@ def headerless_columns(
     head = _read_csv_text(path, spec, has_header=False, n_rows=2000)
     ref = _read_csv_text(reference, spec, n_rows=sample)
     if width == ref_width:
-        # mesma largura: os nomes valem se o tipo de cada coluna bate na posição
-        if _alignment_score(head, ref, tuple(range(width))) < 0:
+        # mesma largura: os nomes valem se a ordem das colunas do irmão é a deste
+        # membro. O tipo de cada coluna tem de bater na posição, e a troca de duas
+        # colunas vizinhas não pode casar melhor com os valores (Região/UF)
+        identity = tuple(range(width))
+        score = _alignment_score(head, ref, identity)
+        swapped = [
+            _alignment_score(head, ref, (*identity[:i], i + 1, i, *identity[i + 2 :]))
+            for i in range(width - 1)
+        ]
+        if score < 0 or max(swapped, default=-1.0) > score:
             raise ValueError(
                 f"CSV sem cabeçalho com {width} colunas, como o irmão "
                 f"{reference.name}, mas a ordem das colunas não bate: nomes não "
@@ -1213,7 +1240,10 @@ def read_excel(
             numbers = None
             if header.get("tables"):
                 options = {**header, "origin": parse_filename(path)["base_id"]}
-                numbers = _typed_sheet(source, index)
+
+                def numbers() -> pl.DataFrame | None:
+                    return _typed_sheet(source, index)
+
             frame = _real_header(
                 frame, headerless=True, options=options, numbers=numbers
             )

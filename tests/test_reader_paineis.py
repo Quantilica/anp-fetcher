@@ -389,3 +389,61 @@ def test_painel_aceita_cabecalho_com_mes_e_um_ano_so(tmp_path: Path) -> None:
     assert df.columns[3:] == ["Mês", "ANO 2027"]
     assert df["Mês"].to_list() == ["Janeiro", "Fevereiro", "Total do Ano"]
     assert df["ANO 2027"].to_list() == [1.5, 2.5, 4.0]
+
+
+def test_painel_filtro_e_nota_logo_apos_o_total_nao_sao_dado(tmp_path: Path) -> None:
+    rows = _tabela("Produção por Unidade da Federação - 2000-2001 (b)", [2000, 2001])
+    total = next(i for i, r in enumerate(rows) if r[0] == "Total do Ano")
+    rows[total + 1 : total + 1] = [
+        ["REFINARIA", "(Tudo)"],  # filtro de duas células
+        ["Fonte: ANP", "x"],  # nota de duas células
+    ]
+    df = read_file(_planilha(tmp_path / "x.xlsx", rows), spec_for("pp"))
+    assert df.height == 13
+    assert set(df["Mês"]) == {*MESES, "Total do Ano"}
+
+
+def test_painel_aceita_mes_mal_grafado_e_media_do_ano(tmp_path: Path) -> None:
+    rows = _tabela("Produção por Unidade da Federação - 2000-2001 (b)", [2000, 2001])
+    inicio = next(i for i, r in enumerate(rows) if r[0] == "Janeiro")
+    rows[inicio + 1][0] = "Feveiro"  # grafia errada da fonte
+    rows.insert(inicio + 13, ["Média do Ano", 3.0, 4.0, 1.0])
+    df = read_file(_planilha(tmp_path / "x.xlsx", rows), spec_for("pp"))
+    assert df.height == 14
+    assert df["Mês"].to_list()[1] == "Feveiro"
+    assert df["Mês"].to_list()[-1] == "Média do Ano"
+
+
+def test_titulo_com_unidade_de_expoente_mantem_o_expoente(tmp_path: Path) -> None:
+    rows = _tabela("Produção de gás¹ por UF - 2000-2001 (Mm³/dia)", [2000, 2001])
+    df = read_file(_planilha(tmp_path / "x.xlsx", rows), spec_for("pp"))
+    assert df["tabela"][0] == "Produção de gás por UF (Mm³/dia)"
+
+
+def test_planilha_municipal_nao_faz_a_leitura_tipada(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # os globais de ``read_file``: outros testes recarregam o módulo
+    modulo = read_file.__globals__
+
+    def nao_deveria(*args: object) -> None:
+        raise AssertionError("leitura tipada só vale para painel")
+
+    original = modulo["_typed_sheet"]
+    monkeypatch.setitem(modulo, "_typed_sheet", nao_deveria)
+    path = _municipal(
+        tmp_path / "vendas-municipais-asfalto_2001.xlsx",
+        [
+            ["AGÊNCIA"],
+            ["VENDAS DE ASFALTO POR MUNICÍPIO"],
+            ["UNIDADE DE MEDIDA: QUILO"],
+        ],
+    )
+    assert read_file(path, spec_for("vdpb")).height == 2
+    # e o painel, sim, lê com tipo
+    chamadas: list[int] = []
+    monkeypatch.setitem(
+        modulo, "_typed_sheet", lambda *a: chamadas.append(1) or original(*a)
+    )
+    read_file(_painel(tmp_path / "p.xlsx"), spec_for("pp"))
+    assert chamadas == [1]

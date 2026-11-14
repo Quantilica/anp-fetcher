@@ -1037,3 +1037,22 @@ def test_membro_sem_cabecalho_de_mesma_largura_com_ordem_trocada_e_erro(
     assert len(res.errors) == 1
     assert "2007_a_2017" in res.errors[0]
     assert "a ordem das colunas não bate" in res.errors[0]
+
+
+def test_membro_sem_cabecalho_com_colunas_vizinhas_trocadas_no_irmao_e_erro(
+    tmp_path: Path,
+) -> None:
+    # no irmão a coluna "Região Origem" guarda UF e "UF Origem" guarda a região:
+    # o tipo (texto) bate na posição, os valores não
+    cabecalho = "Ano;Mês;Região Origem;UF Origem;Quantidade\n"
+    _zip(
+        _group_dir(tmp_path, "movimentacao-derivados") / "mdpg-liquidos@20261104.zip",
+        {
+            "Liquidos_Vendas_Historico_2018_a_2023.csv": cabecalho
+            + "2018;1;SP;SE;1,5\n2018;2;RJ;SE;2,5\n2018;3;MG;SE;3,5\n",
+            "Liquidos_Vendas_Historico_2007_a_2017.csv": "2007;1;SE;SP;1,98\n",
+        },
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert len(res.errors) == 1
+    assert "a ordem das colunas não bate" in res.errors[0]
