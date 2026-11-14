@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.7.0] - 2026-11-14
+
 ### Corrigido
 - O lake lia só o primeiro membro de cada ZIP (`producao-poco-da_2005.zip`: só o mar, 10.500 de 120.718 linhas). Agora todo ZIP com mais de um membro de dados (csv/xls/xlsx) rende um Parquet por membro, com `file_key` `<zip>__<membro>` (o padrão do PMQC e do transparencia-sp; colisão de nome ganha `_2`, `_3` antes da extensão). ZIP de um membro só não muda. O JSON gêmeo do CSV (PMQC) e o ruído (`Thumbs.db`, PDF, `__MACOSX/`) ficam de fora.
   - `ppg` e `producao-poco-abertos`: o membro leva a coluna `ambiente` (`mar`, `terra` ou `presal`; o nome do arquivo era a única fonte). O `presal` é um recorte do `mar` (as mesmas linhas já estão no `mar`): vai para o dataset próprio `<dataset>-presal` (`ppg-presal`, `producao-poco-abertos-presal`, `producao-poco-abertos-anual-presal`), então `ppg` e `producao-poco-abertos*` ficam só com mar e terra e somá-los não duplica o pré-sal. Nos ZIPs de 2010 a 2015, que trazem o ano inteiro e o mesmo ano em meses, vale só o anual consolidado (os meses repetem linhas e, em 2010, têm colunas deslocadas).
