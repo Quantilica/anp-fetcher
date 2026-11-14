@@ -7,6 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+- Cabeçalhos mal lidos que restavam no lake (1º Parquet de cada dataset: `ie` 28, `pp` 28, `pb` 23, `vdpb` 2, `vdpb-historico` 29 colunas `__UNNAMED__N`; `ppg-historico` com `column_N`):
+  - Painéis estatísticos (`ie`, `pp`, `pb`, `vdpb-historico` e `ppg-historico`, que é a mesma planilha no `ppg`): cada planilha é uma única aba com várias tabelas uma sobre a outra (título, filtros, faixa de `xxxx`, cabeçalho com `ANO` mesclado sobre os anos, 12 meses, `Total do Ano`, notas e `Voltar ao índice`); o leitor tomava a 1ª linha (o nome da agência) como cabeçalho e deixava títulos, faixas e notas como linhas de dado. Agora cada tabela é achada pela linha `Mês` e entra só com as suas linhas de dado (meses e `Total do Ano`), com nomes legíveis (`Mês`, `ANO 2000`, ..., `VARIAÇÃO DO ACUMULADO NO ANO (%)`); título, filtros, faixa, notas e rodapé ficam fora. As tabelas começam em anos diferentes (`ANO 2012`) e as colunas se juntam pelo nome, não pela posição. Nova coluna `tabela` com o título de cada tabela (sem ela, as linhas `Janeiro` de 19 tabelas não se distinguiam) e valores numéricos tipados como `Float64` (antes, texto misturado com número). A marca de nota (`¹`) e os anos da variação (`NO ANO 2026 / 2025`) saem do nome da coluna, para o esquema não mudar a cada edição.
+  - `vdpb` (vendas municipais por produto e ano): título, unidade e ano acima do cabeçalho (`CÓDIGO IBGE`/`IBGE` em duas linhas mescladas) deixam de ser nome de coluna e de dado; as colunas passam a ser `CÓDIGO IBGE`, `Município(s)` e `Vendas`/`TOTAL GERAL`. O estado que abre a lista (uma linha só com o nome) segue como dado e linhas totalmente vazias saem. O produto e a unidade (`UNIDADE DE MEDIDA: QUILO`) só constam do nome do arquivo de origem, não mais do dado.
+- Os datasets afetados precisam de `quantilica lake build --force`.
+
 ## [2.7.0] - 2026-11-14
 
 ### Corrigido

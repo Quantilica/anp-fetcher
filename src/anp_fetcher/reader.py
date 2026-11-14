@@ -469,9 +469,156 @@ def _levels_names(levels: list[list[str]]) -> list[str]:
                 out.append("")
         filled.append(out)
     return [
-        " ".join(filter(None, (filled[r][j] for r in range(len(levels)))))
-        for j in range(width)
+        _join_levels([filled[r][j] for r in range(len(levels))]) for j in range(width)
     ]
+
+
+def _join_levels(parts: list[str]) -> str:
+    """Junta os níveis de um nome; o nível que repete o que já está no nome some.
+
+    ``CÓDIGO IBGE`` com ``IBGE`` embaixo (célula mesclada em duas linhas) é só
+    ``CÓDIGO IBGE``.
+    """
+    name = ""
+    for part in parts:
+        if part and not re.search(
+            rf"(?<!\w){re.escape(part.casefold())}(?!\w)", name.casefold()
+        ):
+            name = f"{name} {part}".strip()
+    return name
+
+
+_FILLER_ROW = re.compile(r"x{3,}", re.IGNORECASE)
+# linha de nota/rodapé/filtro: nunca é o título de uma tabela
+_NOT_A_TITLE = re.compile(
+    r"^(selecione|fonte|notas?:|dados atualizados|voltar|periodicidade|\W*\d?\W*varia)",
+    re.IGNORECASE,
+)
+_TITLE_MIN_CHARS = 25
+
+
+def _block_end(rows: list[list[str]], start: int) -> int:
+    """Primeira linha, a partir de ``start``, que já não é dado da tabela.
+
+    Dado é a linha com duas ou mais células preenchidas que não seja a faixa de
+    ``xxxx`` com que a planilha separa as tabelas.
+    """
+    end = start
+    while end < len(rows):
+        cells = [c for c in rows[end] if c]
+        if len(cells) < 2 or all(_FILLER_ROW.fullmatch(c) for c in cells):
+            break
+        end += 1
+    return end
+
+
+def _block_title(rows: list[list[str]], start: int, header: int) -> str | None:
+    """Título da tabela cujo cabeçalho está em ``header``.
+
+    Candidata a título é a linha de uma célula só, de texto longo, que não seja
+    nota nem filtro. Depois do ``Voltar ao índice`` da tabela anterior o título é
+    a primeira candidata (as notas ``ATENÇÃO`` vêm depois dele); na primeira tabela,
+    antes da qual há o índice e as notas da planilha, é a última candidata.
+    """
+    candidates: list[str] = []
+    after_back = False
+    for i in range(start, header):
+        cells = [c for c in rows[i] if c]
+        if cells and cells[0].casefold().startswith("voltar"):
+            candidates, after_back = [], True
+        elif (
+            len(cells) == 1
+            and len(cells[0]) >= _TITLE_MIN_CHARS
+            and not _NOT_A_TITLE.match(cells[0])
+        ):
+            candidates.append(cells[0])
+    if not candidates:
+        return None
+    return candidates[0] if after_back else candidates[-1]
+
+
+_FOOTNOTE_MARK = re.compile(r"\s*[¹²³⁴⁵⁶⁷⁸⁹⁰]+$")
+_YEAR_PAIR = re.compile(r"\s*\d{4}\s*/\s*\d{4}")
+_YEAR_COLUMN = re.compile(r"ANO (\d{4})$")
+
+
+def _table_names(rows: list[list[str]], header: int, width: int) -> list[str]:
+    """Nomes das colunas de uma tabela de painel (``Mês``, ``ANO 2000``, ...).
+
+    A linha de cima entra como primeiro nível quando tem texto de cabeçalho (``ANO``
+    mesclado sobre os anos, ``VARIAÇÃO DO ACUMULADO``). A marca de nota (``¹``) e
+    os anos da variação (``NO ANO 2026 / 2025 (%)``, que mudam por tabela e por
+    ano) saem do nome; o primeiro nome (``MÊS``, ``Meses``) é sempre ``Mês``.
+    """
+    above = rows[header - 1] if header else [""] * width
+    cells = [c for c in above if c]
+    has_above = (
+        0 < len(cells) <= 0.6 * width
+        and not any(_data_like(c) for c in cells)
+        and not all(_FILLER_ROW.fullmatch(c) for c in cells)
+    )
+    levels = [above, rows[header]] if has_above else [rows[header]]
+    names = []
+    for j, name in enumerate(_levels_names(levels)):
+        name = _YEAR_PAIR.sub("", _FOOTNOTE_MARK.sub("", name)).strip()
+        name = re.sub(r"\s+", " ", name)
+        names.append("Mês" if j == 0 else name or f"__blank_{j}")
+    return _unique(names)
+
+
+def _stacked_tables(df: pl.DataFrame, anchor: str) -> pl.DataFrame | None:
+    """Empilha as tabelas de uma planilha de painel da ANP; ``None`` se não há.
+
+    Os painéis estatísticos (``ie``, ``pp``, ``pb``, ``ppg``, ``vdpb``) são uma
+    planilha com várias tabelas uma sobre a outra: título, filtros, a faixa de
+    ``xxxx``, o cabeçalho (``Mês`` e os anos, com ``ANO`` mesclado na linha de
+    cima), os meses, ``Total do Ano`` e as notas. Cada tabela é achada pela linha
+    cuja primeira célula casa ``anchor`` (às vezes na segunda coluna, como em
+    ``vendas``) e entra com as suas linhas de dado e os seus próprios nomes: as
+    tabelas começam em anos diferentes (``ANO 2012``) e as colunas se juntam pelo
+    nome, em vez de pela posição. A coluna ``tabela`` diz de qual veio a linha.
+    Colunas só com números viram ``Float64``.
+    """
+    rows = [[_cell(v) for v in row] for row in df.rows()]
+    pattern = re.compile(anchor, re.IGNORECASE)
+    headers: list[tuple[int, int]] = []  # (linha, coluna da célula ``Mês``)
+    for i, row in enumerate(rows):
+        left = next((j for j, c in enumerate(row) if c), None)
+        if (
+            left is not None
+            and pattern.search(row[left])
+            and sum(1 for c in row if c) >= 3  # ``Mês`` e ao menos dois anos
+        ):
+            headers.append((i, left))
+    if not headers:
+        return None
+    order: list[str] = []
+    records: list[dict[str, str | None]] = []
+    previous_end = 0
+    for header, left in headers:
+        table = [row[left:] for row in rows]
+        names = _table_names(table, header, len(table[0]))
+        end = _block_end(table, header + 1)
+        title = _block_title(rows, previous_end, header)
+        order.extend(n for n in names if n not in order)
+        records.extend(
+            {"tabela": title, **{n: c or None for n, c in zip(names, row, strict=True)}}
+            for row in table[header + 1 : end]
+        )
+        previous_end = end
+    if not records:
+        return None
+    years = sorted((n for n in order if _YEAR_COLUMN.fullmatch(n)), key=lambda n: n[4:])
+    columns = ["tabela", "Mês", *years, *(n for n in order[1:] if n not in years)]
+    frame: dict[str, pl.Series] = {}
+    for name in columns:
+        series = pl.Series(name, [r.get(name) for r in records], pl.String)
+        if name not in ("tabela", "Mês"):
+            number = series.cast(pl.Float64, strict=False)
+            if number.null_count() == series.null_count():
+                series = number
+        frame[name] = series
+    return pl.DataFrame(frame)
 
 
 def _real_header(
@@ -493,11 +640,19 @@ def _real_header(
         headerless (bool): ``True`` quando a primeira linha ainda é dado (planilha
             lida sem cabeçalho); ``False`` quando já virou nome de coluna (CSV).
         options (dict[str, Any]): ``anchor`` (regex da primeira célula do
-            cabeçalho) e ``levels`` (aceita níveis abaixo do cabeçalho).
+            cabeçalho), ``levels`` (aceita níveis abaixo do cabeçalho: ``True`` até
+            três, ou o número máximo), ``drop_blank`` (descarta linhas sem nenhuma
+            célula preenchida) e ``tables``
+            (regex do cabeçalho de planilha de painel, com várias tabelas
+            empilhadas: :func:`_stacked_tables`).
     """
     width = df.width
     if width < 2 or not all(t == pl.String for t in df.schema.values()):
         return df
+    if headerless and options.get("tables"):
+        stacked = _stacked_tables(df, options["tables"])
+        if stacked is not None:
+            return stacked
     names = [] if headerless else [None if _blank_name(c) else c for c in df.columns]
     rows = ([] if headerless else [[_cell(v) for v in names]]) + [
         [_cell(v) for v in row] for row in df.head(_HEADER_SCAN).rows()
@@ -507,8 +662,11 @@ def _real_header(
         return df
     consumed = header + 1
     levels = [rows[header]]
-    if options.get("levels"):
-        while consumed < len(rows) and len(levels) <= _MAX_SUBHEADERS:
+    sublevels = options.get("levels")
+    if sublevels:
+        # ``True``: até ``_MAX_SUBHEADERS`` níveis; um número: no máximo esse tanto
+        limit = _MAX_SUBHEADERS if sublevels is True else int(sublevels)
+        while consumed < len(rows) and len(levels) <= limit:
             cells = [c for c in rows[consumed] if c]
             if not cells:
                 consumed += 1  # linha em branco dentro do cabeçalho
@@ -532,7 +690,11 @@ def _real_header(
             all(not c or c == lv[j] for j, c in enumerate(cells)) for lv in repeats
         )
 
-    keep = [not is_repeat(row) for row in body.rows()]
+    drop_blank = bool(options.get("drop_blank"))
+    keep = [
+        not (drop_blank and all(_blank(v) for v in row)) and not is_repeat(row)
+        for row in body.rows()
+    ]
     return body.filter(pl.Series(keep)) if not all(keep) else body
 
 

@@ -73,8 +73,27 @@ _POCO_HEADER_SPEC: dict[str, Any] = {"header": {"levels": True}}
 # o cabeçalho é a linha que começa por "Serviço").
 _ARF_SPEC: dict[str, Any] = {"header": {"anchor": r"^servi[cç]o"}}
 
+# Painéis estatísticos (planilha com várias tabelas empilhadas, ``Mês`` e os anos no
+# cabeçalho): cada tabela vira linhas, com a coluna ``tabela`` de origem.
+_PAINEL_TABLES = r"^m[eê]s(es)?$"
+_PAINEL_SPEC: dict[str, Any] = {"header": {"tables": _PAINEL_TABLES}}
+# Vendas: o painel mensal e as planilhas municipais (título, unidade e ano acima do
+# cabeçalho ``CÓDIGO IBGE``, com ``IBGE`` repetido na linha de baixo).
+_VENDAS_SPEC: dict[str, Any] = {
+    "header": {
+        "tables": _PAINEL_TABLES,
+        "anchor": r"^c[oó]digo ibge",
+        "levels": 1,  # só o ``IBGE`` repetido; a linha de baixo já é o 1º estado
+        "drop_blank": True,
+    }
+}
+
 PROCESSING_SPECS: dict[str, dict[str, Any]] = {
-    "ppg": _POCO_HEADER_SPEC,
+    "ie": _PAINEL_SPEC,
+    "pp": _PAINEL_SPEC,
+    "pb": _PAINEL_SPEC,
+    "vdpb": _VENDAS_SPEC,
+    "ppg": {"header": {**_POCO_HEADER_SPEC["header"], "tables": _PAINEL_TABLES}},
     "producao-poco-abertos": _POCO_HEADER_SPEC,
     "amostras-rochas-fluidos": _ARF_SPEC,
     "shpc-ca": _SHPC_SPEC,
