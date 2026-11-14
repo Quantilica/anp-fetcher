@@ -47,6 +47,7 @@ except ImportError as exc:
 from anp_fetcher import __version__
 from anp_fetcher.catalog import ALL_GROUP_KEYS, resolve_group
 from anp_fetcher.reader import (
+    collect_notes,
     csv_lacks_header,
     decompress,
     extract_zip_member,
@@ -1060,7 +1061,9 @@ class LakeConverter:
         """Lê ``source_path`` (o arquivo ou o membro já extraído) e grava no lake."""
         raw_file = item.path
         part_keys_lower = [k.lower() for k in item.partition_keys]
-        data = read_file(source_path, spec)
+        with collect_notes() as notes:
+            data = read_file(source_path, spec)
+        result.warnings.extend(f"{raw_file.name}: {note}" for note in notes)
         frames = list(data.items()) if isinstance(data, dict) else [(None, data)]
         for sheet, frame in frames:
             norm = normalize_dtypes(frame, spec)

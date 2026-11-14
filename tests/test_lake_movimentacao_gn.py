@@ -54,10 +54,10 @@ NOVO = [
 ]
 
 
-def _ids(variavel: str) -> list[str]:
+def _ids(variavel: str, tipo: str = "", contrato: str = "") -> list[str]:
     return [
-        "700521", "Bolívia - Mato Grosso", "", "", "", "", "", "Gasocidente",
-        "1717813", "AMBAR", "1645009", "", variavel,
+        "700521", "Bolívia - Mato Grosso", "", "", tipo, "", "", "Gasocidente",
+        "1717813", "AMBAR", "1645009", contrato, variavel,
     ]  # fmt: skip
 
 
@@ -71,11 +71,23 @@ def _csv(
     ids: list[str],
     cabecalho_datas: list[str],
     linhas: list[tuple[str, list[str]]],
+    *,
+    tipo: str = "",
+    contrato: str = "",
+    sem: int | None = None,
 ) -> Path:
-    """CSV em latin-1, como a ANP publica: ``(variável, valores por coluna)``."""
-    texto = ";".join([*ids, *cabecalho_datas]) + "\n"
+    """CSV em latin-1, como a ANP publica: ``(variável, valores por coluna)``.
+
+    ``sem`` tira a coluna de identificação dessa posição (cabeçalho e linhas).
+    """
+
+    def tira(cells: list[str]) -> list[str]:
+        return [c for i, c in enumerate(cells) if i != sem]
+
+    texto = ";".join([*tira(ids), *cabecalho_datas]) + "\n"
     for variavel, valores in linhas:
-        texto += ";".join([*_ids(variavel), *valores]) + "\n"
+        row = tira(_ids(variavel, tipo, contrato))
+        texto += ";".join([*row, *valores]) + "\n"
     path.write_bytes(texto.encode("latin-1"))
     return path
 
@@ -209,15 +221,7 @@ def test_valor_nao_numerico_e_erro(tmp_path: Path) -> None:
     valores = _valores(28)
     valores[3] = "abc"
     csv = _csv(tmp_path / "e.csv", NOVO, _datas(2026, 2), [("Alocação (%)", valores)])
-    with pytest.raises(ValueError, match="não convertida"):
-        read_file(csv, SPEC)
-
-
-def test_valor_com_ponto_ambiguo_e_erro(tmp_path: Path) -> None:
-    valores = _valores(28)
-    valores[3] = "1.234"
-    csv = _csv(tmp_path / "p.csv", NOVO, _datas(2026, 2), [("Alocação (%)", valores)])
-    with pytest.raises(ValueError, match="ambíguo"):
+    with pytest.raises(ValueError, match="não convertido"):
         read_file(csv, SPEC)
 
 
@@ -254,19 +258,219 @@ def test_lake_um_esquema_para_todas_as_safras(tmp_path: Path) -> None:
     assert df.filter(pl.col("ano") == 2021)["unidade"].null_count() == 2 * 28
 
 
-def test_coluna_desconhecida_segue_como_vem(tmp_path: Path) -> None:
-    """Coluna nova da fonte não some em silêncio nem derruba a conversão."""
+def test_valores_das_colunas_renomeadas_sao_levados(tmp_path: Path) -> None:
+    """Tipo e contrato (posições 4 e 11) mudam de nome entre safras, não de valor."""
+    antigo = _csv(
+        tmp_path / "antigo.csv",
+        ANTIGO,
+        _datas(2021, 1),
+        [("Volume Realizado", _valores(31))],
+        tipo="Ponto de Entrega",
+        contrato="CP01",
+    )
+    novo = _csv(
+        tmp_path / "novo.csv",
+        NOVO,
+        _datas(2026, 4),
+        [("Volume Realizado (mil m³)", _valores(30))],
+        tipo="Ponto de Entrega",
+        contrato="CP01",
+    )
+    for df in (read_file(antigo, SPEC), read_file(novo, SPEC)):
+        assert df["Tipo da instalação de Gasoduto"].unique().to_list() == [
+            "Ponto de Entrega"
+        ]
+        assert df["Nome do Contrato da Instalação de Gasoduto"].unique().to_list() == [
+            "CP01"
+        ]
+        assert df["Nome do Operador da instalação de Gasoduto"].unique().to_list() == [
+            "Gasocidente"
+        ]
+
+
+def test_coluna_desconhecida_e_erro(tmp_path: Path) -> None:
+    """Coluna de identificação com outro nome não passa em silêncio."""
+    ids = [*NOVO[:-1], "Nome do Operador da Instalacao", NOVO[-1]]
+    ids = [c for c in ids if c != "Nome do Operador da instalação de Gasoduto"]
     csv = _csv(
         tmp_path / "x.csv",
-        [*NOVO[:-1], "Observação", NOVO[-1]],
+        ids,
         _datas(2026, 2),
         [("Alocação (%)", _valores(28))],
     )
-    texto = csv.read_bytes().decode("latin-1").splitlines()
-    # a linha de dados tem a célula da coluna nova antes da variável
-    texto[1] = texto[1].replace(";Alocação (%);", ";nota;Alocação (%);")
-    csv.write_bytes(("\n".join(texto) + "\n").encode("latin-1"))
+    with pytest.raises(ValueError, match="desconhecidas.*Operador da Instalacao"):
+        read_file(csv, SPEC)
+
+
+def test_coluna_ausente_e_erro(tmp_path: Path) -> None:
+    csv = _csv(
+        tmp_path / "x.csv",
+        [c for c in NOVO if not c.startswith("Nome do Contrato")],
+        _datas(2026, 2),
+        [("Alocação (%)", _valores(28))],
+        sem=11,
+    )
+    with pytest.raises(ValueError, match="ausentes.*Nome do Contrato"):
+        read_file(csv, SPEC)
+
+
+def test_variavel_ausente_no_cabecalho_e_erro(tmp_path: Path) -> None:
+    csv = _csv(
+        tmp_path / "x.csv",
+        NOVO[:-1],
+        _datas(2026, 2),
+        [("Alocação (%)", _valores(28))],
+        sem=12,
+    )
+    with pytest.raises(ValueError, match="ausentes.*Nome da Variável"):
+        read_file(csv, SPEC)
+
+
+def _lido(tmp_path: Path, cabecalho: list[str], n: int, nome: str = "x.csv") -> Path:
+    return _csv(tmp_path / nome, NOVO, cabecalho, [("Alocação (%)", _valores(n))])
+
+
+@pytest.mark.parametrize(
+    ("cabecalho", "mensagem"),
+    [
+        (["01/03/2025", "02/03/2025", "", "05/03/2025"], "faltam 2 dia"),
+        (["01/03/2025", "", "", "03/03/2025"], "faltam 1 dia"),
+        (["01/03/2025", "", "02/03/2025"], "faltam 0 dia"),
+        (["", "02/03/2025", "03/03/2025"], "antes da primeira data"),
+        (["01/03/2025", "02/03/2025", "02/03/2025"], "repetida"),
+        (["01/03/2025", "02/03/2025", "01/03/2025"], "repetida"),
+        (["02/03/2025", "01/03/2025"], "fora de ordem"),
+        (["01/03/2025", "02/04/2025"], "mais de um mês"),
+    ],
+)
+def test_cabecalho_de_datas_que_nao_fecha_e_erro(
+    tmp_path: Path, cabecalho: list[str], mensagem: str
+) -> None:
+    csv = _lido(tmp_path, cabecalho, len(cabecalho))
+    with pytest.raises(ValueError, match=mensagem):
+        read_file(csv, SPEC)
+
+
+def test_data_de_outro_mes_do_arquivo_e_erro(tmp_path: Path) -> None:
+    csv = _lido(tmp_path, _datas(2026, 3), 31, f"{GROUP}_2026-04.csv")
+    with pytest.raises(ValueError, match="fora do mês 2026-04"):
+        read_file(csv, SPEC)
+
+
+def test_coluna_sem_nome_no_fim_leva_o_dia_que_falta(tmp_path: Path) -> None:
+    """Falta o cabeçalho do último dia: a cauda cobre exatamente o que sobra."""
+    cabecalho = [*_datas(2026, 4)[:-1], ""]
+    valores = [*_valores(29), "8,5"]
+    csv = _csv(tmp_path / "t.csv", NOVO, cabecalho, [("Alocação (%)", valores)])
+    df = read_file(csv, SPEC).sort("data")
+    assert df["data"].dt.day().to_list() == list(range(1, 31))
+    assert df["valor"][-1] == 8.5
+
+
+def test_coluna_de_dia_com_cabecalho_em_branco_e_toda_vazia_fica(
+    tmp_path: Path,
+) -> None:
+    """O dia continua na tabela, com valor nulo (o leitor não descarta a coluna)."""
+    datas = _datas(2025, 3)
+    cabecalho = [datas[0], "", *datas[2:]]
+    valores = _valores(31)
+    valores[1] = ""
+    csv = _csv(tmp_path / "v.csv", NOVO, cabecalho, [("Alocação (%)", valores)])
+    df = read_file(csv, SPEC).sort("data")
+    assert df.height == 31
+    assert df.filter(pl.col("data").dt.day() == 2)["valor"].to_list() == [None]
+
+
+def test_coluna_final_vazia_sem_nome_e_ignorada(tmp_path: Path) -> None:
+    """O ``;`` sobrando no fim do cabeçalho não vira dia nem erro."""
+    csv = _csv(
+        tmp_path / "f.csv",
+        NOVO,
+        [*_datas(2026, 2), ""],
+        [("Alocação (%)", [*_valores(28), ""])],
+    )
     df = read_file(csv, SPEC)
     assert df.height == 28
-    assert "Observação" in df.columns
-    assert df["Observação"].unique().to_list() == ["nota"]
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperado"),
+    [
+        ("0.123", 0.123),
+        ("209.97", 209.97),
+        ("10.5", 10.5),
+        ("1.234.567", 1234567.0),
+        ("1.234,56", 1234.56),
+        ("- 1,5", -1.5),
+        ("0,00", 0.0),
+        ("1,5E3", 1500.0),
+        ("-", None),
+        ("#N/D", None),
+        ("", None),
+    ],
+)
+def test_valores_aceitos(tmp_path: Path, texto: str, esperado: float | None) -> None:
+    valores = _valores(28)
+    valores[0] = texto
+    csv = _csv(tmp_path / "n.csv", NOVO, _datas(2026, 2), [("Alocação (%)", valores)])
+    df = read_file(csv, SPEC).sort("data")
+    assert (
+        df["valor"][0] == pytest.approx(esperado)
+        if esperado is not None
+        else (df["valor"][0] is None)
+    )
+
+
+@pytest.mark.parametrize(
+    "texto", ["1.234", "- 1.234", "1,234.56", "inf", "nan", "-inf", "abc", "1.2.3"]
+)
+def test_valores_ambiguos_ou_invalidos_sao_erro(tmp_path: Path, texto: str) -> None:
+    valores = _valores(28)
+    valores[3] = texto
+    csv = _csv(tmp_path / "n.csv", NOVO, _datas(2026, 2), [("Alocação (%)", valores)])
+    with pytest.raises(ValueError, match="não convertido"):
+        read_file(csv, SPEC)
+
+
+@pytest.mark.parametrize(
+    ("fonte", "variavel"),
+    [
+        ("Teor de CO2 (%)", "teor-de-co2"),
+        ("Gás Não Contado5 (mil m³)", "gas-nao-contado"),
+    ],
+)
+def test_nota_de_rodape_so_em_palavra_minuscula(
+    tmp_path: Path, fonte: str, variavel: str
+) -> None:
+    csv = _csv(tmp_path / "v.csv", NOVO, _datas(2026, 2), [(fonte, _valores(28))])
+    assert read_file(csv, SPEC)["variavel"].unique().to_list() == [variavel]
+
+
+def test_descarte_da_coluna_sem_nome_vai_para_os_avisos(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    group_dir = raw_dir / _GROUP_DIRS[GROUP]
+    group_dir.mkdir(parents=True)
+    _csv(
+        group_dir / f"{GROUP}_2026-04.csv",
+        NOVO,
+        [*_datas(2026, 4), ""],
+        [("Volume Realizado (mil m³)", [*_valores(30), "7"])],
+    )
+    res = converter.convert(raw_dir, tmp_path / "lake", datasets=[GROUP])
+    assert not res.errors, res.errors
+    assert len(res.warnings) == 1
+    assert "sem nome depois do último dia" in res.warnings[0]
+    assert f"{GROUP}_2026-04.csv" in res.warnings[0]
+
+
+def test_codificacao_decidida_pelos_bytes(tmp_path: Path) -> None:
+    """UTF-8 e latin-1 leem igual, sem depender da exceção de decodificação."""
+    from anp_fetcher.reader import _is_utf8
+
+    utf8 = tmp_path / "u.csv"
+    utf8.write_bytes("Gás;Não\n".encode())
+    latin = tmp_path / "l.csv"
+    latin.write_bytes("Gás;Não\n".encode("latin-1"))
+    assert _is_utf8(utf8) and not _is_utf8(latin)
+    assert read_file(utf8, {"separator": ";"}).columns == ["Gás", "Não"]
+    assert read_file(latin, {"separator": ";"}).columns == ["Gás", "Não"]
