@@ -406,6 +406,136 @@ def _promote_header(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+_DATE_LIKE = re.compile(r"\d{1,4}[/.-]\d{1,2}([/.-]\d{1,4})?([ T]\d.*)?")
+_HEADER_SCAN = 15  # linhas do topo em que se procura o cabeçalho
+_MAX_SUBHEADERS = 3
+_MIN_FALLBACK_WIDTH = 8  # folhas estreitas (formulários de preço) só pelo âncora
+
+
+def _cell(value: Any) -> str:
+    """Texto da célula: espaços repetidos e quebras viram um espaço; vazio é ``""``."""
+    return "" if value is None else re.sub(r"\s+", " ", str(value)).strip()
+
+
+def _data_like(text: str) -> bool:
+    """Número, data ou período (``2005/01``): valor de linha de dados, não de nome."""
+    return bool(_NUMBER.fullmatch(text) or _DATE_LIKE.fullmatch(text))
+
+
+def _locate_header(rows: list[list[str]], width: int, anchor: str | None) -> int | None:
+    """Índice da linha de cabeçalho nas primeiras linhas, ou ``None``.
+
+    Com ``anchor`` (regex), é a primeira linha cuja primeira célula preenchida casa.
+    Sem âncora (ou sem achar uma, em folha larga), é a primeira com 40% ou mais
+    das células preenchidas (célula mesclada deixa o resto vazio) e só texto: o
+    título e a data acima têm uma ou duas.
+    """
+    top = rows[:_HEADER_SCAN]
+    if anchor:
+        pattern = re.compile(anchor, re.IGNORECASE)
+        for i, row in enumerate(top):
+            cells = [c for c in row if c]
+            if cells and pattern.search(cells[0]):
+                return i
+    if width < _MIN_FALLBACK_WIDTH and anchor:
+        return None
+    for i, row in enumerate(top):
+        cells = [c for c in row if c]
+        if len(cells) >= max(4, 0.4 * width) and not any(_data_like(c) for c in cells):
+            return i
+    return None
+
+
+def _levels_names(levels: list[list[str]]) -> list[str]:
+    """Nome de cada coluna a partir dos níveis do cabeçalho (cima para baixo).
+
+    Célula mesclada vira vazia à direita: o nível herda o texto da esquerda, mas só
+    nas colunas que têm texto em algum nível abaixo (``Gás Natural (Mm³/dia)`` sobre
+    ``Associado``, ``Não Associado`` e ``Gás Total``).
+    """
+    width = len(levels[0])
+    filled: list[list[str]] = []
+    for r, row in enumerate(levels):
+        out, current = [], ""
+        for j in range(width):
+            deeper = any(levels[k][j] for k in range(r + 1, len(levels)))
+            if row[j]:
+                current = row[j]
+                out.append(row[j])
+            elif deeper:
+                out.append(current)
+            else:
+                current = ""
+                out.append("")
+        filled.append(out)
+    return [
+        " ".join(filter(None, (filled[r][j] for r in range(len(levels)))))
+        for j in range(width)
+    ]
+
+
+def _real_header(
+    df: pl.DataFrame, *, headerless: bool, options: dict[str, Any]
+) -> pl.DataFrame:
+    """Põe o cabeçalho de verdade nos nomes e tira o resto do topo.
+
+    Planilhas da ANP começam por título e data (``ANP - Agência...``,
+    ``Data: 15/03/2019``), têm o cabeçalho em até três níveis (célula mesclada) e às
+    vezes repetem o cabeçalho no meio dos dados. Aqui o cabeçalho é a primeira linha
+    de texto com boa parte das células preenchidas (:func:`_locate_header`); as linhas
+    de só texto logo abaixo, com menos de 60% preenchidas, são os níveis seguintes
+    (``options["levels"]``); linhas em branco entre eles somem; e as linhas de dados
+    que repetem um nível do cabeçalho são descartadas. Sem cabeçalho achado, o
+    DataFrame passa como veio.
+
+    Args:
+        df (pl.DataFrame): O que o leitor devolveu, tudo texto.
+        headerless (bool): ``True`` quando a primeira linha ainda é dado (planilha
+            lida sem cabeçalho); ``False`` quando já virou nome de coluna (CSV).
+        options (dict[str, Any]): ``anchor`` (regex da primeira célula do
+            cabeçalho) e ``levels`` (aceita níveis abaixo do cabeçalho).
+    """
+    width = df.width
+    if width < 2 or not all(t == pl.String for t in df.schema.values()):
+        return df
+    names = [] if headerless else [None if _blank_name(c) else c for c in df.columns]
+    rows = ([] if headerless else [[_cell(v) for v in names]]) + [
+        [_cell(v) for v in row] for row in df.head(_HEADER_SCAN).rows()
+    ]
+    header = _locate_header(rows, width, options.get("anchor"))
+    if header is None:
+        return df
+    consumed = header + 1
+    levels = [rows[header]]
+    if options.get("levels"):
+        while consumed < len(rows) and len(levels) <= _MAX_SUBHEADERS:
+            cells = [c for c in rows[consumed] if c]
+            if not cells:
+                consumed += 1  # linha em branco dentro do cabeçalho
+                continue
+            if len(cells) <= 0.6 * width and not any(_data_like(c) for c in cells):
+                levels.append(rows[consumed])
+                consumed += 1
+                continue
+            break
+    final = [n if n else f"__blank_{j}" for j, n in enumerate(_levels_names(levels))]
+    offset = consumed - (0 if headerless else 1)
+    body = df.slice(offset)
+    body.columns = _unique(final)
+    # descarta as linhas que repetem um nível do cabeçalho
+    repeats = [[c.casefold() for c in lv] for lv in levels]
+
+    def is_repeat(row: tuple[Any, ...]) -> bool:
+        cells = [_cell(v).casefold() for v in row]
+        used = [c for c in cells if c]
+        return bool(used) and any(
+            all(not c or c == lv[j] for j, c in enumerate(cells)) for lv in repeats
+        )
+
+    keep = [not is_repeat(row) for row in body.rows()]
+    return body.filter(pl.Series(keep)) if not all(keep) else body
+
+
 def _valid_name(name: str) -> bool:
     """Nome que o lake aceita: não vazio, sem controle e com até 128 caracteres."""
     return (
@@ -524,10 +654,14 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
         df = _read_csv_8bit(path, spec)
     else:
         # No scratch do `lake build` quando definido, senão no temp do sistema.
-        with tempfile.TemporaryDirectory(prefix=".anp-utf8-", dir=scratch_dir()) as tmp:
+        with tempfile.TemporaryDirectory(
+            prefix=".anp-utf8-", dir=scratch_dir(), ignore_cleanup_errors=True
+        ) as tmp:
             utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
             df = _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"})
-    if not spec.get("skip_rows"):
+    if spec.get("header"):
+        df = _real_header(df, headerless=False, options=spec["header"])
+    elif not spec.get("skip_rows"):
         df = _promote_header(df)
     return _clean_columns(df)
 
@@ -587,15 +721,27 @@ def read_excel(
             DataFrames por nome de aba.
     """
     sheet = spec.get("sheet")
-    with tempfile.TemporaryDirectory() as tmp:
+    header = spec.get("header")
+    # Com cabeçalho de verdade a achar, a planilha vem sem cabeçalho e tudo texto.
+    extra: dict[str, Any] = {"has_header": False, "infer_schema_length": 0}
+    kwargs = extra if header else {}
+
+    def tidy(frame: pl.DataFrame) -> pl.DataFrame:
+        if header:
+            frame = _real_header(frame, headerless=True, options=header)
+        return _clean_columns(frame)
+
+    with tempfile.TemporaryDirectory(
+        dir=scratch_dir(), ignore_cleanup_errors=True
+    ) as tmp:
         source = _excel_path(path, Path(tmp))
         if sheet == "all":
-            frames = pl.read_excel(source, sheet_id=0)
+            frames = pl.read_excel(source, sheet_id=0, **kwargs)
             assert isinstance(frames, dict), "sheet_id=0 deve retornar dict"
-            return {name: _clean_columns(f) for name, f in frames.items()}
+            return {name: tidy(f) for name, f in frames.items()}
         if sheet is None:
-            return _clean_columns(pl.read_excel(source, sheet_id=None))
-        return _clean_columns(pl.read_excel(source, sheet_id=sheet))
+            return tidy(pl.read_excel(source, sheet_id=None, **kwargs))
+        return tidy(pl.read_excel(source, sheet_id=sheet, **kwargs))
 
 
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
@@ -631,7 +777,9 @@ def read_file(
         csv_members = sorted(n for n in names if n.lower().endswith(".csv"))
         if len(csv_members) > 1:
             return _read_zip_csvs(path, csv_members, spec)
-        with tempfile.TemporaryDirectory(prefix=".anp-zip-", dir=scratch_dir()) as tmp:
+        with tempfile.TemporaryDirectory(
+            prefix=".anp-zip-", dir=scratch_dir(), ignore_cleanup_errors=True
+        ) as tmp:
             return read_file(decompress(path, Path(tmp)), spec)
     separator = spec.get("separator", ";").encode()
     if (

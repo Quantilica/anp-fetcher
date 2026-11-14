@@ -66,7 +66,17 @@ _ABERTOS_NUMERIC = [
     "DISPÊNDIO / RECEITA",
 ]
 
+# Planilhas e CSV que começam por título e data (``ANP - Agência...``,
+# ``Data: 15/03/2019``) e têm o cabeçalho em até três níveis (célula mesclada).
+_POCO_HEADER_SPEC: dict[str, Any] = {"header": {"levels": True}}
+# Consolidação de amostras (CSV com título) e depositárias (formulário de preços:
+# o cabeçalho é a linha que começa por "Serviço").
+_ARF_SPEC: dict[str, Any] = {"header": {"anchor": r"^servi[cç]o"}}
+
 PROCESSING_SPECS: dict[str, dict[str, Any]] = {
+    "ppg": _POCO_HEADER_SPEC,
+    "producao-poco-abertos": _POCO_HEADER_SPEC,
+    "amostras-rochas-fluidos": _ARF_SPEC,
     "shpc-ca": _SHPC_SPEC,
     "shpc-glp": _SHPC_SPEC,
     "shpc-diesel-gnv": _SHPC_SPEC,

@@ -270,3 +270,56 @@ def test_apostrofo_cp1252_em_arquivo_curto_nao_vira_mac_roman(tmp_path: Path) ->
     df = read_csv(src, {})
     # segue o caminho de sempre (latin-1), como no main; nada de "ATEMíS"
     assert df["NOME"].to_list() == ["ATEM\x92S"]
+
+
+def _planilha(path: Path, rows: list[list[object]]) -> Path:
+    xlsxwriter = pytest.importorskip("xlsxwriter")
+    book = xlsxwriter.Workbook(str(path))
+    sheet = book.add_worksheet()
+    for i, row in enumerate(rows):
+        for j, value in enumerate(row):
+            if value is not None:
+                sheet.write(i, j, value)
+    book.close()
+    return path
+
+
+def test_planilha_de_producao_acha_o_cabecalho_de_dois_niveis(tmp_path: Path) -> None:
+    from anp_fetcher.wrangling import spec_for
+
+    cab = ["Estado", "Bacia", "Nome Poço", None, "Período", "Gás Natural (Mm³/dia)"]
+    sub = [None, None, "ANP", "Operador", None, "Associado", "Total"]
+    cab += [None]
+    path = _planilha(
+        tmp_path / "2005_producao_mar.xlsx",
+        [
+            ["ANP - Agência Nacional do Petróleo"],
+            [None, None, None, None, "Data: 29/03/2019"],
+            [],
+            cab,
+            sub,
+            ["BA", "Recôncavo", "1-A-1-BA", "1A 0001", "2005/01", 1.5, 2.5],
+            cab,  # cabeçalho repetido no meio dos dados
+            sub,
+            ["SE", "Sergipe", "1-B-1-SE", "1B 0001", "2005/02", 3.5, 4.5],
+        ],
+    )
+    df = read_file(path, spec_for("ppg"))
+    assert df.columns == [
+        "Estado",
+        "Bacia",
+        "Nome Poço ANP",
+        "Nome Poço Operador",
+        "Período",
+        "Gás Natural (Mm³/dia) Associado",
+        "Gás Natural (Mm³/dia) Total",
+    ]
+    assert df.height == 2
+    assert df["Estado"].to_list() == ["BA", "SE"]
+    assert _valid(df.columns)
+
+
+def test_planilha_sem_cabecalho_de_producao_nao_muda(tmp_path: Path) -> None:
+    # grupo sem a opção de cabeçalho: o comportamento anterior fica
+    path = _planilha(tmp_path / "x.xlsx", [["a", "b"], [1, 2]])
+    assert read_file(path, {}).columns == ["a", "b"]
