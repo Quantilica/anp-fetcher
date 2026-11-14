@@ -12,20 +12,27 @@ Um ZIP com vários membros de dados rende um Parquet por membro
 
 from __future__ import annotations
 
+import glob
 import re
 import tempfile
 import unicodedata
 import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 try:
     import polars as pl
-    from quantilica.analytics.lake import LakeWriter
+    import pyarrow.parquet as pq
+    from quantilica.analytics import lake as analytics_lake
+    from quantilica.analytics.lake import META_FILE_KEY, LakeWriter
+    from quantilica.core.files import sha256_file
     from quantilica.core.lake import (
         DatasetDescriptor,
         composite_file_key,
+        file_key,
         partition_types_for,
     )
 except ImportError as exc:
@@ -220,6 +227,9 @@ class Routed:
     #: colunas literais acrescentadas ao Parquet (nome, valor): o que só o nome do
     #: membro diz (``ambiente`` mar/terra/presal)
     literals: tuple[tuple[str, str], ...] = ()
+    #: motivo de o item não poder ser convertido (membro sem tabela declarada);
+    #: ``convert`` o devolve como erro do item, sem criar dataset algum
+    error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -234,6 +244,7 @@ class _Plan:
     literals: tuple[tuple[str, str], ...] = ()
     #: dataset próprio da tabela (ZIP com layouts diferentes); ``None`` = do grupo
     table: str | None = None
+    error: str | None = None
 
 
 _PMQC_MEMBER = re.compile(r"(?P<ano>\d{4})_(?P<mes>\d{2})\.csv$", re.IGNORECASE)
@@ -281,31 +292,140 @@ _ARF_TABLES = (
 )
 
 
+def _norm(text: str) -> str:
+    """Nome sem acento, caixa nem pontuação (``Vendas_UF`` -> ``vendas uf``)."""
+    return re.sub(r"[^0-9a-z]+", " ", _ascii(text)).strip()
+
+
+#: ``movimentacao-derivados``: ZIP (``base_id``) -> ``(padrão, tabela)``. O padrão
+#: casa o nome do membro sem acento, caixa nem pontuação; a tabela vira o dataset
+#: ``movimentacao-derivados-<tabela>``. Ids curtos e sem ano: os históricos de
+#: períodos diferentes (``..._2007_a_2017``, ``..._2018_a_2023``) são a mesma tabela.
+#: Fonte única do roteamento, como :data:`DATASET_ROUTES`.
+_MDPG_TABLES: dict[str, tuple[tuple[str, str], ...]] = {
+    "mdpg-asfalto": (
+        (r"^asfalto vendas distribuidor atual$", "asfalto-vendas-distribuidor-atual"),
+        (
+            r"^asfalto vendas distribuidor uf atual$",
+            "asfalto-vendas-distribuidor-uf-atual",
+        ),
+        (
+            r"^asfalto vendas distribuidor historico$",
+            "asfalto-vendas-distribuidor-historico",
+        ),
+    ),
+    "mdpg-aviacao": tuple(
+        (rf"^aviacao {pat}$", f"aviacao-{tab}")
+        for pat, tab in (
+            ("entregas distribuidor atual", "entregas-distribuidor-atual"),
+            ("entregas fornecedor atual", "entregas-fornecedor-atual"),
+            ("entregas historico", "entregas-historico"),
+            ("vendas atual", "vendas-atual"),
+            ("vendas historico", "vendas-historico"),
+            ("vendas uf atual", "vendas-uf-atual"),
+        )
+    ),
+    "mdpg-glp": tuple(
+        (rf"^glp {pat}$", f"glp-{tab}")
+        for pat, tab in (
+            ("entregas distribuidor atual", "entregas-distribuidor-atual"),
+            ("entregas fornecedor atual", "entregas-fornecedor-atual"),
+            ("entregas historico", "entregas-historico"),
+            ("vendas atual", "vendas-atual"),
+            ("vendas historico", "vendas-historico"),
+            ("vendas uf atual", "vendas-uf-atual"),
+        )
+    ),
+    "mdpg-liquidos": (
+        (
+            r"^liquidos entregas distribuidor atual$",
+            "liquidos-entregas-distribuidor-atual",
+        ),
+        (
+            r"^liquidos entregas fornecedor atual$",
+            "liquidos-entregas-fornecedor-atual",
+        ),
+        (r"^liquidos entregas historico$", "liquidos-entregas-historico"),
+        (
+            r"^liquidos importacao de distribuidores$",
+            "liquidos-importacao-distribuidores",
+        ),
+        (r"^liquidos vendas atual$", "liquidos-vendas-atual"),
+        (
+            r"^liquidos vendas historico(?: \d{4} a \d{4})?$",
+            "liquidos-vendas-historico",
+        ),
+    ),
+    "mdpg-logistica": (
+        (r"abastecimento nacional", "logistica-abastecimento-nacional"),
+        (r"vendas no mercado", "logistica-vendas-mercado"),
+        (r"vendas congeneres", "logistica-vendas-congeneres"),
+    ),
+    "mdpg-lubrificante": ((r"^lubrificante anexo ([a-z])$", "lubrificante-anexo-\\1"),),
+    "mdpg-solvente": (
+        (r"^solvente vendas dist atual$", "solvente-vendas-distribuidor-atual"),
+        (r"^solvente vendas dist historico$", "solvente-vendas-distribuidor-historico"),
+        (
+            r"^solvente vendas distribuidor uf atual$",
+            "solvente-vendas-distribuidor-uf-atual",
+        ),
+        (r"^solvente vendas prod atual$", "solvente-vendas-produtor-atual"),
+        (r"^solvente vendas prod historico$", "solvente-vendas-produtor-historico"),
+        (r"^solvente vendas produtor uf atual$", "solvente-vendas-produtor-uf-atual"),
+    ),
+    "mdpg-trr": (
+        (r"^trr vendas dist atual$", "trr-vendas-distribuidor-atual"),
+        (r"^trr vendas dist historico$", "trr-vendas-distribuidor-historico"),
+        (r"^trr vendas distribuidor uf atual$", "trr-vendas-distribuidor-uf-atual"),
+        (r"^trr vendas trr atual$", "trr-vendas-trr-atual"),
+        (r"^trr vendas trr historico$", "trr-vendas-trr-historico"),
+        (r"^trr vendas trr uf atual$", "trr-vendas-trr-uf-atual"),
+    ),
+}
+#: membros que são só índice/documentação do ZIP: ficam fora do lake
+_MDPG_SKIPPED = re.compile(r"^indice\b")
+
+
+def _mdpg_table(base_id: str, member: str) -> str | None:
+    """Tabela (sufixo do dataset) de um membro de ZIP do ``movimentacao-derivados``."""
+    name = _norm(Path(member).stem)
+    for pattern, table in _MDPG_TABLES.get(base_id, ()):
+        found = re.search(pattern, name)
+        if found:
+            return found.expand(table)
+    return None
+
+
 def table_dataset_for_member(group: str, base_id: str, member: str) -> str | None:
     """Dataset de uma tabela de ZIP de ``TABLE_DATASET_GROUPS``, ou ``None``.
 
-    ``movimentacao-derivados``: o id sai do nome do membro
-    (``Asfalto_Vendas_Distribuidor_UF_Atual.csv`` ->
-    ``movimentacao-derivados-asfalto-vendas-distribuidor-uf-atual``).
+    ``movimentacao-derivados``: o mapa :data:`_MDPG_TABLES` (ZIP + padrão do nome do
+    membro) dá o id, p.ex. ``Asfalto_Vendas_Distribuidor_UF_Atual.csv`` ->
+    ``movimentacao-derivados-asfalto-vendas-distribuidor-uf-atual``.
     ``amostras-rochas-fluidos``: só o ``arf-consolidacao-*`` tem tabelas
     diferentes (calha, fluidos, lâminas, laterais, plugues, testemunhos, células);
-    as depositárias são o mesmo formulário de preços, um por empresa.
+    as depositárias são o mesmo formulário de preços, um por empresa, e vão
+    todas para ``amostras-rochas-fluidos-depositarias``.
     """
     stem = Path(member).stem
     if group == "movimentacao-derivados":
-        slug = _kebab(stem).removeprefix("dados-abertos-")
-        return f"{group}-{slug}" if slug else None
-    if group == "amostras-rochas-fluidos" and base_id.startswith("arf-consolidacao"):
-        name = _ascii(stem)
-        for needle, suffix in _ARF_TABLES:
-            if needle in name:
-                return f"{group}-{suffix}"
+        table = _mdpg_table(base_id, member)
+        return f"{group}-{table}" if table else None
+    if group == "amostras-rochas-fluidos":
+        if base_id.startswith("arf-depositarias"):
+            return f"{group}-depositarias"
+        if base_id.startswith("arf-consolidacao"):
+            name = _ascii(stem)
+            for needle, suffix in _ARF_TABLES:
+                if needle in name:
+                    return f"{group}-{suffix}"
     return None
 
 
 #: Grupos com um arquivo por ambiente (mar, terra, pré-sal) dentro do ZIP.
 _AMBIENTE_GROUPS = ("ppg", "producao-poco-abertos")
-_AMBIENTE = re.compile(r"(?:^|[^a-z])(mar|terra|presal)$")
+# o nome pode terminar em "(2)" ou "_1": cópia que a ANP deixou no ZIP
+_AMBIENTE = re.compile(r"(?:^|[^a-z])(mar|terra|presal)(?:[ _()-]*\d+[ _()-]*)?$")
 _MONTHLY_MEMBER = re.compile(r"^\d{4}_\d{2}_")
 
 
@@ -340,7 +460,7 @@ def _unique_key_names(path: Path, members: list[str]) -> dict[str, str]:
 
     O ``file_key`` usa só o nome do arquivo do membro; dois membros cujos nomes dão
     o mesmo slug (``PETROSYNERGY_2017.csv`` e ``PETROSYNERGY_2017..csv``) ficam
-    com o sufixo ``_2``, ``_3``, na ordem do nome.
+    com o sufixo ``_2``, ``_3`` no nome (antes da extensão), na ordem do nome.
     """
     taken: set[str] = set()
     names: dict[str, str] = {}
@@ -349,10 +469,19 @@ def _unique_key_names(path: Path, members: list[str]) -> dict[str, str]:
         candidate, n = name, 1
         while composite_file_key(path, candidate) in taken:
             n += 1
-            candidate = f"{name} {n}"
+            candidate = f"{Path(name).stem}_{n}{Path(name).suffix}"
         taken.add(composite_file_key(path, candidate))
         names[member] = candidate
     return names
+
+
+_NAME_YEAR = re.compile(r"-(\d{4})(?=@|\.)")
+
+
+def _zip_year(path: Path) -> str | None:
+    """O ano no nome do ZIP (``arf-consolidacao-2017@2026….zip`` -> ``2017``)."""
+    found = _NAME_YEAR.search(path.name)
+    return found.group(1) if found else None
 
 
 def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
@@ -364,9 +493,12 @@ def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
 
     * grupos de produção por poço: o membro leva a coluna ``ambiente`` e o
       ``presal`` vai para o dataset ``<dataset>-presal``;
-    * ``amostras-rochas-fluidos``/``movimentacao-derivados``: cada tabela vai
-      para o dataset próprio (:func:`table_dataset_for_member`);
-    * as depositárias levam a coluna ``membro`` (o nome do arquivo é a empresa).
+    * ``movimentacao-derivados``: cada tabela vai para o dataset do mapa
+      :data:`_MDPG_TABLES`; membro de índice fica fora e membro que o mapa não
+      conhece vira erro do item;
+    * ``amostras-rochas-fluidos``: cada tabela do ``arf-consolidacao-AAAA`` e as
+      depositárias (que levam a coluna ``membro``: o arquivo é a empresa) vão para
+      datasets próprios, partição ``ano=`` tirada do nome do ZIP.
     """
     path = plan.path
     if path.suffix.lower() != ".zip":
@@ -377,31 +509,40 @@ def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
         return []
     if group in _AMBIENTE_GROUPS:
         members = _drop_monthly_overlap(members)
+    if group == "movimentacao-derivados":
+        members = [m for m in members if not _MDPG_SKIPPED.match(_norm(Path(m).stem))]
     if len(members) < 2:
         return []
     base_id = parse_filename(path)["base_id"]
     key_names = _unique_key_names(path, members)
+    year = _zip_year(path)
+    yearly = group == "amostras-rochas-fluidos" and base_id.startswith(
+        ("arf-consolidacao", "arf-depositarias")
+    )
+    keys, vals = (["ano"], {"ano": year}) if yearly and year else (plan.keys, plan.vals)
     parts = []
     for member in members:
         literals: list[tuple[str, str]] = []
-        table = None
+        table, error = None, None
         if group in _AMBIENTE_GROUPS and (amb := _ambiente(member)):
             literals.append(("ambiente", amb))
         if group in TABLE_DATASET_GROUPS:
             table = table_dataset_for_member(group, base_id, member)
-        if group == "amostras-rochas-fluidos" and base_id.startswith(
-            "arf-depositarias"
-        ):
+            declared = group == "movimentacao-derivados" or yearly
+            if table is None and declared:
+                error = f"membro sem tabela declarada em {group}: {member}"
+        if yearly and base_id.startswith("arf-depositarias"):
             literals.append(("membro", Path(member).stem))
         parts.append(
             _Plan(
                 path,
-                plan.keys,
-                plan.vals,
+                keys,
+                vals,
                 member=member,
                 key_name=key_names[member],
                 literals=tuple(literals),
                 table=table,
+                error=error,
             )
         )
     return parts
@@ -495,7 +636,7 @@ def route_group(
         parts = _zip_parts(group, plan) if plan.member is None else []
         expanded.extend(parts or [plan])
     resolved = expanded
-    finest = max((len(plan.keys) for plan in resolved), default=0)
+    finest = max((len(plan.keys) for plan in resolved if not plan.table), default=0)
     routed = [
         Routed(
             path=plan.path,
@@ -505,6 +646,7 @@ def route_group(
             member=plan.member,
             key_name=plan.key_name,
             literals=plan.literals,
+            error=plan.error,
         )
         for plan in resolved
     ]
@@ -549,6 +691,104 @@ LAKE_DATASET_ALIASES: dict[str, str] = {
     "preco_referencia_petroleo": "royalties",
     "preco-referencia-petroleo": "royalties",
 }
+
+
+@contextmanager
+def _sha_cached(path: Path, digest: str) -> Iterator[None]:
+    """O ``LakeWriter`` hasheia o bruto a cada escrita; um ZIP com 30 membros seria
+    lido 30 vezes. Dentro do bloco o hash de ``path`` já vem pronto.
+    """
+    original = analytics_lake.sha256_file
+
+    def cached(target: str | Path, *args: Any, **kwargs: Any) -> str:
+        if Path(target) == path:
+            return digest
+        return original(target, *args, **kwargs)
+
+    analytics_lake.sha256_file = cached
+    try:
+        yield
+    finally:
+        analytics_lake.sha256_file = original
+
+
+def _drop_legacy_parts(lake_dir: Path, group: str, raw_file: Path) -> int:
+    """Apaga os Parquets que o layout antigo gravou para um ZIP agora aberto por membro.
+
+    Antes, o ZIP inteiro virava um Parquet de ``file_key`` ``<zip>`` (só o primeiro
+    membro), no dataset do grupo; agora cada membro tem o ``<zip>__<membro>``, às
+    vezes em outro dataset. Sem esta limpeza o ``--force`` deixaria o antigo ao lado
+    dos novos e as linhas dobrariam. Só sai o arquivo cujo rodapé
+    (``quantilica.file_key``) é exatamente a chave antiga, nos datasets do grupo.
+
+    Returns:
+        int: Quantos arquivos foram apagados.
+    """
+    base = lake_dir / SOURCE_ID
+    if not base.is_dir():
+        return 0
+    key = file_key(raw_file)
+    parts = re.compile(rf"{re.escape(key)}(?:-\d{{3}})?\.parquet")
+    removed = 0
+    for dataset in sorted(base.iterdir()):
+        dropped = 0
+        if not dataset.is_dir() or not (
+            dataset.name == group or dataset.name.startswith(f"{group}-")
+        ):
+            continue
+        for path in dataset.rglob(f"{glob.escape(key)}*.parquet"):
+            relative = path.relative_to(dataset)
+            if any(part.startswith(".") for part in relative.parts):
+                continue  # staging do writer
+            if not parts.fullmatch(path.name):
+                continue
+            try:
+                owner = (pq.ParquetFile(path).metadata.metadata or {}).get(
+                    META_FILE_KEY.encode()
+                )
+            except (OSError, pq.lib.ArrowException):
+                continue
+            if owner is None or owner.decode() != key:
+                continue
+            path.unlink()
+            removed += 1
+            dropped += 1
+            folder = path.parent
+            while folder != dataset:  # partições que ficaram vazias
+                try:
+                    folder.rmdir()
+                except OSError:
+                    break
+                folder = folder.parent
+        if dropped and not any(dataset.rglob("*.parquet")):
+            # dataset sem dados: sai o descritor e a pasta, se nada mais sobrou
+            for name in ("_dataset.json", ".lock"):
+                (dataset / name).unlink(missing_ok=True)
+            try:
+                dataset.rmdir()
+            except OSError:
+                pass
+    return removed
+
+
+_DIGESTS: dict[Path, tuple[tuple[int, int], str]] = {}
+
+
+def _digest(path: Path) -> str:
+    """O sha256 do bruto, calculado uma vez por arquivo (e por versão dele)."""
+    stat = path.stat()
+    signature = (stat.st_size, stat.st_mtime_ns)
+    cached = _DIGESTS.get(path)
+    if cached is None or cached[0] != signature:
+        _DIGESTS[path] = (signature, sha256_file(path))
+    return _DIGESTS[path][1]
+
+
+def _item_key(item: Routed) -> str | None:
+    """O ``file_key`` de um item de ZIP aberto por membro; ``None`` = o do arquivo."""
+    if item.member is None:
+        return None
+    return composite_file_key(item.path, item.key_name or Path(item.member).name)
 
 
 def _table_group(dataset: str) -> str | None:
@@ -633,19 +873,41 @@ class LakeConverter:
         else:
             target_groups = self.datasets()
 
-        writers: dict[str, LakeWriter] = {}
-
+        # Roteia antes de converter: o id de uma tabela só existe se um arquivo o rende.
+        routes: dict[str, list[Routed]] = {}
         for group in target_groups:
             src_group_dir = input_dir / _GROUP_DIRS[group]
-            if not src_group_dir.exists():
-                continue
+            if src_group_dir.exists():
+                routes[group] = route_group(group, src_group_dir)[0]
+        if target_datasets:
+            known = {item.dataset_id for items in routes.values() for item in items}
+            for d in sorted(target_datasets):
+                aliased = LAKE_DATASET_ALIASES.get(d, d)
+                if (
+                    not resolve_group(aliased)
+                    and aliased not in _GROUP_DIRS
+                    and d not in known
+                ):
+                    result.errors.append(f"dataset desconhecido: {d}")
+            if result.errors:
+                return result
 
+        writers: dict[str, LakeWriter] = {}
+
+        for group, routed in routes.items():
             spec = spec_for(group)
-            routed, _ = route_group(group, src_group_dir)
+            # itens que não chegaram ao lake, por ZIP: decide a limpeza do layout antigo
+            failed: dict[Path, int] = {}
 
             for item in routed:
                 part_keys = item.partition_keys
                 dataset_id = item.dataset_id
+                label = (
+                    f"{item.path.name}[{item.member}]"
+                    if item.member
+                    else item.path.name
+                )
+                failed.setdefault(item.path, 0)
 
                 if (
                     target_datasets
@@ -653,6 +915,11 @@ class LakeConverter:
                     and group not in target_datasets
                     and LAKE_DATASET_ALIASES.get(dataset_id) not in target_datasets
                 ):
+                    failed[item.path] += 1  # fora da seleção: ZIP incompleto
+                    continue
+                if item.error:
+                    result.errors.append(f"{label}: {item.error}")
+                    failed[item.path] += 1
                     continue
 
                 writer_key = f"{dataset_id}:" + ",".join(part_keys)
@@ -671,21 +938,33 @@ class LakeConverter:
                 writer = writers[writer_key]
 
                 try:
-                    with tempfile.TemporaryDirectory(
-                        prefix=".anp-zip-", dir=scratch_dir()
-                    ) as tmp:
-                        source_path = _materialize(item, Path(tmp))
-                        self._write_item(writer, group, spec, item, source_path, result)
+                    with _sha_cached(item.path, _digest(item.path)):
+                        if writer.is_current(
+                            item.path,
+                            partitions=item.partition_values,
+                            file_key_name=_item_key(item),
+                        ):
+                            result.skipped += 1  # sem extrair nem ler o membro
+                            continue
+                        with tempfile.TemporaryDirectory(
+                            prefix=".anp-zip-",
+                            dir=scratch_dir(),
+                            ignore_cleanup_errors=True,
+                        ) as tmp:
+                            source_path = _materialize(item, Path(tmp))
+                            self._write_item(
+                                writer, group, spec, item, source_path, result
+                            )
                 except Exception as exc:
                     message = str(exc).strip()
                     first_line = message.splitlines()[0] if message else repr(exc)
-                    label = (
-                        f"{item.path.name}[{item.member}]"
-                        if item.member
-                        else item.path.name
-                    )
                     result.errors.append(f"{label}: {first_line}")
-                    continue
+                    failed[item.path] += 1
+
+            opened = {i.path for i in routed if i.member}
+            for path, count in failed.items():
+                if count == 0 and path in opened:
+                    _drop_legacy_parts(lake_dir, group, path)
 
         return result
 

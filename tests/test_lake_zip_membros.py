@@ -269,12 +269,13 @@ def test_arf_consolidacao_uma_tabela_por_dataset(tmp_path: Path) -> None:
     ]
     calha = scan_dataset(base / "amostras-rochas-fluidos-calha").collect()
     assert calha.height == 2
+    assert set(calha["ano"].to_list()) == {2024}  # do nome do ZIP
     assert _files(base / "amostras-rochas-fluidos-calha") == [
         "arf-consolidacao-2024__consolidacao_daa_2024_calha"
     ]
 
 
-def test_depositarias_iguais_ficam_no_grupo_com_a_coluna_membro(
+def test_depositarias_iguais_viram_um_dataset_por_ano_com_a_coluna_membro(
     tmp_path: Path,
 ) -> None:
     group = "amostras-rochas-fluidos"
@@ -284,17 +285,23 @@ def test_depositarias_iguais_ficam_no_grupo_com_a_coluna_membro(
         {
             "valores-depositarias-SAAs-2017/SHELL_2017.csv": tabela,
             "valores-depositarias-SAAs-2017/TOTAL_2017.csv": tabela,
-            # mesmo slug de TOTAL_2017.csv: ganha sufixo, não sobrescreve
+            # mesmo slug de TOTAL_2017.csv: o sufixo entra no nome, antes da extensão
             "valores-depositarias-SAAs-2017/TOTAL_2017..csv": tabela,
         },
     )
     res = converter.convert(tmp_path / "raw", tmp_path / "lake")
     assert not res.errors, res.errors
     assert res.converted == 3
-    dataset = tmp_path / "lake" / SOURCE_ID / "amostras-rochas-fluidos"
-    assert len(_files(dataset)) == 3
+    dataset = tmp_path / "lake" / SOURCE_ID / "amostras-rochas-fluidos-depositarias"
+    assert _files(dataset) == [
+        "arf-depositarias-2017__shell_2017",
+        "arf-depositarias-2017__total_2017",
+        "arf-depositarias-2017__total_2017_2",
+    ]
+    assert (dataset / "ano=2017").is_dir()
     df = scan_dataset(dataset).collect()
     assert df.height == 3
+    assert set(df["ano"].to_list()) == {2017}
     assert sorted(df["membro"].to_list()) == ["SHELL_2017", "TOTAL_2017", "TOTAL_2017."]
 
 
@@ -404,16 +411,355 @@ def test_zip_data_members_recusa_arquivo_que_nao_e_zip(tmp_path: Path) -> None:
             "consolidacao-daa-2024-testemunho.csv",
             "amostras-rochas-fluidos-testemunhos",
         ),
-        ("amostras-rochas-fluidos", "arf-depositarias-2020", "SHELL.csv", None),
+        (
+            "amostras-rochas-fluidos",
+            "arf-depositarias-2020",
+            "SHELL.csv",
+            "amostras-rochas-fluidos-depositarias",
+        ),
         (
             "movimentacao-derivados",
             "mdpg-logistica",
             "DADOS ABERTOS - LOGISTICA 01 - ABASTECIMENTO NACIONAL DE COMBUSTÍVEIS.csv",
-            "movimentacao-derivados-logistica-01-abastecimento-nacional-de-combustiveis",
+            "movimentacao-derivados-logistica-abastecimento-nacional",
         ),
+        (
+            "movimentacao-derivados",
+            "mdpg-liquidos",
+            "Liquidos_Vendas_Historico_2018_a_2023.csv",
+            "movimentacao-derivados-liquidos-vendas-historico",
+        ),
+        (
+            "movimentacao-derivados",
+            "mdpg-liquidos",
+            "LÍQUIDOS vendas historico 2007 a 2017.CSV",
+            "movimentacao-derivados-liquidos-vendas-historico",
+        ),
+        (
+            "movimentacao-derivados",
+            "mdpg-lubrificante",
+            "Lubrificante_Anexo_C.csv",
+            "movimentacao-derivados-lubrificante-anexo-c",
+        ),
+        ("movimentacao-derivados", "mdpg-lubrificante", "INDICE_ANEXOS.xlsx", None),
+        ("movimentacao-derivados", "mdpg-novo", "Novo_Atual.csv", None),
     ],
 )
 def test_table_dataset_for_member(
     group: str, base_id: str, member: str, expected: str | None
 ) -> None:
     assert table_dataset_for_member(group, base_id, member) == expected
+
+
+def test_mdpg_ids_estaveis_historicos_juntos_indice_fora_e_membro_novo_erra(
+    tmp_path: Path,
+) -> None:
+    group = "movimentacao-derivados"
+    cabecalho = "Ano;Mês;Agente Regulado;Quantidade\n"
+    _zip(
+        _group_dir(tmp_path, group) / "mdpg-liquidos@20261114.zip",
+        {
+            "Liquidos_Vendas_Atual.csv": cabecalho + "2024;1;A;1,5\n",
+            "Liquidos_Vendas_Historico_2007_a_2017.csv": cabecalho + "2010;1;A;7,5\n",
+            "Liquidos_Vendas_Historico_2018_a_2023.csv": cabecalho + "2020;1;B;8,5\n",
+            "Liquidos_Tabela_Nova.csv": cabecalho + "2024;1;A;1,5\n",
+        },
+    )
+    _zip(
+        _group_dir(tmp_path, group) / "mdpg-lubrificante@20261104.zip",
+        {
+            "INDICE_ANEXOS.xlsx": b"nao e lido",
+            "Lubrificante_Anexo_A.csv": cabecalho + "2024;1;A;1,5\n",
+            "Lubrificante_Anexo_B.csv": cabecalho + "2024;1;A;2,5\n",
+        },
+    )
+    lake = tmp_path / "lake"
+    res = converter.convert(tmp_path / "raw", lake)
+    assert len(res.errors) == 1, res.errors
+    assert "Liquidos_Tabela_Nova.csv" in res.errors[0]
+    assert "sem tabela declarada" in res.errors[0]
+    base = lake / SOURCE_ID
+    assert sorted(p.name for p in base.iterdir()) == [
+        "movimentacao-derivados-liquidos-vendas-atual",
+        "movimentacao-derivados-liquidos-vendas-historico",
+        "movimentacao-derivados-lubrificante-anexo-a",
+        "movimentacao-derivados-lubrificante-anexo-b",
+    ]  # nada de dataset novo para o membro desconhecido, nem para o índice
+    historico = base / "movimentacao-derivados-liquidos-vendas-historico"
+    assert _files(historico) == [
+        "mdpg-liquidos__liquidos_vendas_historico_2007_a_2017",
+        "mdpg-liquidos__liquidos_vendas_historico_2018_a_2023",
+    ]
+    assert scan_dataset(historico).collect().height == 2
+
+
+def test_upgrade_do_lake_apaga_o_layout_antigo_e_nao_duplica(tmp_path: Path) -> None:
+    import polars as pl
+    from quantilica.analytics.lake import LakeWriter
+    from quantilica.core.lake import DatasetDescriptor, partition_types_for
+
+    group = "producao-poco-abertos"
+    zpath = _zip(
+        _group_dir(tmp_path, group) / "producao-poco-da_2005@20261105.zip",
+        {
+            "2005/2005_producao_mar.csv": _poco_csv("M", 3),
+            "2005/2005_producao_terra.csv": _poco_csv("T", 5),
+        },
+    )
+    lake = tmp_path / "lake"
+    # o que o layout antigo gravava: o ZIP inteiro como um Parquet só (o 1º membro)
+    old_dataset = lake / SOURCE_ID / "producao-poco-abertos"
+    writer = LakeWriter(
+        old_dataset,
+        DatasetDescriptor(
+            source_id=SOURCE_ID,
+            dataset_id="producao-poco-abertos",
+            alias="producao-poco-abertos",
+            partition_keys=["ano"],
+            partition_types=partition_types_for(["ano"]),
+        ),
+    )
+    writer.write_polars(
+        pl.DataFrame({"x": [1, 2, 3]}), zpath, partitions={"ano": "2005"}
+    )
+    old = list(old_dataset.rglob("producao-poco-da_2005.parquet"))
+    assert len(old) == 1
+    # outro Parquet do mesmo dataset, de outro ZIP, que não pode sair
+    other = old_dataset / "ano=2006" / "producao-poco-da_2006.parquet"
+    other.parent.mkdir(parents=True)
+    other.write_bytes(old[0].read_bytes())
+
+    res = converter.convert(tmp_path / "raw", lake, force=True)
+    assert not res.errors, res.errors
+    assert not old[0].exists()
+    assert other.exists()
+    names = sorted(p.stem for p in old_dataset.rglob("*.parquet"))
+    assert names == [
+        "producao-poco-da_2005__2005_producao_mar",
+        "producao-poco-da_2005__2005_producao_terra",
+        "producao-poco-da_2006",
+    ]
+    assert scan_dataset(old_dataset / "ano=2005").collect().height == 8  # sem dobrar
+
+    # sem force também (o skip dos membros não impede a limpeza)
+    old[0].parent.mkdir(exist_ok=True)
+    writer.write_polars(pl.DataFrame({"x": [1]}), zpath, partitions={"ano": "2005"})
+    res2 = converter.convert(tmp_path / "raw", lake)
+    assert res2.converted == 0 and res2.skipped == 2
+    assert not old[0].exists()
+
+
+def test_upgrade_nao_apaga_o_antigo_se_um_membro_falhar(tmp_path: Path) -> None:
+    import polars as pl
+    from quantilica.analytics.lake import LakeWriter
+    from quantilica.core.lake import DatasetDescriptor
+
+    group = "movimentacao-derivados"
+    zpath = _zip(
+        _group_dir(tmp_path, group) / "mdpg-trr@20261104.zip",
+        {
+            "TRR_Vendas_Dist_Atual.csv": "Ano;Q\n2024;1\n",
+            "TRR_Nova.csv": "Ano;Q\n2024;1\n",
+        },
+    )
+    old_dataset = tmp_path / "lake" / SOURCE_ID / "movimentacao-derivados"
+    LakeWriter(
+        old_dataset,
+        DatasetDescriptor(
+            source_id=SOURCE_ID,
+            dataset_id="movimentacao-derivados",
+            alias="movimentacao-derivados",
+        ),
+    ).write_polars(pl.DataFrame({"x": [1]}), zpath)
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert len(res.errors) == 1
+    assert (old_dataset / "mdpg-trr.parquet").exists()
+
+
+def test_id_de_tabela_inexistente_e_dataset_desconhecido(tmp_path: Path) -> None:
+    group = "movimentacao-derivados"
+    _zip(
+        _group_dir(tmp_path, group) / "mdpg-asfalto@20261104.zip",
+        {
+            "Asfalto_Vendas_Distribuidor_Atual.csv": "Ano;Q\n2024;1\n",
+            "Asfalto_Vendas_Distribuidor_UF_Atual.csv": "Ano;Q\n2024;1\n",
+        },
+    )
+    res = converter.convert(
+        tmp_path / "raw",
+        tmp_path / "lake",
+        datasets=["movimentacao-derivados-nao-existe"],
+    )
+    assert res.errors == ["dataset desconhecido: movimentacao-derivados-nao-existe"]
+    assert not (tmp_path / "lake").exists()
+
+
+def test_convert_de_ppg_presal_grava_so_o_presal(tmp_path: Path) -> None:
+    _zip(
+        _group_dir(tmp_path, "ppg") / "producao-poco_2018@20261105.zip",
+        {
+            "2018/2018_producao_mar.csv": _poco_csv("M", 3),
+            "2018/2018_producao_presal.csv": _poco_csv("P", 2),
+            "2018/2018_producao_terra.csv": _poco_csv("T", 4),
+        },
+    )
+    res = converter.convert(
+        tmp_path / "raw", tmp_path / "lake", datasets=["ppg-presal"]
+    )
+    assert not res.errors, res.errors
+    assert res.converted == 1
+    assert [p.name for p in (tmp_path / "lake" / SOURCE_ID).iterdir()] == ["ppg-presal"]
+    df = scan_dataset(tmp_path / "lake" / SOURCE_ID / "ppg-presal").collect()
+    assert df.height == 2 and set(df["ambiente"].to_list()) == {"presal"}
+
+
+def test_membro_com_nome_cp437_e_em_subpasta(tmp_path: Path) -> None:
+    # o nome do membro fica em cp437 (sem a marca UTF-8): "produc╞o_terra"
+    path = _zip(
+        _group_dir(tmp_path, "producao-poco-abertos")
+        / "producao-poco-da_2015@20261105.zip",
+        {
+            "2015/sub/2015_producao_mar.csv": _poco_csv("M", 2),
+            "2015/sub/2015_producao_produc_o_terra.csv": _poco_csv("T", 3),
+        },
+    )
+    path.write_bytes(path.read_bytes().replace(b"produc_o_terra", b"produc\xc6o_terra"))
+    with zipfile.ZipFile(path) as zf:
+        assert any("produc╞o" in n for n in zf.namelist())
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert not res.errors, res.errors
+    df = scan_dataset(tmp_path / "lake" / SOURCE_ID / "producao-poco-abertos").collect()
+    assert df.group_by("ambiente").len().sort("ambiente").rows() == [
+        ("mar", 2),
+        ("terra", 3),
+    ]
+    assert _files(tmp_path / "lake" / SOURCE_ID / "producao-poco-abertos") == [
+        "producao-poco-da_2015__2015_producao_mar",
+        "producao-poco-da_2015__2015_producao_produco_terra",
+    ]
+
+
+def test_skip_nao_extrai_nem_hasheia_cada_membro(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from anp_fetcher import lake
+
+    _zip(
+        _group_dir(tmp_path, "producao-poco-abertos")
+        / "producao-poco-da_2005@20261105.zip",
+        {
+            "a_producao_mar.csv": _poco_csv("M", 2),
+            "a_producao_terra.csv": _poco_csv("T", 2),
+        },
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.converted == 2
+
+    extracted: list[str] = []
+    real = lake.extract_zip_member
+    monkeypatch.setattr(
+        lake,
+        "extract_zip_member",
+        lambda *a, **k: extracted.append(a[1]) or real(*a, **k),
+    )
+    hashed: list[object] = []
+    import quantilica.analytics.lake as analytics_lake
+
+    real_sha = analytics_lake.sha256_file
+    for module in (analytics_lake, lake):
+        monkeypatch.setattr(
+            module,
+            "sha256_file",
+            lambda p, *a, **k: hashed.append(p) or real_sha(p, *a, **k),
+        )
+    lake._DIGESTS.clear()
+    res2 = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res2.converted == 0 and res2.skipped == 2
+    assert extracted == []
+    assert len(hashed) == 1  # o ZIP é lido uma vez, não uma por membro
+
+
+def test_cabecalho_real_no_csv_com_titulo_subcabecalho_e_linha_repetida(
+    tmp_path: Path,
+) -> None:
+    sub = ";;ANP;Operador;;;;;;;;Associado;Não Associado;Gás Total"
+    cabecalho = (
+        "Estado;Bacia;Nome Poço;;Campo;Operador;Contrato;Período;Óleo;Cond;Petr;"
+        "Gás Natural (Mm³/dia);;"
+    )
+    topo = [
+        "ANP - Agência Nacional do Petróleo;;;;Data: 15/03/2019;;;;;;;;;",
+        "SIGEP Produção;;;;;;;;;;;;;",
+        cabecalho,
+        sub,
+        "BA;Recôncavo;1-A-1-BA;1A 0001 BA;CAMPO;Petro;480000;2005/01;1,5;0;1,5;1;2;3",
+        cabecalho,
+        sub,
+        "SE;Sergipe;1-B-1-SE;1B 0001 SE;OUTRO;Petro;480001;2005/01;2,5;0;2,5;1;2;3",
+    ]
+    _zip(
+        _group_dir(tmp_path, "producao-poco-abertos")
+        / "producao-poco-da_2005@20261105.zip",
+        {
+            "a_producao_mar.csv": "\n".join(topo) + "\n",
+            "a_producao_terra.csv": "\n".join(topo) + "\n",
+        },
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert not res.errors, res.errors
+    df = scan_dataset(tmp_path / "lake" / SOURCE_ID / "producao-poco-abertos").collect()
+    assert (
+        df.height == 4
+    )  # só as linhas de dado; título, subcabeçalho e repetições fora
+    assert df.columns[:4] == ["Estado", "Bacia", "Nome Poço ANP", "Nome Poço Operador"]
+    assert "Gás Natural (Mm³/dia) Gás Total" in df.columns
+    assert "Gás Natural (Mm³/dia) Não Associado" in df.columns
+    assert not any(c.startswith(("__UNNAMED__", "Data:", "ANP -")) for c in df.columns)
+    assert df["Estado"].to_list().count("Estado") == 0
+
+
+def test_upgrade_remove_o_dataset_que_ficou_sem_dados(tmp_path: Path) -> None:
+    import polars as pl
+    from quantilica.analytics.lake import LakeWriter
+    from quantilica.core.lake import DatasetDescriptor
+
+    group = "amostras-rochas-fluidos"
+    zpath = _zip(
+        _group_dir(tmp_path, group) / "arf-consolidacao-2017@20261105.zip",
+        {
+            "c/consolidacao-calha-2017.csv": "Bacia sedimentar;Total de caixas\nA;1\n",
+            "c/consolidacao-fluidos-2017.csv": "Bacia sedimentar;Volume (L)\nA;1,5\n",
+        },
+    )
+    old_dataset = tmp_path / "lake" / SOURCE_ID / group
+    LakeWriter(
+        old_dataset,
+        DatasetDescriptor(source_id=SOURCE_ID, dataset_id=group, alias=group),
+    ).write_polars(pl.DataFrame({"x": [1]}), zpath)
+    assert (old_dataset / "arf-consolidacao-2017.parquet").exists()
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert not res.errors, res.errors
+    assert not old_dataset.exists()
+    assert sorted(p.name for p in (tmp_path / "lake" / SOURCE_ID).iterdir()) == [
+        "amostras-rochas-fluidos-calha",
+        "amostras-rochas-fluidos-fluidos",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("member", "expected"),
+    [
+        ("2015/2015_01_produc╞o_terra.csv", "terra"),
+        ("2022_08_producao_Terra.xlsx", "terra"),
+        ("2023_12_producao_PreSal.csv", "presal"),
+        ("2021_10_producao_Mar (2).xlsx", "mar"),
+        ("2021_10_producao_presal (1).xlsx", "presal"),
+        ("2021_10_producao_terra_1.xlsx", "terra"),
+        ("2020/2020_producao_marte.csv", None),
+        ("leia-me.csv", None),
+    ],
+)
+def test_ambiente_do_nome_do_membro(member: str, expected: str | None) -> None:
+    from anp_fetcher.lake import _ambiente
+
+    assert _ambiente(member) == expected
