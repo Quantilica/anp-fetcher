@@ -9,6 +9,7 @@ import pytest
 
 pytest.importorskip("quantilica.analytics.lake")
 pytest.importorskip("duckdb")
+import polars as pl  # noqa: E402
 from quantilica.analytics.lake import check_dataset, scan_dataset  # noqa: E402
 
 from anp_fetcher.lake import (  # noqa: E402
@@ -912,3 +913,81 @@ def test_sha_cached_serializa_threads_e_restaura_o_original() -> None:
         t.join()
     assert sorted(seen) == [("a", "digest-a"), ("b", "digest-b")]
     assert analytics_lake.sha256_file is original
+
+
+_COM_DESCRICAO = (
+    "Ano;Mês;Agente Regulado;Código do Produto;Nome do Produto;Descrição do Produto;"
+    "UF Origem;Quantidade de Produto (mil m³)\n"
+)
+
+
+def _historico_zip(tmp_path: Path, antigo: str) -> None:
+    _zip(
+        _group_dir(tmp_path, "movimentacao-derivados") / "mdpg-liquidos@20261104.zip",
+        {
+            "Liquidos_Vendas_Historico_2018_a_2023.csv": _COM_DESCRICAO
+            + "2018;1;A;320102001;Gasolina C;GASOLINA C COMUM;RJ;1,5\n"
+            + "2018;2;B;810101001;Etanol Hidratado;ETANOL HIDRATADO;SP;2,5\n",
+            "Liquidos_Vendas_Historico_2007_a_2017.csv": antigo,
+        },
+    )
+
+
+def test_membro_sem_cabecalho_ganha_os_nomes_do_irmao_sem_perder_linha(
+    tmp_path: Path,
+) -> None:
+    # a 1ª linha do membro de 2007-2017 é dado; falta a coluna "Descrição do Produto"
+    _historico_zip(
+        tmp_path,
+        "2007;1;ABENGOA;810101001;Etanol Hidratado;SP;1,98\n"
+        "2007;2;ABENGOA;810101001;Etanol Hidratado;SP;0,02\n"
+        "2008;1;USINA;320102001;Gasolina C;RJ;3,10\n",
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.errors == []
+    historico = (
+        tmp_path
+        / "lake"
+        / SOURCE_ID
+        / "movimentacao-derivados-liquidos-vendas-historico"
+    )
+    todos = scan_dataset(historico).collect()
+    antigo = todos.filter(pl.col("Ano").is_in(["2007", "2008"]))
+    assert antigo.height == 3  # nenhuma linha virou nome de coluna
+    assert todos.height == 5
+    assert "Código do Produto" in todos.columns
+    # o irmão tem "Descrição do Produto" a mais: vazia no membro antigo
+    assert antigo["Descrição do Produto"].null_count() == 3
+    assert sorted(antigo["Nome do Produto"].to_list()) == [
+        "Etanol Hidratado",
+        "Etanol Hidratado",
+        "Gasolina C",
+    ]  # "Descrição do Produto" saiu, não "Nome do Produto"
+    assert not any(c.isdigit() for c in antigo.columns)
+
+
+def test_membro_sem_cabecalho_com_largura_diferente_e_erro_claro(
+    tmp_path: Path,
+) -> None:
+    _historico_zip(tmp_path, "2007;1;ABENGOA\n2007;2;ABENGOA\n")
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert len(res.errors) == 1
+    assert "Liquidos_Vendas_Historico_2007_a_2017.csv" in res.errors[0]
+    assert "sem cabeçalho" in res.errors[0]
+    assert "nomes não inferíveis" in res.errors[0]
+
+
+def test_membro_com_cabecalho_nao_muda(tmp_path: Path) -> None:
+    _historico_zip(
+        tmp_path,
+        _COM_DESCRICAO + "2007;1;ABENGOA;810101001;Etanol Hidratado;ETANOL;SP;1,98\n",
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.errors == []
+    historico = (
+        tmp_path
+        / "lake"
+        / SOURCE_ID
+        / "movimentacao-derivados-liquidos-vendas-historico"
+    )
+    assert scan_dataset(historico).collect().height == 3

@@ -12,6 +12,7 @@ from __future__ import annotations
 import codecs
 import csv
 import io
+import itertools
 import logging
 import os
 import re
@@ -745,12 +746,13 @@ def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
     return out
 
 
-def _read_csv_8bit(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
+def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:
     """Lê um CSV da ANP de 8 bits (utf-8 com fallback latin-1).
 
     Args:
         path (Path): Caminho do arquivo CSV.
         spec (dict[str, Any]): Especificação de processamento do grupo.
+        **extra: Opções do leitor do polars (``has_header``, ``n_rows``).
 
     Returns:
         pl.DataFrame: O DataFrame lido com tipos inferidos.
@@ -761,6 +763,7 @@ def _read_csv_8bit(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     }
     if spec.get("skip_rows"):
         kwargs["skip_rows"] = spec["skip_rows"]
+    kwargs.update(extra)
     encoding = spec.get("encoding")
     try:
         return read_brazilian_csv(
@@ -811,21 +814,148 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     Returns:
         pl.DataFrame: O DataFrame lido com tipos inferidos.
     """
-    codec = _transcode_codec(path, eight_bit=spec.get("encoding") is None)
-    if codec is None:
-        df = _read_csv_8bit(path, spec)
-    else:
-        # No scratch do `lake build` quando definido, senão no temp do sistema.
-        with tempfile.TemporaryDirectory(
-            prefix=".anp-utf8-", dir=scratch_dir(), ignore_cleanup_errors=True
-        ) as tmp:
-            utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
-            df = _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"})
-    if spec.get("header"):
+    columns = spec.get("columns")
+    df = _read_csv_text(path, spec, **({"has_header": False} if columns else {}))
+    if columns:
+        if df.width != len(columns):
+            raise ValueError(
+                f"CSV sem cabeçalho com {df.width} colunas; os nomes dados são "
+                f"{len(columns)}"
+            )
+        df.columns = _unique(list(columns))
+    elif spec.get("header"):
         df = _real_header(df, headerless=False, options=spec["header"])
     elif not spec.get("skip_rows"):
         df = _promote_header(df)
     return _clean_columns(df)
+
+
+def _read_csv_text(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:
+    """Lê o CSV como texto, regravando antes em UTF-8 o que não é de 8 bits."""
+    codec = _transcode_codec(path, eight_bit=spec.get("encoding") is None)
+    if codec is None:
+        return _read_csv_8bit(path, spec, **extra)
+    # No scratch do `lake build` quando definido, senão no temp do sistema.
+    with tempfile.TemporaryDirectory(
+        prefix=".anp-utf8-", dir=scratch_dir(), ignore_cleanup_errors=True
+    ) as tmp:
+        utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
+        return _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"}, **extra)
+
+
+def _first_csv_row(path: Path, spec: dict[str, Any]) -> list[str]:
+    """Células da primeira linha de um CSV de 8 bits (UTF-8 com BOM ou latin-1)."""
+    separator = _sniff_separator(path, spec.get("separator", ";"))
+    for encoding in ("utf-8-sig", "latin-1"):
+        try:
+            with open(path, encoding=encoding, newline="") as fh:
+                return next(csv.reader(fh, delimiter=separator), [])
+        except UnicodeDecodeError:
+            continue
+    return []
+
+
+def _is_data_row(cells: list[str]) -> bool:
+    """Linha de registro, não de cabeçalho: tem números ou datas em boa parte."""
+    filled = [c.strip() for c in cells if c.strip()]
+    numeric = [c for c in filled if _data_like(c)]
+    return len(numeric) >= 2 and len(numeric) >= 0.25 * len(filled)
+
+
+def csv_lacks_header(path: Path, spec: dict[str, Any]) -> bool:
+    """``True`` quando a primeira linha do CSV já é um registro (sem cabeçalho)."""
+    if _transcode_codec(path, eight_bit=spec.get("encoding") is None) is not None:
+        return False
+    return _is_data_row(_first_csv_row(path, spec))
+
+
+def _numeric_column(values: list[str | None]) -> bool:
+    """Coluna em que todo valor preenchido é número (e há algum)."""
+    filled = [v.strip() for v in values if v is not None and v.strip()]
+    return bool(filled) and all(_NUMBER.fullmatch(v) for v in filled)
+
+
+_MAX_EXTRA_COLUMNS = 2
+
+
+def headerless_columns(
+    path: Path, reference: Path, spec: dict[str, Any], *, sample: int = 100_000
+) -> list[str] | None:
+    """Nomes das colunas de um CSV sem cabeçalho, tirados de um CSV irmão.
+
+    Há membros de ZIP em que a ANP publica o arquivo sem a linha de cabeçalho
+    (``Liquidos_Vendas_Historico_2007_a_2017``): a primeira linha de dados virava
+    o nome das colunas (``2007``, ``1``, ``810101001``...). O irmão com cabeçalho
+    (``..._2018_a_2023``, do mesmo dataset) dá os nomes. Quando o irmão tem colunas
+    a mais (``Descrição do Produto``), vale o alinhamento que casa na posição o
+    tipo (número ou texto) e os valores de cada coluna com os do irmão. Largura
+    que não fecha, ou alinhamento sem vencedor claro, é erro.
+
+    Args:
+        path (Path): O CSV a conferir.
+        reference (Path): O CSV irmão, com cabeçalho.
+        spec (dict[str, Any]): Especificação de processamento do grupo.
+        sample (int, optional): Linhas do irmão que servem de amostra.
+
+    Returns:
+        list[str] | None: Os nomes, ou ``None`` se ``path`` tem cabeçalho (ou se
+            ``reference`` não tem).
+
+    Raises:
+        ValueError: Se a largura não bate ou o alinhamento é ambíguo.
+    """
+    first = _first_csv_row(path, spec)
+    names = _first_csv_row(reference, spec)
+    if not _is_data_row(first) or not names or _is_data_row(names):
+        return None
+    width, ref_width = len(first), len(names)
+    if not 0 <= ref_width - width <= _MAX_EXTRA_COLUMNS:
+        raise ValueError(
+            f"CSV sem cabeçalho com {width} colunas; o irmão {reference.name} tem "
+            f"{ref_width}: nomes não inferíveis"
+        )
+    if width == ref_width:
+        return names
+    head = _read_csv_text(path, spec, has_header=False, n_rows=2000)
+    ref = _read_csv_text(reference, spec, n_rows=sample)
+    scored = sorted(
+        (
+            (_alignment_score(head, ref, kept), kept)
+            for kept in itertools.combinations(range(ref_width), width)
+        ),
+        reverse=True,
+    )
+    best, kept = scored[0]
+    if best < 0 or (len(scored) > 1 and scored[1][0] >= best):
+        raise ValueError(
+            f"CSV sem cabeçalho com {width} colunas; o alinhamento com o irmão "
+            f"{reference.name} ({ref_width} colunas) é ambíguo: nomes não inferíveis"
+        )
+    return [names[i] for i in kept]
+
+
+def _alignment_score(
+    head: pl.DataFrame, ref: pl.DataFrame, kept: tuple[int, ...]
+) -> float:
+    """Quanto as colunas de ``head`` casam com as colunas ``kept`` de ``ref``.
+
+    ``-1`` quando o tipo (número ou texto) de alguma coluna não bate; senão, a soma,
+    nas colunas de texto, da fração dos valores distintos de ``head`` que o irmão
+    também tem na coluna.
+    """
+    score = 0.0
+    for i, k in enumerate(kept):
+        mine = head.to_series(i).to_list()
+        theirs = ref.to_series(k).to_list()
+        if _numeric_column(mine) != _numeric_column(theirs):
+            return -1.0
+        if _numeric_column(mine):
+            continue
+        values = {v for v in mine if v}
+        known = {v for v in theirs if v}
+        if values:
+            score += len(values & known) / len(values)
+    return score
 
 
 def read_json(path: Path) -> pl.DataFrame:

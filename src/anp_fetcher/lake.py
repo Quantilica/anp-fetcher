@@ -47,8 +47,10 @@ except ImportError as exc:
 from anp_fetcher import __version__
 from anp_fetcher.catalog import ALL_GROUP_KEYS, resolve_group
 from anp_fetcher.reader import (
+    csv_lacks_header,
     decompress,
     extract_zip_member,
+    headerless_columns,
     normalize_dtypes,
     parse_filename,
     read_file,
@@ -842,6 +844,53 @@ def _materialize(item: Routed, tmp_dir: Path) -> Path:
     return raw_file
 
 
+def _headerless_spec(
+    spec: dict[str, Any],
+    item: Routed,
+    routed: list[Routed],
+    source_path: Path,
+    tmp_dir: Path,
+) -> dict[str, Any]:
+    """Especificação do item; com ``columns`` quando o membro CSV não tem cabeçalho.
+
+    Num ZIP com vários CSV do mesmo dataset, um membro pode vir sem a linha de
+    cabeçalho (``Liquidos_Vendas_Historico_2007_a_2017``). Os nomes saem de um
+    irmão com cabeçalho (:func:`~anp_fetcher.reader.headerless_columns`); sem irmão
+    que sirva, o membro segue como está.
+
+    Raises:
+        ValueError: Se o irmão não tem a mesma largura e os nomes não se inferem.
+    """
+    if item.member is None or source_path.suffix.lower() != ".csv":
+        return spec
+    siblings = [
+        other
+        for other in routed
+        if other.path == item.path
+        and other.member is not None
+        and other.member != item.member
+        and other.dataset_id == item.dataset_id
+        and not other.ignored
+    ]
+    if not siblings or not csv_lacks_header(source_path, spec):
+        return spec
+    for n, sibling in enumerate(siblings):
+        # pasta própria: o membro extraído tem sempre o mesmo nome neutro
+        sibling_dir = tmp_dir / f"irmao{n}"
+        sibling_dir.mkdir()
+        reference = _materialize(sibling, sibling_dir)
+        columns = headerless_columns(source_path, reference, spec)
+        if columns is not None:
+            logger.warning(
+                "%s[%s]: CSV sem cabeçalho; nomes do irmão %s",
+                item.path.name,
+                item.member,
+                sibling.member,
+            )
+            return {**spec, "columns": columns}
+    return spec
+
+
 class LakeConverter:
     """Converter registered under the ``quantilica.lake`` entry point."""
 
@@ -976,8 +1025,11 @@ class LakeConverter:
                             ignore_cleanup_errors=True,
                         ) as tmp:
                             source_path = _materialize(item, Path(tmp))
+                            item_spec = _headerless_spec(
+                                spec, item, routed, source_path, Path(tmp)
+                            )
                             self._write_item(
-                                writer, group, spec, item, source_path, result
+                                writer, group, item_spec, item, source_path, result
                             )
                 except Exception as exc:
                     message = str(exc).strip()
