@@ -249,8 +249,24 @@ def test_encoding_fixo_no_spec_nao_e_adivinhado(tmp_path: Path) -> None:
     assert read_csv(src, {"encoding": "utf-8"}).columns == ["Município", "Ação"]
 
 
-def test_transcodificacao_nao_deixa_lixo_ao_lado_do_arquivo(tmp_path: Path) -> None:
-    src = tmp_path / "cgn.csv"
+def test_transcodificacao_nao_deixa_lixo_ao_lado_do_arquivo(
+    tmp_path: Path, monkeypatch
+) -> None:
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setenv("QUANTILICA_LAKE_SCRATCH", str(scratch))
+    bruto = tmp_path / "bruto"
+    bruto.mkdir()
+    src = bruto / "cgn.csv"
     src.write_bytes("Ano;Mês\n2020;1\n".encode("utf-16"))
-    read_csv(src, {})
-    assert [p.name for p in tmp_path.iterdir()] == ["cgn.csv"]
+    assert read_csv(src, {}).columns == ["Ano", "Mês"]
+    assert [p.name for p in bruto.iterdir()] == ["cgn.csv"]
+    assert list(scratch.iterdir()) == []
+
+
+def test_apostrofo_cp1252_em_arquivo_curto_nao_vira_mac_roman(tmp_path: Path) -> None:
+    src = tmp_path / "x.csv"
+    src.write_bytes(b"NOME;x\nATEM\x92S;1\n")
+    df = read_csv(src, {})
+    # segue o caminho de sempre (latin-1), como no main; nada de "ATEMíS"
+    assert df["NOME"].to_list() == ["ATEM\x92S"]

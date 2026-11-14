@@ -185,6 +185,9 @@ _PT_LETTERS = frozenset("áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ")
 _EIGHT_BIT = ("cp1252", "cp850", "mac_roman")
 
 
+_MIN_LETRAS = 3
+
+
 def _eight_bit_codec(sample: bytes) -> str | None:
     """``cp850`` ou ``mac_roman`` quando decodificam melhor que o latin-1/cp1252.
 
@@ -206,7 +209,13 @@ def _eight_bit_codec(sample: bytes) -> str | None:
         for enc in _EIGHT_BIT
     }
     best = max(_EIGHT_BIT, key=lambda enc: scores[enc])
-    return best if best != "cp1252" and scores[best] > scores["cp1252"] else None
+    if best == "cp1252":
+        return None
+    # Margem mínima: um arquivo curto sem acentos e com um apóstrofo cp1252
+    # (0x92) daria 1 a 0 para o mac_roman. Só troca com evidência clara.
+    if scores[best] < _MIN_LETRAS or scores[best] < 2 * scores["cp1252"]:
+        return None
+    return best
 
 
 def _transcode_codec(path: Path, *, eight_bit: bool = True) -> str | None:
@@ -433,10 +442,13 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     if codec is None:
         df = _read_csv_8bit(path, spec)
     else:
-        # ao lado do arquivo, no disco dele, quando dá para gravar lá; senão no temp
-        parent = path.absolute().parent  # sem seguir link: não grava no Drive
-        where = parent if os.access(parent, os.W_OK) else None
-        with tempfile.TemporaryDirectory(prefix=".anp-utf8-", dir=where) as tmp:
+        # No scratch do `lake build` (QUANTILICA_LAKE_SCRATCH) quando definido;
+        # senão no temp do sistema. Nunca ao lado do bruto: um worker morto
+        # deixaria a pasta temporária dentro da visão vigente.
+        scratch = os.environ.get("QUANTILICA_LAKE_SCRATCH") or None
+        if scratch and not os.path.isdir(scratch):
+            scratch = None
+        with tempfile.TemporaryDirectory(prefix=".anp-utf8-", dir=scratch) as tmp:
             utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
             df = _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"})
     if not spec.get("skip_rows"):
