@@ -9,6 +9,7 @@ extraídos do sidecar ``DownloadManifest``.
 
 from __future__ import annotations
 
+import codecs
 import logging
 import re
 import shutil
@@ -130,14 +131,16 @@ def decompress(path: Path) -> Path:
 
 
 def _sniff_separator(path: Path, default: str) -> str:
-    """Troca ``;`` por ``,`` quando o cabeçalho só tem vírgulas.
+    """Escolhe o separador pelo cabeçalho: ``;`` (padrão) ou ``,``.
 
     A maioria dos CSV da ANP usa ``;``, mas alguns arquivos do mesmo grupo
-    usam ``,`` (ex.: ``vendas-biodiesel-b100-m3.csv``); lidos com ``;`` eles
-    viram uma coluna só.
+    usam ``,`` (ex.: ``vendas-biodiesel-b100-m3.csv``, ``producao-mar``);
+    lidos com ``;`` eles viram uma coluna só ("Ano,Mês/Ano,Estado,..."). Vence
+    o separador mais frequente na primeira linha, e o padrão no empate; um
+    ``;`` solto num nome de coluna de um CSV com vírgulas não decide.
 
     Args:
-        path (Path): Caminho do arquivo CSV.
+        path (Path): Caminho do arquivo CSV (já em UTF-8 ou 8 bits).
         default (str): O separador da especificação do grupo.
 
     Returns:
@@ -145,13 +148,172 @@ def _sniff_separator(path: Path, default: str) -> str:
     """
     with path.open("rb") as fh:
         header = fh.readline()
-    if default.encode() not in header and b"," in header:
+    if default != "," and header.count(b",") > header.count(default.encode()):
         return ","
     return default
 
 
-def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
-    """Lê um CSV da ANP (utf-8 com fallback latin-1).
+def _transcode_codec(path: Path) -> str | None:
+    """O codec que o polars não lê sozinho: UTF-16 ou DOS (cp850).
+
+    ``comercializacao-gn`` vem em UTF-16 LE com BOM; lido como 8 bits, os NUL
+    e o BOM (``ÿþ``) entram nos nomes das colunas. Alguns ``multas-*`` saem em
+    cp850: lidos como latin-1, ``ê`` (0x88) vira um caractere de controle no
+    nome da coluna.
+
+    Returns:
+        str | None: ``"utf-16"`` (BOM), ``"utf-16-le"``, ``"utf-16-be"``,
+            ``"cp850"`` ou ``None`` quando UTF-8/latin-1 servem.
+    """
+    with path.open("rb") as fh:
+        head = fh.read(1 << 20)
+    if head[:2] in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
+        return "utf-16"
+    if _is_dos_text(head):
+        return "cp850"
+    head = head[:4096]
+    pairs = len(head) // 2
+    if pairs < 4:
+        return None
+    even = head[0 : pairs * 2 : 2].count(0)
+    odd = head[1 : pairs * 2 : 2].count(0)
+    # texto latino em UTF-16: o byte alto é NUL em (quase) todos os caracteres
+    if odd > pairs * 0.4 and even == 0:
+        return "utf-16-le"
+    if even > pairs * 0.4 and odd == 0:
+        return "utf-16-be"
+    return None
+
+
+_INNER_C1 = re.compile(rb"[A-Za-z][\x80-\x9f][A-Za-z]")
+
+
+def _is_dos_text(sample: bytes) -> bool:
+    """Texto em cp850: não é UTF-8 e tem byte 0x80-0x9f no meio de palavra.
+
+    Em latin-1 esses bytes são controles; em cp850 são letras acentuadas
+    (``Superintend\\x88ncia`` = Superintendência). Aspas e travessões do cp1252
+    também caem nessa faixa, mas vêm junto de espaço, não no meio da palavra.
+    """
+    if not _INNER_C1.search(sample):
+        return False
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    try:
+        decoder.decode(sample, final=False)
+    except UnicodeDecodeError:
+        return True
+    return False
+
+
+def _transcode_to_utf8(path: Path, codec: str, target: Path) -> Path:
+    """Regrava ``path`` em UTF-8 (em blocos, sem carregar o arquivo)."""
+    decoder = codecs.getincrementaldecoder(codec)()
+    with path.open("rb") as src, target.open("wb") as dst:
+        while chunk := src.read(1 << 24):
+            dst.write(decoder.decode(chunk).encode("utf-8"))
+        dst.write(decoder.decode(b"", final=True).encode("utf-8"))
+    return target
+
+
+_CONTROL_RUN = re.compile(r"[\x00-\x20\x7f-\xa0\u200b-\u200f\u2028\u2029\ufeff]+")
+MAX_COLUMN_NAME = 128
+
+
+_BLANK_NAME = re.compile(r"(_duplicated_\d+|__blank_\d+|__UNNAMED__\d+)?")
+
+
+def _blank(value: Any) -> bool:
+    """Célula sem conteúdo: nula ou só espaços."""
+    return value is None or str(value).strip() == ""
+
+
+def _blank_name(name: str) -> bool:
+    """Nome de coluna sem conteúdo: vazio ou o ``_duplicated_N`` do polars.
+
+    O polars dá ``_duplicated_N`` à segunda coluna de nome vazio (célula
+    mesclada, delimitador sobrando) e ``__UNNAMED__N`` ao cabeçalho vazio de
+    uma planilha; o nome em si continua vazio.
+    """
+    return _BLANK_NAME.fullmatch(_CONTROL_RUN.sub(" ", name).strip()) is not None
+
+
+def _unique(names: list[str]) -> list[str]:
+    """Nomes sem repetição (a segunda ocorrência ganha ``_2``, a terceira ``_3``)."""
+    seen: dict[str, int] = {}
+    out = []
+    for name in names:
+        seen[name] = seen.get(name, 0) + 1
+        out.append(name if seen[name] == 1 else f"{name}_{seen[name]}")
+    return out
+
+
+def _promote_header(df: pl.DataFrame) -> pl.DataFrame:
+    """Usa como cabeçalho a primeira linha densa quando o topo é preâmbulo.
+
+    Alguns CSV começam por título e linhas em branco (``multas``: "ANP - Agência
+    Nacional..." e "RELAÇÃO DE MULTAS ..." antes do cabeçalho) ou por uma linha
+    de grupos mesclados (``acervo-dados-tecnicos``). O leitor tomava essa
+    primeira linha como nomes de colunas. Só age quando menos da metade dos
+    nomes tem conteúdo e uma das 30 primeiras linhas tem ao menos 80% das
+    células preenchidas; arquivos com cabeçalho normal passam intactos.
+    """
+    width = df.width
+    if width < 2 or not all(t == pl.String for t in df.schema.values()):
+        return df
+    names_filled = sum(1 for c in df.columns if not _blank_name(c))
+    if names_filled >= width * 0.5:
+        return df
+    for i, row in enumerate(df.head(30).rows()):
+        filled = sum(1 for v in row if not _blank(v))
+        if filled >= width * 0.8:
+            # vazio vira marcador único: o DataFrame não aceita nomes repetidos
+            header = [
+                f"__blank_{j}" if _blank(v) else str(v) for j, v in enumerate(row)
+            ]
+            body = df.slice(i + 1)
+            body.columns = _unique(header)
+            return body
+    return df
+
+
+def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Garante nomes de colunas válidos: sem controle, não vazios, únicos, <= 128.
+
+    - Controles, quebras de linha e espaços repetidos viram um espaço só
+      (``"PCS GP\\n(kJ/m³)"`` -> ``"PCS GP (kJ/m³)"``).
+    - Nome vazio (delimitador sobrando no fim do cabeçalho, célula mesclada): a
+      coluna é descartada quando não tem nenhum valor; com valores, ganha o
+      nome estável ``coluna_<posição>`` (posição 1-based no arquivo).
+    - Nome com mais de 128 caracteres é cortado; repetidos ganham ``_2``, ``_3``.
+    """
+    keep: list[str] = []
+    final: list[str] = []
+    seen: set[str] = set()
+    for pos, col in enumerate(df.columns, start=1):
+        name = _CONTROL_RUN.sub(" ", col).strip()
+        if _blank_name(name):
+            series = df[col]
+            if series.dtype == pl.String:
+                series = series.str.strip_chars().replace("", None)
+            if series.null_count() == series.len():
+                continue
+            name = f"coluna_{pos}"
+        name = name[:MAX_COLUMN_NAME].rstrip()
+        candidate, n = name, 1
+        while candidate in seen:
+            n += 1
+            suffix = f"_{n}"
+            candidate = name[: MAX_COLUMN_NAME - len(suffix)].rstrip() + suffix
+        seen.add(candidate)
+        keep.append(col)
+        final.append(candidate)
+    out = df.select(keep)
+    out.columns = final
+    return out
+
+
+def _read_csv_8bit(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
+    """Lê um CSV da ANP de 8 bits (utf-8 com fallback latin-1).
 
     Args:
         path (Path): Caminho do arquivo CSV.
@@ -200,6 +362,33 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
             raise
 
 
+def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
+    """Lê um CSV da ANP e devolve colunas com nomes válidos.
+
+    Aceita UTF-8 (com ou sem BOM), latin-1, cp850 e UTF-16 (os dois últimos
+    regravados em UTF-8 antes da leitura); o separador (``;`` ou ``,``) sai do
+    cabeçalho. Preâmbulo no topo é descartado (:func:`_promote_header`) e os
+    nomes passam por :func:`_clean_columns`.
+
+    Args:
+        path (Path): Caminho do arquivo CSV.
+        spec (dict[str, Any]): Especificação de processamento do grupo.
+
+    Returns:
+        pl.DataFrame: O DataFrame lido com tipos inferidos.
+    """
+    codec = _transcode_codec(path)
+    if codec is None:
+        df = _read_csv_8bit(path, spec)
+    else:
+        with tempfile.TemporaryDirectory() as tmp:
+            utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
+            df = _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"})
+    if not spec.get("skip_rows"):
+        df = _promote_header(df)
+    return _clean_columns(df)
+
+
 def read_json(path: Path) -> pl.DataFrame:
     """Lê um JSON tabular (array de objetos), em UTF-8 (com BOM) ou Latin-1.
 
@@ -215,10 +404,12 @@ def read_json(path: Path) -> pl.DataFrame:
     if isinstance(data, dict):  # {"dados": [...]} e afins
         data = next((v for v in data.values() if isinstance(v, list)), [data])
     try:
-        return pl.from_dicts(data)
+        return _clean_columns(pl.from_dicts(data))
     except Exception:
         keys = {k for row in data for k in row}
-        return pl.from_dicts(data, schema_overrides={k: pl.String for k in keys})
+        return _clean_columns(
+            pl.from_dicts(data, schema_overrides={k: pl.String for k in keys})
+        )
 
 
 def _excel_path(path: Path, tmp_dir: Path) -> Path:
@@ -258,10 +449,10 @@ def read_excel(
         if sheet == "all":
             frames = pl.read_excel(source, sheet_id=0)
             assert isinstance(frames, dict), "sheet_id=0 deve retornar dict"
-            return frames
+            return {name: _clean_columns(f) for name, f in frames.items()}
         if sheet is None:
-            return pl.read_excel(source, sheet_id=None)
-        return pl.read_excel(source, sheet_id=sheet)
+            return _clean_columns(pl.read_excel(source, sheet_id=None))
+        return _clean_columns(pl.read_excel(source, sheet_id=sheet))
 
 
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
