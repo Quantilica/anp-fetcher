@@ -451,7 +451,7 @@ def test_table_dataset_for_member(
     assert table_dataset_for_member(group, base_id, member) == expected
 
 
-def test_mdpg_ids_estaveis_historicos_juntos_indice_fora_e_membro_novo_erra(
+def test_mdpg_ids_estaveis_historicos_juntos_indice_fora_e_membro_novo_avisa(
     tmp_path: Path,
 ) -> None:
     group = "movimentacao-derivados"
@@ -475,9 +475,10 @@ def test_mdpg_ids_estaveis_historicos_juntos_indice_fora_e_membro_novo_erra(
     )
     lake = tmp_path / "lake"
     res = converter.convert(tmp_path / "raw", lake)
-    assert len(res.errors) == 1, res.errors
-    assert "Liquidos_Tabela_Nova.csv" in res.errors[0]
-    assert "sem tabela declarada" in res.errors[0]
+    assert res.errors == []  # membro desconhecido não derruba os demais
+    assert len(res.warnings) == 1
+    assert "Liquidos_Tabela_Nova.csv" in res.warnings[0]
+    assert "sem tabela declarada" in res.warnings[0]
     base = lake / SOURCE_ID
     assert sorted(p.name for p in base.iterdir()) == [
         "movimentacao-derivados-liquidos-vendas-atual",
@@ -559,7 +560,7 @@ def test_upgrade_nao_apaga_o_antigo_se_um_membro_falhar(tmp_path: Path) -> None:
         _group_dir(tmp_path, group) / "mdpg-trr@20261104.zip",
         {
             "TRR_Vendas_Dist_Atual.csv": "Ano;Q\n2024;1\n",
-            "TRR_Nova.csv": "Ano;Q\n2024;1\n",
+            "TRR_Vendas_TRR_Atual.xlsx": b"nao e uma planilha",
         },
     )
     old_dataset = tmp_path / "lake" / SOURCE_ID / "movimentacao-derivados"
@@ -763,3 +764,151 @@ def test_ambiente_do_nome_do_membro(member: str, expected: str | None) -> None:
     from anp_fetcher.lake import _ambiente
 
     assert _ambiente(member) == expected
+
+
+def _seed(dataset: Path, key: str, partitions: dict[str, str] | None = None) -> Path:
+    """Grava um Parquet de uma conversão anterior: ``file_key`` = ``key``."""
+    import polars as pl
+    from quantilica.analytics.lake import LakeWriter
+    from quantilica.core.lake import DatasetDescriptor, partition_types_for
+
+    keys = list(partitions or {})
+    LakeWriter(
+        dataset,
+        DatasetDescriptor(
+            source_id=SOURCE_ID,
+            dataset_id=dataset.name,
+            alias=dataset.name,
+            partition_keys=keys,
+            partition_types=partition_types_for(keys),
+        ),
+    ).write_polars(
+        pl.DataFrame({"x": [1]}), None, partitions=partitions, file_key_name=key
+    )
+    (path,) = dataset.rglob(f"{key}.parquet")
+    return path
+
+
+def test_logistica_edicao_antiga_no_zip_avisa_e_nada_antigo_sobra(
+    tmp_path: Path,
+) -> None:
+    group = "movimentacao-derivados"
+    cab = "Ano;Q\n2024;1\n"
+    nova = [
+        "DADOS ABERTOS - LOGISTICA 01 - ABASTECIMENTO NACIONAL DE COMBUSTÍVEIS.csv",
+        "DADOS ABERTOS - LOGISTICA 02 - VENDAS NO MERCADO BRASILEIRO.csv",
+        "DADOS ABERTOS - LOGISTICA 03 - VENDAS CONGÊNERES DE DISTRIBUIDORES.csv",
+    ]
+    antiga = [
+        "DADOS ABERTOS - LOGISTICA DO ABASTECIMENTO NACIONAL DE COMBUSTÍVEIS.csv",
+        "DADOS ABERTOS - VENDAS CONGÊNERES DE DISTRIBUIDORES.csv",
+    ]
+    zpath = _zip(
+        _group_dir(tmp_path, group) / "mdpg-logistica@20261104.zip",
+        {name: cab for name in [*nova, *antiga]},
+    )
+    base = tmp_path / "lake" / SOURCE_ID
+    from quantilica.core.lake import composite_file_key
+
+    # o que a conversão anterior deixou: os cinco membros (a edição antiga também)
+    # nos datasets em que cada um caía, e o Parquet do layout mais antigo ainda
+    stale = [
+        _seed(
+            base / "movimentacao-derivados-logistica-abastecimento-nacional",
+            composite_file_key(zpath, antiga[0]),
+        ),
+        _seed(
+            base / "movimentacao-derivados-logistica-vendas-congeneres",
+            composite_file_key(zpath, antiga[1]),
+        ),
+        _seed(base / "movimentacao-derivados", composite_file_key(zpath)),
+    ]
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.errors == []
+    assert len(res.warnings) == 2  # a edição antiga fica fora, com aviso
+    assert not any(p.exists() for p in stale)
+    assert not (base / "movimentacao-derivados").exists()
+    assert sorted(p.name for p in base.iterdir()) == [
+        "movimentacao-derivados-logistica-abastecimento-nacional",
+        "movimentacao-derivados-logistica-vendas-congeneres",
+        "movimentacao-derivados-logistica-vendas-mercado",
+    ]
+    assert _files(base / "movimentacao-derivados-logistica-vendas-congeneres") == [
+        "mdpg-logistica__dados_abertos_logistica_03_vendas_congeneres_de_distribuidores"
+    ]
+    assert (
+        scan_dataset(base / "movimentacao-derivados-logistica-abastecimento-nacional")
+        .collect()
+        .height
+        == 1
+    )
+
+
+def test_zip_que_passa_de_varios_membros_para_um_so_nao_deixa_os_antigos(
+    tmp_path: Path,
+) -> None:
+    group_dir = _group_dir(tmp_path, "producao-poco-abertos")
+    zname = "producao-poco-da_2005@20261105.zip"
+    _zip(
+        group_dir / zname,
+        {
+            "a_producao_mar.csv": _poco_csv("M", 3),
+            "a_producao_terra.csv": _poco_csv("T", 2),
+        },
+    )
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.converted == 2
+    dataset = tmp_path / "lake" / SOURCE_ID / "producao-poco-abertos"
+    assert len(_files(dataset)) == 2
+
+    # edição nova do ZIP, só com o mar: o terra de antes não pode ficar
+    _zip(group_dir / zname, {"a_producao_mar.csv": _poco_csv("M", 4)})
+    res2 = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res2.errors == []
+    assert _files(dataset) == ["producao-poco-da_2005"]
+    assert scan_dataset(dataset).collect().height == 4
+
+
+def test_limpeza_fica_nos_datasets_do_grupo_e_nao_alcanca_outro_grupo(
+    tmp_path: Path,
+) -> None:
+    group = "pp"
+    zpath = _zip(
+        _group_dir(tmp_path, group) / "pp-x_2020@20261105.zip",
+        {"a.csv": "Ano;Q\n2020;1\n", "b.csv": "Ano;Q\n2020;2\n"},
+    )
+    from quantilica.core.lake import file_key
+
+    key = file_key(zpath)  # chave antiga do ZIP
+    base = tmp_path / "lake" / SOURCE_ID
+    mine = _seed(base / "pp", key, {"ano": "2020"})
+    other = _seed(base / "pp-abertos", key, {"ano": "2020"})  # outro grupo, mesma chave
+    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    assert res.errors == []
+    assert not mine.exists()
+    assert other.exists()
+
+
+def test_sha_cached_serializa_threads_e_restaura_o_original() -> None:
+    import threading
+
+    import quantilica.analytics.lake as analytics_lake
+
+    from anp_fetcher import lake
+
+    original = analytics_lake.sha256_file
+    seen: list[tuple[str, str]] = []
+    barrier = threading.Barrier(2)
+
+    def run(name: str) -> None:
+        barrier.wait()
+        with lake._sha_cached(Path(f"/x/{name}"), f"digest-{name}"):
+            seen.append((name, analytics_lake.sha256_file(Path(f"/x/{name}"))))
+
+    threads = [threading.Thread(target=run, args=(n,)) for n in ("a", "b")]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert sorted(seen) == [("a", "digest-a"), ("b", "digest-b")]
+    assert analytics_lake.sha256_file is original

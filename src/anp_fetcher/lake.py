@@ -13,8 +13,10 @@ Um ZIP com vários membros de dados rende um Parquet por membro
 from __future__ import annotations
 
 import glob
+import logging
 import re
 import tempfile
+import threading
 import unicodedata
 import zipfile
 from collections.abc import Iterator
@@ -61,6 +63,8 @@ if TYPE_CHECKING:  # só tipagem: o core publicado antes do contrato não tem Pl
 
 SOURCE_ID = "anp"
 
+logger = logging.getLogger(__name__)
+
 _YM = re.compile(r"^(?P<ano>\d{4})-(?P<mes>\d{2})$")
 _YS = re.compile(r"^(?P<ano>\d{4})-S(?P<semestre>[12])$")
 _Y = re.compile(r"^(?P<ano>\d{4})$")
@@ -68,11 +72,16 @@ _Y = re.compile(r"^(?P<ano>\d{4})$")
 
 @dataclass
 class ConvertResult:
-    """Counts of a conversion run; ``errors`` holds one message per failure."""
+    """Counts of a conversion run; ``errors`` holds one message per failure.
+
+    ``warnings`` lists what was deliberately left out without failing the run
+    (a ZIP member that no declared table covers).
+    """
 
     converted: int = 0
     skipped: int = 0
     errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 # A ANP publica o mesmo conteúdo em vários formatos ("pmqc-csv_2024-01@...",
@@ -227,9 +236,9 @@ class Routed:
     #: colunas literais acrescentadas ao Parquet (nome, valor): o que só o nome do
     #: membro diz (``ambiente`` mar/terra/presal)
     literals: tuple[tuple[str, str], ...] = ()
-    #: motivo de o item não poder ser convertido (membro sem tabela declarada);
-    #: ``convert`` o devolve como erro do item, sem criar dataset algum
-    error: str | None = None
+    #: motivo de o item ficar fora do lake (membro sem tabela declarada): ``convert``
+    #: avisa e segue, sem erro nem dataset novo
+    ignored: str | None = None
 
 
 @dataclass(frozen=True)
@@ -244,7 +253,7 @@ class _Plan:
     literals: tuple[tuple[str, str], ...] = ()
     #: dataset próprio da tabela (ZIP com layouts diferentes); ``None`` = do grupo
     table: str | None = None
-    error: str | None = None
+    ignored: str | None = None
 
 
 _PMQC_MEMBER = re.compile(r"(?P<ano>\d{4})_(?P<mes>\d{2})\.csv$", re.IGNORECASE)
@@ -357,9 +366,11 @@ _MDPG_TABLES: dict[str, tuple[tuple[str, str], ...]] = {
         ),
     ),
     "mdpg-logistica": (
-        (r"abastecimento nacional", "logistica-abastecimento-nacional"),
-        (r"vendas no mercado", "logistica-vendas-mercado"),
-        (r"vendas congeneres", "logistica-vendas-congeneres"),
+        # só a edição atual (01, 02, 03): a antiga que ficou no ZIP ("LOGISTICA DO
+        # ABASTECIMENTO NACIONAL", "VENDAS CONGENERES...") repete 2022 a 2024
+        (r"^dados abertos logistica 0?1\b", "logistica-abastecimento-nacional"),
+        (r"^dados abertos logistica 0?2\b", "logistica-vendas-mercado"),
+        (r"^dados abertos logistica 0?3\b", "logistica-vendas-congeneres"),
     ),
     "mdpg-lubrificante": ((r"^lubrificante anexo ([a-z])$", "lubrificante-anexo-\\1"),),
     "mdpg-solvente": (
@@ -523,14 +534,14 @@ def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
     parts = []
     for member in members:
         literals: list[tuple[str, str]] = []
-        table, error = None, None
+        table, ignored = None, None
         if group in _AMBIENTE_GROUPS and (amb := _ambiente(member)):
             literals.append(("ambiente", amb))
         if group in TABLE_DATASET_GROUPS:
             table = table_dataset_for_member(group, base_id, member)
             declared = group == "movimentacao-derivados" or yearly
             if table is None and declared:
-                error = f"membro sem tabela declarada em {group}: {member}"
+                ignored = f"membro sem tabela declarada em {group}: {member}"
         if yearly and base_id.startswith("arf-depositarias"):
             literals.append(("membro", Path(member).stem))
         parts.append(
@@ -542,7 +553,7 @@ def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
                 key_name=key_names[member],
                 literals=tuple(literals),
                 table=table,
-                error=error,
+                ignored=ignored,
             )
         )
     return parts
@@ -646,7 +657,7 @@ def route_group(
             member=plan.member,
             key_name=plan.key_name,
             literals=plan.literals,
-            error=plan.error,
+            ignored=plan.ignored,
         )
         for plan in resolved
     ]
@@ -693,62 +704,71 @@ LAKE_DATASET_ALIASES: dict[str, str] = {
 }
 
 
+_SHA_LOCK = threading.Lock()
+
+
 @contextmanager
 def _sha_cached(path: Path, digest: str) -> Iterator[None]:
     """O ``LakeWriter`` hasheia o bruto a cada escrita; um ZIP com 30 membros seria
-    lido 30 vezes. Dentro do bloco o hash de ``path`` já vem pronto.
+    lido 30 vezes. Dentro do bloco o hash de ``path`` já vem pronto. A troca do
+    global é um estado do processo: o lock a serializa entre threads.
     """
-    original = analytics_lake.sha256_file
+    with _SHA_LOCK:
+        original = analytics_lake.sha256_file
 
-    def cached(target: str | Path, *args: Any, **kwargs: Any) -> str:
-        if Path(target) == path:
-            return digest
-        return original(target, *args, **kwargs)
+        def cached(target: str | Path, *args: Any, **kwargs: Any) -> str:
+            if Path(target) == path:
+                return digest
+            return original(target, *args, **kwargs)
 
-    analytics_lake.sha256_file = cached
-    try:
-        yield
-    finally:
-        analytics_lake.sha256_file = original
+        analytics_lake.sha256_file = cached
+        try:
+            yield
+        finally:
+            analytics_lake.sha256_file = original
 
 
-def _drop_legacy_parts(lake_dir: Path, group: str, raw_file: Path) -> int:
-    """Apaga os Parquets que o layout antigo gravou para um ZIP agora aberto por membro.
+def _prune_zip_parts(
+    lake_dir: Path, datasets: set[str], raw_file: Path, produced: set[str]
+) -> int:
+    """Apaga os Parquets de um ZIP que esta conversão não produziu mais.
 
-    Antes, o ZIP inteiro virava um Parquet de ``file_key`` ``<zip>`` (só o primeiro
-    membro), no dataset do grupo; agora cada membro tem o ``<zip>__<membro>``, às
-    vezes em outro dataset. Sem esta limpeza o ``--force`` deixaria o antigo ao lado
-    dos novos e as linhas dobrariam. Só sai o arquivo cujo rodapé
-    (``quantilica.file_key``) é exatamente a chave antiga, nos datasets do grupo.
+    O rodapé (``quantilica.file_key``) de cada Parquet diz de que ZIP e membro ele
+    veio: ``<zip>`` (layout antigo, só o 1º membro) ou ``<zip>__<membro>``. Cai tudo
+    o que é do ZIP e não está em ``produced``, nos ``datasets`` que o roteamento do
+    grupo usa: o layout antigo, o membro que sumiu ou mudou de nome numa edição nova
+    do ZIP, e os membros de um ZIP que passou a ter um só. Sem isso o ``--force``
+    deixaria o antigo ao lado do novo e as linhas dobrariam. Um dataset que fica
+    sem dados sai com os arquivos.
 
     Returns:
         int: Quantos arquivos foram apagados.
     """
     base = lake_dir / SOURCE_ID
-    if not base.is_dir():
+    if not base.is_dir() or not produced:
         return 0
     key = file_key(raw_file)
-    parts = re.compile(rf"{re.escape(key)}(?:-\d{{3}})?\.parquet")
     removed = 0
-    for dataset in sorted(base.iterdir()):
-        dropped = 0
-        if not dataset.is_dir() or not (
-            dataset.name == group or dataset.name.startswith(f"{group}-")
-        ):
+    for name in sorted(datasets):
+        dataset = base / name
+        if not dataset.is_dir():
             continue
+        dropped = 0
         for path in dataset.rglob(f"{glob.escape(key)}*.parquet"):
-            relative = path.relative_to(dataset)
-            if any(part.startswith(".") for part in relative.parts):
+            if any(part.startswith(".") for part in path.relative_to(dataset).parts):
                 continue  # staging do writer
-            if not parts.fullmatch(path.name):
-                continue
             try:
                 owner = (pq.ParquetFile(path).metadata.metadata or {}).get(
                     META_FILE_KEY.encode()
                 )
             except (OSError, pq.lib.ArrowException):
                 continue
-            if owner is None or owner.decode() != key:
+            if owner is None:
+                continue
+            owner_key = owner.decode()
+            if owner_key in produced or not (
+                owner_key == key or owner_key.startswith(f"{key}__")
+            ):
                 continue
             path.unlink()
             removed += 1
@@ -762,8 +782,8 @@ def _drop_legacy_parts(lake_dir: Path, group: str, raw_file: Path) -> int:
                 folder = folder.parent
         if dropped and not any(dataset.rglob("*.parquet")):
             # dataset sem dados: sai o descritor e a pasta, se nada mais sobrou
-            for name in ("_dataset.json", ".lock"):
-                (dataset / name).unlink(missing_ok=True)
+            for leftover in ("_dataset.json", ".lock"):
+                (dataset / leftover).unlink(missing_ok=True)
             try:
                 dataset.rmdir()
             except OSError:
@@ -896,8 +916,10 @@ class LakeConverter:
 
         for group, routed in routes.items():
             spec = spec_for(group)
-            # itens que não chegaram ao lake, por ZIP: decide a limpeza do layout antigo
+            # por ZIP: itens que não chegaram ao lake (decide a limpeza) e chaves
+            # produzidas (o que a limpeza preserva)
             failed: dict[Path, int] = {}
+            produced: dict[Path, set[str]] = {}
 
             for item in routed:
                 part_keys = item.partition_keys
@@ -908,6 +930,7 @@ class LakeConverter:
                     else item.path.name
                 )
                 failed.setdefault(item.path, 0)
+                produced.setdefault(item.path, set())
 
                 if (
                     target_datasets
@@ -917,11 +940,12 @@ class LakeConverter:
                 ):
                     failed[item.path] += 1  # fora da seleção: ZIP incompleto
                     continue
-                if item.error:
-                    result.errors.append(f"{label}: {item.error}")
-                    failed[item.path] += 1
+                if item.ignored:
+                    result.warnings.append(f"{label}: {item.ignored}")
+                    logger.warning("%s: %s", label, item.ignored)
                     continue
 
+                produced[item.path].add(_item_key(item) or file_key(item.path))
                 writer_key = f"{dataset_id}:" + ",".join(part_keys)
                 if writer_key not in writers:
                     writers[writer_key] = LakeWriter(
@@ -961,10 +985,14 @@ class LakeConverter:
                     result.errors.append(f"{label}: {first_line}")
                     failed[item.path] += 1
 
-            opened = {i.path for i in routed if i.member}
+            scope = {item.dataset_id for item in routed} | {group}
             for path, count in failed.items():
-                if count == 0 and path in opened:
-                    _drop_legacy_parts(lake_dir, group, path)
+                if (
+                    count == 0
+                    and path.suffix.lower() == ".zip"
+                    and spec.get("sheet") != "all"
+                ):
+                    _prune_zip_parts(lake_dir, scope, path, produced[path])
 
         return result
 
