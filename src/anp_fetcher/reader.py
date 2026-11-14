@@ -109,7 +109,7 @@ def parse_filename(path: Path) -> dict[str, Any]:
     }
 
 
-def decompress(path: Path) -> Path:
+def decompress(path: Path, output_dir: Path | None = None) -> Path:
     """Descompacta um arquivo ZIP/7z e retorna o primeiro arquivo de dados.
 
     A extração é delegada a ``quantilica.core.files.decompress_archive``
@@ -119,6 +119,8 @@ def decompress(path: Path) -> Path:
 
     Args:
         path (Path): O caminho do arquivo compactado.
+        output_dir (Path | None): Pasta de destino. Sem ela, a extração vai para
+            uma pasta temporária que o chamador precisa remover.
 
     Returns:
         Path: O caminho do arquivo extraído (primeiro csv/xls/xlsx encontrado).
@@ -128,9 +130,88 @@ def decompress(path: Path) -> Path:
     """
     logger.info("Descompactando %s", path)
     try:
-        return decompress_archive(path, target_extensions=(".csv", ".xls", ".xlsx"))
+        return decompress_archive(
+            path, output_dir, target_extensions=(".csv", ".xls", ".xlsx")
+        )
     except StorageError as exc:
         raise RuntimeError(f"falha ao descompactar {path}: {exc}") from exc
+
+
+# Membros de ZIP que o leitor abre. O JSON que a ANP publica ao lado de cada CSV
+# (PMQC) é o mesmo dado em outro formato: fica de fora, o CSV é o que vale.
+_MEMBER_SUFFIXES = (".csv", ".xls", ".xlsx")
+
+
+def scratch_dir() -> str | None:
+    """Pasta para temporários: o scratch do ``lake build`` ou o temp do sistema.
+
+    Usa ``QUANTILICA_LAKE_SCRATCH`` quando definido e existente; nunca fica ao
+    lado do bruto (um worker morto deixaria a pasta dentro da visão vigente).
+    """
+    scratch = os.environ.get("QUANTILICA_LAKE_SCRATCH") or None
+    return scratch if scratch and os.path.isdir(scratch) else None
+
+
+def _is_junk_member(name: str) -> bool:
+    """Ruído de arquivo compactado: ``__MACOSX/``, locks do Office, ``Thumbs.db``."""
+    parts = name.replace("\\", "/").split("/")
+    base = parts[-1].lower()
+    return (
+        "__macosx" in (p.lower() for p in parts[:-1])
+        or base.startswith(("~$", "."))
+        or base == "thumbs.db"
+        or base.startswith("md5_")
+    )
+
+
+def zip_data_members(path: Path) -> list[str]:
+    """Membros de dados (csv/xls/xlsx) de um ZIP, em ordem de nome.
+
+    Pastas, ruído (``Thumbs.db``, ``__MACOSX/``), PDF e JSON ficam de fora. Um
+    ZIP que na verdade é uma planilha (``[Content_Types].xml``) não tem membros:
+    é o próprio arquivo de dados.
+
+    Args:
+        path (Path): O arquivo ZIP.
+
+    Returns:
+        list[str]: Os nomes dos membros, como no ZIP.
+
+    Raises:
+        zipfile.BadZipFile: Se o arquivo não for um ZIP.
+    """
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+    if "[Content_Types].xml" in names:
+        return []
+    return sorted(
+        n
+        for n in names
+        if not n.endswith("/")
+        and n.lower().endswith(_MEMBER_SUFFIXES)
+        and not _is_junk_member(n)
+    )
+
+
+def extract_zip_member(path: Path, member: str, dest_dir: Path) -> Path:
+    """Extrai um membro do ZIP para ``dest_dir`` com nome neutro e a mesma extensão.
+
+    O nome neutro evita path traversal e colisão entre membros de pastas
+    diferentes; a extensão fica porque o leitor escolhe o formato por ela.
+
+    Args:
+        path (Path): O arquivo ZIP.
+        member (str): O nome do membro, como no ZIP.
+        dest_dir (Path): Pasta de destino (existente).
+
+    Returns:
+        Path: O arquivo extraído.
+    """
+    target = Path(dest_dir) / f"membro{Path(member).suffix.lower()}"
+    with zipfile.ZipFile(path) as archive, archive.open(member) as src:
+        with open(target, "wb") as dst:
+            shutil.copyfileobj(src, dst)
+    return target
 
 
 def _field_counts(text: str, separator: str, limit: int) -> list[int]:
@@ -442,13 +523,8 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     if codec is None:
         df = _read_csv_8bit(path, spec)
     else:
-        # No scratch do `lake build` (QUANTILICA_LAKE_SCRATCH) quando definido;
-        # senão no temp do sistema. Nunca ao lado do bruto: um worker morto
-        # deixaria a pasta temporária dentro da visão vigente.
-        scratch = os.environ.get("QUANTILICA_LAKE_SCRATCH") or None
-        if scratch and not os.path.isdir(scratch):
-            scratch = None
-        with tempfile.TemporaryDirectory(prefix=".anp-utf8-", dir=scratch) as tmp:
+        # No scratch do `lake build` quando definido, senão no temp do sistema.
+        with tempfile.TemporaryDirectory(prefix=".anp-utf8-", dir=scratch_dir()) as tmp:
             utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
             df = _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"})
     if not spec.get("skip_rows"):
@@ -555,7 +631,8 @@ def read_file(
         csv_members = sorted(n for n in names if n.lower().endswith(".csv"))
         if len(csv_members) > 1:
             return _read_zip_csvs(path, csv_members, spec)
-        return read_file(decompress(path), spec)
+        with tempfile.TemporaryDirectory(prefix=".anp-zip-", dir=scratch_dir()) as tmp:
+            return read_file(decompress(path, Path(tmp)), spec)
     separator = spec.get("separator", ";").encode()
     if (
         suffix in (".xls", ".xlsx")

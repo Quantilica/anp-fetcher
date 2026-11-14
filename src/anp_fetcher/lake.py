@@ -5,13 +5,16 @@ Each raw file lands in
 Monthly datasets (e.g. Preços de Combustíveis) are partitioned by ``ano=/mes=``;
 annual statistical reports by ``ano=``; and static datasets are stored unpartitioned.
 Data contracts are validated and cast when available.
+
+Um ZIP com vários membros de dados rende um Parquet por membro
+(``<zip>__<membro>.parquet``); ver :func:`route_group`.
 """
 
 from __future__ import annotations
 
 import re
-import shutil
 import tempfile
+import unicodedata
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 try:
     import polars as pl
-    from quantilica.analytics.lake import LakeError, LakeWriter
+    from quantilica.analytics.lake import LakeWriter
     from quantilica.core.lake import (
         DatasetDescriptor,
         composite_file_key,
@@ -36,9 +39,12 @@ from anp_fetcher import __version__
 from anp_fetcher.catalog import ALL_GROUP_KEYS, resolve_group
 from anp_fetcher.reader import (
     decompress,
+    extract_zip_member,
     normalize_dtypes,
     parse_filename,
     read_file,
+    scratch_dir,
+    zip_data_members,
 )
 from anp_fetcher.storage import _GROUP_DIRS
 from anp_fetcher.wrangling import _apply_contract, spec_for
@@ -97,9 +103,17 @@ def raw_files(src_group_dir: Path) -> list[Path]:
 
 
 def _format_rank(path: Path) -> tuple[str, int, str]:
-    """``(base, rank, stamp)`` de um arquivo: o conteúdo, o formato e a versão."""
-    base = _FORMAT_TAG.sub("", path.name.split("@", 1)[0].rsplit(".", 1)[0])
+    """``(base, rank, stamp)`` de um arquivo: o conteúdo, o formato e a versão.
+
+    O formato vem da extensão, mas a marca ``-json`` no nome (``pmqc-json_...zip``)
+    vale mais: a ANP já publicou JSON com extensão ``.zip``, e o CSV é o que fica.
+    """
+    stem = path.name.split("@", 1)[0].rsplit(".", 1)[0]
+    base = _FORMAT_TAG.sub("", stem)
     stamp = path.name.split("@", 1)[1] if "@" in path.name else ""
+    tag = _FORMAT_TAG.search(stem)
+    if tag and tag.group(1).lower() == "json":
+        return base, _FORMAT_RANK[".json"], stamp
     return base, _FORMAT_RANK.get(path.suffix.lower(), 5), stamp
 
 
@@ -193,14 +207,33 @@ def dataset_for_granularity(
 
 @dataclass(frozen=True)
 class Routed:
-    """Um arquivo bruto e o dataset/partição que ``convert`` lhe dá."""
+    """Um arquivo bruto (ou um membro dele) e o dataset/partição que ``convert`` dá."""
 
     path: Path
     dataset_id: str
     partition_keys: list[str]
     partition_values: dict[str, str]
-    #: membro do ZIP que este item converte (ZIP anual do PMQC); ``None`` = arquivo todo
+    #: membro do ZIP que este item converte; ``None`` = arquivo todo
     member: str | None = None
+    #: nome do membro no ``file_key``, único dentro do ZIP (``None`` = ``member``)
+    key_name: str | None = None
+    #: colunas literais acrescentadas ao Parquet (nome, valor): o que só o nome do
+    #: membro diz (``ambiente`` mar/terra/presal)
+    literals: tuple[tuple[str, str], ...] = ()
+
+
+@dataclass(frozen=True)
+class _Plan:
+    """Um arquivo bruto ou um membro dele, antes de escolher o dataset."""
+
+    path: Path
+    keys: list[str]
+    vals: dict[str, str]
+    member: str | None = None
+    key_name: str | None = None
+    literals: tuple[tuple[str, str], ...] = ()
+    #: dataset próprio da tabela (ZIP com layouts diferentes); ``None`` = do grupo
+    table: str | None = None
 
 
 _PMQC_MEMBER = re.compile(r"(?P<ano>\d{4})_(?P<mes>\d{2})\.csv$", re.IGNORECASE)
@@ -209,8 +242,7 @@ _PMQC_MEMBER = re.compile(r"(?P<ano>\d{4})_(?P<mes>\d{2})\.csv$", re.IGNORECASE)
 def _pmqc_zip_members(path: Path) -> list[tuple[str, dict[str, str]]]:
     """CSV mensais de um ZIP anual do PMQC: ``(membro, {"ano":…, "mes":…})``."""
     try:
-        with zipfile.ZipFile(path) as archive:
-            names = sorted(archive.namelist())
+        names = zip_data_members(path)
     except (OSError, zipfile.BadZipFile):
         return []
     members = []
@@ -221,6 +253,168 @@ def _pmqc_zip_members(path: Path) -> list[tuple[str, dict[str, str]]]:
     return members
 
 
+def _ascii(text: str) -> str:
+    """Minúsculas sem acento (``Lâminas`` -> ``laminas``)."""
+    folded = unicodedata.normalize("NFKD", text).encode("ascii", "ignore")
+    return folded.decode("ascii").lower()
+
+
+def _kebab(text: str) -> str:
+    """Id em kebab-case ASCII (``Asfalto_Vendas UF`` -> ``asfalto-vendas-uf``)."""
+    return re.sub(r"[^0-9a-z]+", "-", _ascii(text)).strip("-")
+
+
+#: Grupos cujos ZIPs trazem várias tabelas de layouts diferentes (uma por membro):
+#: cada tabela vira o dataset ``<grupo>-<tabela>``, para o dataset ter um layout só.
+#: Vale para ZIP com mais de um membro de dados; ZIP de um membro fica no grupo.
+TABLE_DATASET_GROUPS = ("amostras-rochas-fluidos", "movimentacao-derivados")
+
+#: Tabelas do ``arf-consolidacao-AAAA.zip``: trecho do nome do membro -> sufixo do id.
+_ARF_TABLES = (
+    ("calha", "calha"),
+    ("celula", "celulas"),
+    ("fluido", "fluidos"),
+    ("lamina", "laminas"),
+    ("later", "laterais"),  # lateral / laterais
+    ("plugue", "plugues"),
+    ("testemunho", "testemunhos"),
+)
+
+
+def table_dataset_for_member(group: str, base_id: str, member: str) -> str | None:
+    """Dataset de uma tabela de ZIP de ``TABLE_DATASET_GROUPS``, ou ``None``.
+
+    ``movimentacao-derivados``: o id sai do nome do membro
+    (``Asfalto_Vendas_Distribuidor_UF_Atual.csv`` ->
+    ``movimentacao-derivados-asfalto-vendas-distribuidor-uf-atual``).
+    ``amostras-rochas-fluidos``: só o ``arf-consolidacao-*`` tem tabelas
+    diferentes (calha, fluidos, lâminas, laterais, plugues, testemunhos, células);
+    as depositárias são o mesmo formulário de preços, um por empresa.
+    """
+    stem = Path(member).stem
+    if group == "movimentacao-derivados":
+        slug = _kebab(stem).removeprefix("dados-abertos-")
+        return f"{group}-{slug}" if slug else None
+    if group == "amostras-rochas-fluidos" and base_id.startswith("arf-consolidacao"):
+        name = _ascii(stem)
+        for needle, suffix in _ARF_TABLES:
+            if needle in name:
+                return f"{group}-{suffix}"
+    return None
+
+
+#: Grupos com um arquivo por ambiente (mar, terra, pré-sal) dentro do ZIP.
+_AMBIENTE_GROUPS = ("ppg", "producao-poco-abertos")
+_AMBIENTE = re.compile(r"(?:^|[^a-z])(mar|terra|presal)$")
+_MONTHLY_MEMBER = re.compile(r"^\d{4}_\d{2}_")
+
+
+def _ambiente(member: str) -> str | None:
+    """``mar``, ``terra`` ou ``presal``, o último trecho do nome do membro."""
+    found = _AMBIENTE.search(_ascii(Path(member).stem))
+    return found.group(1) if found else None
+
+
+def _drop_monthly_overlap(members: list[str]) -> list[str]:
+    """Tira os membros mensais de um ambiente que já tem o anual consolidado.
+
+    Os ZIPs de 2010 a 2015 trazem o ano inteiro (``2013_producao_terra.csv``) e
+    o mesmo ano partido em meses (``2013_05_producao_terra.csv``): é o mesmo dado
+    duas vezes (os mensais ainda repetem linhas e, em 2010, têm colunas
+    deslocadas). Vale o anual.
+    """
+    annual = {
+        _ambiente(m)
+        for m in members
+        if not _MONTHLY_MEMBER.match(Path(m).name) and _ambiente(m)
+    }
+    return [
+        m
+        for m in members
+        if not (_MONTHLY_MEMBER.match(Path(m).name) and _ambiente(m) in annual)
+    ]
+
+
+def _unique_key_names(path: Path, members: list[str]) -> dict[str, str]:
+    """Nome de cada membro no ``file_key``, sem repetir dentro do ZIP.
+
+    O ``file_key`` usa só o nome do arquivo do membro; dois membros cujos nomes dão
+    o mesmo slug (``PETROSYNERGY_2017.csv`` e ``PETROSYNERGY_2017..csv``) ficam
+    com o sufixo ``_2``, ``_3``, na ordem do nome.
+    """
+    taken: set[str] = set()
+    names: dict[str, str] = {}
+    for member in sorted(members):
+        name = Path(member).name
+        candidate, n = name, 1
+        while composite_file_key(path, candidate) in taken:
+            n += 1
+            candidate = f"{name} {n}"
+        taken.add(composite_file_key(path, candidate))
+        names[member] = candidate
+    return names
+
+
+def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
+    """Um item por membro de dados de um ZIP; vazio quando o ZIP vai inteiro.
+
+    O ZIP vai inteiro (como antes) quando tem um membro de dados só, ou nenhum
+    (7z, planilha com extensão ``.zip``, ZIP inválido: o erro sai na conversão).
+    Com vários membros cada um vira um item, com o ``file_key`` ``<zip>__<membro>``:
+
+    * grupos de produção por poço: o membro leva a coluna ``ambiente``;
+    * ``amostras-rochas-fluidos``/``movimentacao-derivados``: cada tabela vai
+      para o dataset próprio (:func:`table_dataset_for_member`);
+    * as depositárias levam a coluna ``membro`` (o nome do arquivo é a empresa).
+    """
+    path = plan.path
+    if path.suffix.lower() != ".zip":
+        return []
+    try:
+        members = zip_data_members(path)
+    except (OSError, zipfile.BadZipFile):
+        return []
+    if group in _AMBIENTE_GROUPS:
+        members = _drop_monthly_overlap(members)
+    if len(members) < 2:
+        return []
+    base_id = parse_filename(path)["base_id"]
+    key_names = _unique_key_names(path, members)
+    parts = []
+    for member in members:
+        literals: list[tuple[str, str]] = []
+        table = None
+        if group in _AMBIENTE_GROUPS and (amb := _ambiente(member)):
+            literals.append(("ambiente", amb))
+        if group in TABLE_DATASET_GROUPS:
+            table = table_dataset_for_member(group, base_id, member)
+        if group == "amostras-rochas-fluidos" and base_id.startswith(
+            "arf-depositarias"
+        ):
+            literals.append(("membro", Path(member).stem))
+        parts.append(
+            _Plan(
+                path,
+                plan.keys,
+                plan.vals,
+                member=member,
+                key_name=key_names[member],
+                literals=tuple(literals),
+                table=table,
+            )
+        )
+    return parts
+
+
+def _is_json_in_zip_clothing(path: Path) -> bool:
+    """Se um arquivo ``.zip`` é na verdade JSON (``pmqc-json_2024-02.zip``)."""
+    if path.suffix.lower() != ".zip" or zipfile.is_zipfile(path):
+        return False
+    with open(path, "rb") as fh:
+        head = fh.read(64).lstrip()
+    return head[:1] in (b"{", b"[")
+
+
 def route_group(
     group: str, src_group_dir: Path
 ) -> tuple[list[Routed], list[tuple[Path, str]]]:
@@ -229,7 +423,8 @@ def route_group(
     Regra única de :meth:`LakeConverter.convert` e :meth:`LakeConverter.inventory`:
     um arquivo por conteúdo (:func:`pick_one_format`), partições pelo nome
     (:func:`resolve_partitions`) e dataset pela granularidade do grupo
-    (:func:`dataset_for_granularity`). Os arquivos descartados voltam com o
+    (:func:`dataset_for_granularity`). ZIP com vários membros de dados rende um
+    item por membro (:func:`_zip_parts`). Os arquivos descartados voltam com o
     motivo do inventário: ``"gemeo"`` (mesmo conteúdo em outro formato),
     ``"nao_tabular"`` (formato que o leitor não abre) ou ``"superado"``
     (versão anterior do mesmo formato).
@@ -238,48 +433,65 @@ def route_group(
     best = _best_by_base(files)
 
     chosen = sorted(path for _, _, path in best.values())
-    resolved: list[tuple[Path, list[str], dict[str, str], str | None]] = [
-        (f, *resolve_partitions(parse_filename(f)), None) for f in chosen
-    ]
+    # JSON com extensão .zip: o leitor não abre, e não pode tomar o lugar do mês
+    # que o ZIP anual traz em CSV.
+    json_as_zip = {p for p in chosen if _is_json_in_zip_clothing(p)}
+    chosen = [p for p in chosen if p not in json_as_zip]
+    resolved = [_Plan(f, *resolve_partitions(parse_filename(f))) for f in chosen]
     expanded_away: set[Path] = set()
     if group == "pmqc":
         # ZIP anual (um CSV por mês): vira os meses do mesmo dataset dos mensais.
         # Mês que já existe como arquivo mensal avulso fica com o avulso, para não
         # duplicar linhas na partição.
         monthly = {
-            (vals["ano"], vals["mes"])
-            for _, keys, vals, _ in resolved
-            if keys == ["ano", "mes"]
+            (plan.vals["ano"], plan.vals["mes"])
+            for plan in resolved
+            if plan.keys == ["ano", "mes"]
         }
-        expanded: list[tuple[Path, list[str], dict[str, str], str | None]] = []
-        for path, keys, vals, member in resolved:
+        pmqc: list[_Plan] = []
+        for plan in resolved:
             members = (
-                _pmqc_zip_members(path)
-                if keys == ["ano"] and path.suffix.lower() == ".zip"
+                _pmqc_zip_members(plan.path)
+                if plan.keys == ["ano"] and plan.path.suffix.lower() == ".zip"
                 else []
             )
             if not members:
-                expanded.append((path, keys, vals, member))
+                pmqc.append(plan)
                 continue
+            names = _unique_key_names(plan.path, [name for name, _ in members])
             kept = [
-                (path, ["ano", "mes"], mvals, name)
+                _Plan(
+                    plan.path,
+                    ["ano", "mes"],
+                    mvals,
+                    member=name,
+                    key_name=names[name],
+                )
                 for name, mvals in members
                 if (mvals["ano"], mvals["mes"]) not in monthly
             ]
             if not kept:
-                expanded_away.add(path)
-            expanded.extend(kept)
-        resolved = expanded
-    finest = max((len(keys) for _, keys, _, _ in resolved), default=0)
+                expanded_away.add(plan.path)
+            pmqc.extend(kept)
+        resolved = pmqc
+    expanded: list[_Plan] = []
+    for plan in resolved:
+        parts = _zip_parts(group, plan) if plan.member is None else []
+        expanded.extend(parts or [plan])
+    resolved = expanded
+    finest = max((len(plan.keys) for plan in resolved), default=0)
     routed = [
         Routed(
-            path=path,
-            dataset_id=dataset_for_granularity(group, keys, finest, path=path),
-            partition_keys=keys,
-            partition_values=vals,
-            member=member,
+            path=plan.path,
+            dataset_id=plan.table
+            or dataset_for_granularity(group, plan.keys, finest, path=plan.path),
+            partition_keys=plan.keys,
+            partition_values=plan.vals,
+            member=plan.member,
+            key_name=plan.key_name,
+            literals=plan.literals,
         )
-        for path, keys, vals, member in resolved
+        for plan in resolved
     ]
 
     routed_paths = {item.path for item in routed}
@@ -289,6 +501,11 @@ def route_group(
             continue
         if path in expanded_away:
             ignored.append((path, "gemeo"))
+            continue
+        if path in json_as_zip:
+            # o mesmo mês vem em CSV no ZIP anual; sem a marca -json, JSON é dado
+            reason = "gemeo" if _FORMAT_TAG.search(path.name) else "nao_tabular"
+            ignored.append((path, reason))
             continue
         if not is_tabular(path):
             ignored.append((path, "nao_tabular"))
@@ -317,6 +534,37 @@ LAKE_DATASET_ALIASES: dict[str, str] = {
     "preco_referencia_petroleo": "royalties",
     "preco-referencia-petroleo": "royalties",
 }
+
+
+def _table_group(dataset: str) -> str | None:
+    """O grupo de um dataset de tabela (``amostras-rochas-fluidos-calha``)."""
+    for group in TABLE_DATASET_GROUPS:
+        if dataset.startswith(f"{group}-"):
+            return group
+    return None
+
+
+def _materialize(item: Routed, tmp_dir: Path) -> Path:
+    """O arquivo a ler de um item: o bruto, o membro extraído ou o ZIP aberto.
+
+    A extração vai para ``tmp_dir``, que o chamador descarta: nada fica no temp.
+    """
+    raw_file = item.path
+    if item.member is not None:
+        return extract_zip_member(raw_file, item.member, tmp_dir)
+    suffix = raw_file.suffix.lower()
+    if suffix == ".zip":
+        if not zipfile.is_zipfile(raw_file):
+            raise RuntimeError("não é um arquivo ZIP válido")
+        members = zip_data_members(raw_file)
+        if len(members) == 1:
+            return extract_zip_member(raw_file, members[0], tmp_dir)
+    if suffix in (".zip", ".7z"):
+        try:
+            return decompress(raw_file, tmp_dir)
+        except RuntimeError as exc:
+            raise RuntimeError(f"erro na descompressão: {exc}") from exc
+    return raw_file
 
 
 class LakeConverter:
@@ -360,7 +608,7 @@ class LakeConverter:
             target_datasets = set(datasets)
             for d in datasets:
                 aliased = LAKE_DATASET_ALIASES.get(d, d)
-                resolved = resolve_group(aliased) or aliased
+                resolved = resolve_group(aliased) or _table_group(aliased) or aliased
                 if resolved in _GROUP_DIRS and resolved not in target_groups:
                     target_groups.append(resolved)
                 elif resolved not in _GROUP_DIRS:
@@ -381,9 +629,7 @@ class LakeConverter:
             routed, _ = route_group(group, src_group_dir)
 
             for item in routed:
-                raw_file = item.path
                 part_keys = item.partition_keys
-                part_vals = item.partition_values
                 dataset_id = item.dataset_id
 
                 if (
@@ -409,93 +655,78 @@ class LakeConverter:
                     )
                 writer = writers[writer_key]
 
-                # Decompress if compressed
-                source_path = raw_file
-                tmp_dir: tempfile.TemporaryDirectory[str] | None = None
-                if item.member is not None:
-                    # membro de um ZIP anual: extrai só ele, com nome neutro
-                    tmp_dir = tempfile.TemporaryDirectory()
-                    source_path = Path(tmp_dir.name) / "membro.csv"
-                    try:
-                        with (
-                            zipfile.ZipFile(raw_file) as archive,
-                            archive.open(item.member) as src,
-                            open(source_path, "wb") as dst,
-                        ):
-                            shutil.copyfileobj(src, dst)
-                    except (OSError, KeyError, zipfile.BadZipFile) as exc:
-                        tmp_dir.cleanup()
-                        result.errors.append(
-                            f"{raw_file.name}: erro ao extrair {item.member}: {exc}"
-                        )
-                        continue
-                elif raw_file.suffix.lower() in (".zip", ".7z"):
-                    try:
-                        inner = decompress(raw_file)
-                        source_path = inner
-                    except Exception as exc:
-                        result.errors.append(
-                            f"{raw_file.name}: erro na descompressão: {exc}"
-                        )
-                        continue
-
                 try:
-                    data = read_file(source_path, spec)
-                    frames = (
-                        list(data.items()) if isinstance(data, dict) else [(None, data)]
-                    )
-
-                    for sheet, frame in frames:
-                        norm = normalize_dtypes(frame, spec)
-                        norm = _apply_contract(group, norm, raw_file.name)
-                        if dataset_id == "participacoes_especiais":
-                            # quatro recortes (uniao/estado/municipio/campo) com
-                            # colunas diferentes no mesmo dataset: a coluna os separa.
-                            recorte = parse_filename(raw_file)["base_id"].removeprefix(
-                                "pe-"
-                            )
-                            norm = norm.with_columns(pl.lit(recorte).alias("recorte"))
-                        part_keys_lower = [k.lower() for k in part_keys]
-                        drop_part_cols = [
-                            c for c in norm.columns if c.lower() in part_keys_lower
-                        ]
-                        if drop_part_cols:
-                            norm = norm.drop(drop_part_cols)
-                        file_key_override = None
-                        if item.member is not None:
-                            file_key_override = composite_file_key(
-                                raw_file, Path(item.member).name
-                            )
-                        elif sheet is not None:
-                            file_key_override = composite_file_key(raw_file, sheet)
-
-                        written = writer.write_polars(
-                            norm,
-                            raw_file,
-                            partitions=part_vals,
-                            file_key_name=file_key_override,
-                            converter=f"anp-fetcher {__version__}",
-                        )
-                        if written.status == "skipped":
-                            result.skipped += 1
-                        else:
-                            result.converted += 1
-
-                except (
-                    LakeError,
-                    OSError,
-                    pl.exceptions.PolarsError,
-                    Exception,
-                ) as exc:
+                    with tempfile.TemporaryDirectory(
+                        prefix=".anp-zip-", dir=scratch_dir()
+                    ) as tmp:
+                        source_path = _materialize(item, Path(tmp))
+                        self._write_item(writer, group, spec, item, source_path, result)
+                except Exception as exc:
                     message = str(exc).strip()
                     first_line = message.splitlines()[0] if message else repr(exc)
-                    result.errors.append(f"{raw_file.name}: {first_line}")
+                    label = (
+                        f"{item.path.name}[{item.member}]"
+                        if item.member
+                        else item.path.name
+                    )
+                    result.errors.append(f"{label}: {first_line}")
                     continue
-                finally:
-                    if tmp_dir is not None:
-                        tmp_dir.cleanup()
 
         return result
+
+    @staticmethod
+    def _write_item(
+        writer: LakeWriter,
+        group: str,
+        spec: dict[str, Any],
+        item: Routed,
+        source_path: Path,
+        result: ConvertResult,
+    ) -> None:
+        """Lê ``source_path`` (o arquivo ou o membro já extraído) e grava no lake."""
+        raw_file = item.path
+        part_keys_lower = [k.lower() for k in item.partition_keys]
+        data = read_file(source_path, spec)
+        frames = list(data.items()) if isinstance(data, dict) else [(None, data)]
+        for sheet, frame in frames:
+            norm = normalize_dtypes(frame, spec)
+            norm = _apply_contract(group, norm, raw_file.name)
+            if item.dataset_id == "participacoes_especiais":
+                # quatro recortes (uniao/estado/municipio/campo) com
+                # colunas diferentes no mesmo dataset: a coluna os separa.
+                recorte = parse_filename(raw_file)["base_id"].removeprefix("pe-")
+                norm = norm.with_columns(pl.lit(recorte).alias("recorte"))
+            drop_part_cols = [c for c in norm.columns if c.lower() in part_keys_lower]
+            if drop_part_cols:
+                norm = norm.drop(drop_part_cols)
+            existing = {c.lower() for c in norm.columns}
+            norm = norm.with_columns(
+                [
+                    pl.lit(value).alias(name)
+                    for name, value in item.literals
+                    if name.lower() not in existing
+                ]
+            )
+            file_key_override = None
+            if item.member is not None:
+                label = item.key_name or Path(item.member).name
+                if sheet is not None:
+                    label = f"{label} {sheet}"
+                file_key_override = composite_file_key(raw_file, label)
+            elif sheet is not None:
+                file_key_override = composite_file_key(raw_file, sheet)
+
+            written = writer.write_polars(
+                norm,
+                raw_file,
+                partitions=item.partition_values,
+                file_key_name=file_key_override,
+                converter=f"anp-fetcher {__version__}",
+            )
+            if written.status == "skipped":
+                result.skipped += 1
+            else:
+                result.converted += 1
 
     def inventory(self, input_dir: Path) -> list[Planned]:
         """Um ``Planned`` por arquivo bruto: o dataset ou o motivo de ignorar.
