@@ -1086,6 +1086,24 @@ def _dates_to_rows(df: pl.DataFrame, options: dict[str, Any]) -> pl.DataFrame:
     )
 
 
+def _is_utf8(path: Path) -> bool:
+    """Se o arquivo todo é UTF-8 válido (lido em blocos).
+
+    Decidir antes poupa a exceção de decodificação do leitor, que deixa um ciclo de
+    referências (traceback e quadros) prendendo as tabelas da leitura até o
+    coletor de lixo passar: num CSV latin-1 grande isso empilhava gigabytes.
+    """
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    try:
+        with open(path, "rb") as fh:
+            while chunk := fh.read(1 << 20):
+                decoder.decode(chunk)
+        decoder.decode(b"", final=True)
+    except UnicodeDecodeError:
+        return False
+    return True
+
+
 def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:
     """Lê um CSV da ANP de 8 bits (utf-8 com fallback latin-1).
 
@@ -1107,7 +1125,10 @@ def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFra
     encoding = spec.get("encoding")
     try:
         return read_brazilian_csv(
-            path, encoding=encoding or "utf-8", decimal=",", **kwargs
+            path,
+            encoding=encoding or ("utf-8" if _is_utf8(path) else "latin-1"),
+            decimal=",",
+            **kwargs,
         )
     except Exception as exc:  # fallback latin-1
         if encoding is not None:
