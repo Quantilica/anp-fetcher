@@ -22,6 +22,7 @@ import tempfile
 import unicodedata
 import zipfile
 from collections.abc import Callable
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -899,6 +900,192 @@ def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
     return out
 
 
+_DATE_HEADER = re.compile(r"^\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*$")
+_UNNAMED_HEADER = re.compile(r"^coluna_\d+$")
+_TRAILING_UNIT = re.compile(r"\s*\(([^()]*)\)\s*$")
+_FOOTNOTE_DIGITS = re.compile(r"(?<=[^\W\d_])\d+$")
+_THOUSANDS_DOT = re.compile(r"^-?\d{1,3}(\.\d{3})+$")
+# O Excel que gerou a planilha deixou o erro como texto: vale como célula sem valor.
+_WIDE_NULLS = _NULL_TOKENS | {"#n/d", "#n/a", "#valor!", "#div/0!"}
+
+
+def _slug(text: str) -> str:
+    """Texto em kebab-case ASCII (``Gás Não`` -> ``gas-nao``)."""
+    return re.sub(r"[^0-9a-z]+", "-", _plain(text)).strip("-")
+
+
+def _id_key(name: str) -> str:
+    """Chave de um nome de coluna entre safras: sem acento, caixa nem ``do``/``de``."""
+    return re.sub(r"\bdo\b", "de", _plain(name))
+
+
+def _split_variable(text: str) -> tuple[str, str | None]:
+    """``(variável estável, unidade)`` de ``Gás Não Contado5 (mil m³)``.
+
+    A unidade é o parêntese final (sem os espaços de dentro; ``None`` sem ele). A
+    variável sai em kebab-case ASCII, sem a marca de nota colada na palavra
+    (``Contado5``), então ``Desequilibrio``/``Desequilíbrio`` e ``Compagas``/
+    ``COMPAGAS`` são a mesma variável; o texto original fica em ``variavel_fonte``.
+    """
+    unit = None
+    match = _TRAILING_UNIT.search(text)
+    if match:
+        unit = match.group(1).strip() or None
+        text = text[: match.start()]
+    return _slug(_FOOTNOTE_DIGITS.sub("", text.strip())), unit
+
+
+def _decimal(column: str) -> pl.Expr:
+    """Expressão que lê a célula de texto como número, ``None`` se não tem valor.
+
+    Aceita vírgula decimal (``1113,52``), sinal separado do número (``- 153,85``),
+    espaços nas pontas, ponto de milhar com vírgula (``13.927,30``), ponto decimal
+    sem vírgula (``209.97``) e notação científica (``5,78439E-13``).
+    """
+    text = pl.col(column).str.replace_all(r"\s+", "")
+    return (
+        pl.when(text.str.to_lowercase().is_in(sorted(_WIDE_NULLS)) | (text == ""))
+        .then(None)
+        .when(text.str.contains(","))
+        .then(text.str.replace_all(r"\.", "", literal=False).str.replace(",", "."))
+        .otherwise(text)
+        .cast(pl.Float64, strict=False)
+    )
+
+
+def _iso(header: str) -> str | None:
+    """A data ISO de um cabeçalho ``dd/mm/aaaa``; ``None`` se não é uma data."""
+    match = _DATE_HEADER.match(header)
+    if not match:
+        return None
+    day, month, year = (int(g) for g in match.groups())
+    try:
+        return date(year, month, day).isoformat()
+    except ValueError:
+        return None
+
+
+def _date_columns(df: pl.DataFrame) -> dict[str, str]:
+    """Colunas de data da tabela larga: ``{nome na fonte: data ISO}``.
+
+    Uma coluna sem nome (``coluna_<n>``, ver :func:`_clean_columns`) logo depois de
+    uma data é o dia seguinte quando ele falta e cai no mesmo mês (cabeçalho em
+    branco no meio do mês, ``2025-03``); depois do último dia do mês (``2026-04``:
+    31ª coluna num mês de 30 dias) é resíduo de planilha, sem data, e fica fora.
+    """
+    named = {col: iso for col in df.columns if (iso := _iso(col))}
+    taken = set(named.values())
+    dates: dict[str, str] = {}
+    previous: date | None = None
+    for col in df.columns:
+        if col in named:
+            previous = date.fromisoformat(named[col])
+            dates[col] = named[col]
+        elif _UNNAMED_HEADER.match(col) and previous is not None:
+            following = previous + timedelta(days=1)
+            if following.month == previous.month and following.isoformat() not in taken:
+                dates[col] = following.isoformat()
+                taken.add(dates[col])
+                previous = following
+            else:
+                previous = None
+        else:
+            previous = None
+    return dates
+
+
+def _dates_to_rows(df: pl.DataFrame, options: dict[str, Any]) -> pl.DataFrame:
+    """Tabela larga (uma coluna por dia) em tabela longa, com esquema estável.
+
+    ``options["ids"]`` lista os nomes canônicos das colunas de identificação, que a
+    fonte escreve de forma diferente de uma safra para outra (``Nome da variável``/
+    ``Nome da Variável``, ``Instalação do Gasoduto``/``de Gasoduto``); o casamento
+    ignora acento, caixa e ``do``/``de``. ``options["variable"]`` é a coluna do nome
+    da variável, que vira ``variavel`` (estável), ``unidade`` (o parêntese final) e
+    ``variavel_fonte`` (o texto como vem). As colunas de data viram ``data`` (Date)
+    e ``valor`` (Float64); célula vazia ou ``#N/D`` fica como ``valor`` nulo, a linha
+    não some. Coluna sem nome e sem data possível é descartada, com aviso. Coluna
+    que não é nada disso segue como está, com aviso.
+    """
+    canonical = {_id_key(name): name for name in options["ids"]}
+    variable_key = _id_key(options["variable"])
+    dates = _date_columns(df)
+    renames: dict[str, str] = {}
+    source_variable = None
+    extras: list[str] = []
+    for col in df.columns:
+        if col in dates:
+            continue
+        key = _id_key(col)
+        if key == variable_key:
+            source_variable = col
+        elif key in canonical:
+            renames[col] = canonical[key]
+        elif _UNNAMED_HEADER.match(col):
+            logger.warning("coluna %s sem nome e sem data possível: descartada", col)
+        else:
+            logger.warning("coluna %r desconhecida: mantida como vem", col)
+            extras.append(col)
+    if source_variable is None:
+        raise ValueError(f"coluna {options['variable']!r} não consta do cabeçalho")
+    if not dates:
+        raise ValueError("nenhuma coluna de data no cabeçalho")
+
+    frame = df.rename({c: iso for c, iso in dates.items() if c != iso})
+    frame = frame.select([*renames, *extras, source_variable, *dates.values()])
+    frame = frame.rename(renames)
+    missing = [name for name in options["ids"] if name not in frame.columns]
+    if missing:
+        logger.warning("colunas ausentes (ficam nulas): %s", missing)
+        frame = frame.with_columns(
+            pl.lit(None, dtype=pl.String).alias(n) for n in missing
+        )
+    index = [*options["ids"], *extras]
+
+    long = frame.unpivot(
+        index=[*index, source_variable],
+        on=list(dates.values()),
+        variable_name="data",
+        value_name="valor",
+    )
+    texts = [t.strip() for t in long[source_variable].drop_nulls().unique().to_list()]
+    parts = {t: _split_variable(t) for t in texts}
+    stripped = pl.col(source_variable).str.strip_chars()
+    long = long.with_columns(
+        stripped.replace_strict(
+            {t: v for t, (v, _) in parts.items()}, default=None, return_dtype=pl.String
+        ).alias("variavel"),
+        stripped.replace_strict(
+            {t: u for t, (_, u) in parts.items()}, default=None, return_dtype=pl.String
+        ).alias("unidade"),
+        stripped.alias("variavel_fonte"),
+        pl.col("data").str.strptime(pl.Date, "%Y-%m-%d"),
+    ).drop(source_variable)
+
+    raw = long["valor"].str.strip_chars()
+    ambiguous = raw.filter(raw.str.contains(_THOUSANDS_DOT.pattern))
+    if ambiguous.len():
+        raise ValueError(
+            "valor com ponto e sem vírgula, ambíguo: "
+            f"{ambiguous.unique().head(5).to_list()}"
+        )
+    long = long.with_columns(_decimal("valor").alias("valor"))
+    lost = raw.filter(
+        raw.is_not_null()
+        & long["valor"].is_null()
+        & ~raw.str.to_lowercase().is_in(sorted(_WIDE_NULLS))
+        & (raw != "")
+    )
+    if lost.len():
+        raise ValueError(
+            f"valor: {lost.len()} célula(s) não convertida(s), "
+            f"ex.: {lost.unique().head(5).to_list()}"
+        )
+    return long.select(
+        [*index, "variavel", "unidade", "variavel_fonte", "data", "valor"]
+    )
+
+
 def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:
     """Lê um CSV da ANP de 8 bits (utf-8 com fallback latin-1).
 
@@ -980,7 +1167,10 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
         df = _real_header(df, headerless=False, options=spec["header"])
     elif not spec.get("skip_rows"):
         df = _promote_header(df)
-    return _clean_columns(df)
+    df = _clean_columns(df)
+    if spec.get("wide_dates"):
+        df = _dates_to_rows(df, spec["wide_dates"])
+    return df
 
 
 def _read_csv_text(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:

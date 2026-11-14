@@ -100,7 +100,33 @@ _VENDAS_SPEC: dict[str, Any] = {
     "preamble_from_name": {"produto": r"^vendas-municipais-(.+)$"},
 }
 
+# Movimentação de gás natural em gasodutos: uma coluna por dia do mês (28 a 31, e um
+# esquema diferente por arquivo) vira ``data``/``valor``. Os nomes das colunas de
+# identificação são os da safra mais recente; a fonte os escreveu de outras formas
+# (``Tipo da Instalação do Gasoduto``, ``Nome do Operador da Instalação``), e o
+# casamento ignora acento, caixa e ``do``/``de``.
+_MOVIMENTACAO_GN_SPEC: dict[str, Any] = {
+    "wide_dates": {
+        "ids": [
+            "Código da Instalação de Transporte",
+            "Nome da Instalação de Transporte",
+            "Nome da Instalação de Gasoduto",
+            "Código da Instalação de Gasoduto",
+            "Tipo da instalação de Gasoduto",
+            "Nome do Município da Instalação de Gasoduto",
+            "Nome da UF da Instalação de Gasoduto",
+            "Nome do Operador da instalação de Gasoduto",
+            "Código do Operador da Instalação de Gasoduto",
+            "Nome do Carregador que usa a Instalação de Gasoduto",
+            "Código do Carregador que usa a Instalação de Gasoduto",
+            "Nome do Contrato da Instalação de Gasoduto",
+        ],
+        "variable": "Nome da Variável",
+    }
+}
+
 PROCESSING_SPECS: dict[str, dict[str, Any]] = {
+    "movimentacao-gn": _MOVIMENTACAO_GN_SPEC,
     "ie": _PAINEL_SPEC,
     "pp": _PAINEL_SPEC,
     "pb": _PAINEL_SPEC,
