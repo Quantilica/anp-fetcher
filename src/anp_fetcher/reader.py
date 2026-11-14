@@ -10,7 +10,10 @@ extraídos do sidecar ``DownloadManifest``.
 from __future__ import annotations
 
 import codecs
+import csv
+import io
 import logging
+import os
 import re
 import shutil
 import tempfile
@@ -130,14 +133,30 @@ def decompress(path: Path) -> Path:
         raise RuntimeError(f"falha ao descompactar {path}: {exc}") from exc
 
 
-def _sniff_separator(path: Path, default: str) -> str:
-    """Escolhe o separador pelo cabeçalho: ``;`` (padrão) ou ``,``.
+def _field_counts(text: str, separator: str, limit: int) -> list[int]:
+    """Quantidade de campos das primeiras linhas (com aspas, como o CSV)."""
+    rows = csv.reader(io.StringIO(text), delimiter=separator)
+    counts = []
+    try:
+        for row in rows:
+            counts.append(len(row))
+            if len(counts) >= limit:
+                break
+    except csv.Error:
+        pass
+    return counts
 
-    A maioria dos CSV da ANP usa ``;``, mas alguns arquivos do mesmo grupo
-    usam ``,`` (ex.: ``vendas-biodiesel-b100-m3.csv``, ``producao-mar``);
-    lidos com ``;`` eles viram uma coluna só ("Ano,Mês/Ano,Estado,..."). Vence
-    o separador mais frequente na primeira linha, e o padrão no empate; um
-    ``;`` solto num nome de coluna de um CSV com vírgulas não decide.
+
+def _sniff_separator(path: Path, default: str) -> str:
+    """Escolhe o separador (``;`` padrão ou ``,``) pela consistência das colunas.
+
+    A maioria dos CSV da ANP usa ``;``, mas alguns arquivos do mesmo grupo usam
+    ``,`` (``producao-mar``, ``armazenagem-terminais``); lidos com ``;`` eles
+    viram uma coluna só ("Ano,Mês/Ano,Estado,..."). Para cada candidato conta
+    os campos do cabeçalho e das 20 linhas seguintes: vale o que dá mais de um
+    campo no cabeçalho e o mesmo número nas linhas de dados. O padrão fica no
+    empate, então vírgulas dentro de nomes (``Preço (R$/l, média)``) ou um ``;``
+    solto num nome de CSV com vírgulas não decidem.
 
     Args:
         path (Path): Caminho do arquivo CSV (já em UTF-8 ou 8 bits).
@@ -147,62 +166,79 @@ def _sniff_separator(path: Path, default: str) -> str:
         str: O separador a usar.
     """
     with path.open("rb") as fh:
-        header = fh.readline()
-    if default != "," and header.count(b",") > header.count(default.encode()):
-        return ","
-    return default
+        text = fh.read(1 << 16).decode("latin-1").lstrip("\xef\xbb\xbf")
+    if default == ",":
+        return default
+
+    def score(sep: str) -> tuple[bool, float, int]:
+        counts = _field_counts(text, sep, 21)
+        if not counts:
+            return (False, 0.0, 0)
+        head, rest = counts[0], counts[1:]
+        same = sum(1 for c in rest if c == head) / len(rest) if rest else 1.0
+        return (head > 1, same, head)
+
+    return "," if score(",") > score(default) else default
 
 
-def _transcode_codec(path: Path) -> str | None:
-    """O codec que o polars não lê sozinho: UTF-16 ou DOS (cp850).
+_PT_LETTERS = frozenset("áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ")
+_EIGHT_BIT = ("cp1252", "cp850", "mac_roman")
+
+
+def _eight_bit_codec(sample: bytes) -> str | None:
+    """``cp850`` ou ``mac_roman`` quando decodificam melhor que o latin-1/cp1252.
+
+    Só vale para o que não é UTF-8. Decodifica a amostra nos três codecs e fica
+    com o que gera mais letras acentuadas do português; ``cp1252`` (igual ao
+    latin-1 fora de 0x80-0x9f) ou empate devolvem ``None``, o caminho de sempre.
+    ``multas-*`` vem em cp850 (``ê`` = 0x88, controle em latin-1) e
+    ``prorrogacoes-708`` em mac_roman; já o 0x92 de ``ATEM\x92S`` é o apóstrofo
+    do cp1252, não uma letra cp850.
+    """
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    try:
+        decoder.decode(sample, final=False)
+        return None
+    except UnicodeDecodeError:
+        pass
+    scores = {
+        enc: sum(ch in _PT_LETTERS for ch in sample.decode(enc, "replace"))
+        for enc in _EIGHT_BIT
+    }
+    best = max(_EIGHT_BIT, key=lambda enc: scores[enc])
+    return best if best != "cp1252" and scores[best] > scores["cp1252"] else None
+
+
+def _transcode_codec(path: Path, *, eight_bit: bool = True) -> str | None:
+    """O codec que o polars não lê sozinho: UTF-16, cp850 ou mac_roman.
 
     ``comercializacao-gn`` vem em UTF-16 LE com BOM; lido como 8 bits, os NUL
-    e o BOM (``ÿþ``) entram nos nomes das colunas. Alguns ``multas-*`` saem em
-    cp850: lidos como latin-1, ``ê`` (0x88) vira um caractere de controle no
-    nome da coluna.
+    e o BOM (``ÿþ``) entram nos nomes das colunas.
+
+    Args:
+        path (Path): O arquivo.
+        eight_bit (bool): Também procura cp850/mac_roman (desligado quando o
+            grupo fixa o encoding).
 
     Returns:
         str | None: ``"utf-16"`` (BOM), ``"utf-16-le"``, ``"utf-16-be"``,
-            ``"cp850"`` ou ``None`` quando UTF-8/latin-1 servem.
+            ``"cp850"``, ``"mac_roman"`` ou ``None`` quando UTF-8/latin-1 servem.
     """
     with path.open("rb") as fh:
         head = fh.read(1 << 20)
     if head[:2] in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
         return "utf-16"
-    if _is_dos_text(head):
-        return "cp850"
-    head = head[:4096]
-    pairs = len(head) // 2
-    if pairs < 4:
-        return None
-    even = head[0 : pairs * 2 : 2].count(0)
-    odd = head[1 : pairs * 2 : 2].count(0)
-    # texto latino em UTF-16: o byte alto é NUL em (quase) todos os caracteres
-    if odd > pairs * 0.4 and even == 0:
-        return "utf-16-le"
-    if even > pairs * 0.4 and odd == 0:
-        return "utf-16-be"
-    return None
-
-
-_INNER_C1 = re.compile(rb"[A-Za-z][\x80-\x9f][A-Za-z]")
-
-
-def _is_dos_text(sample: bytes) -> bool:
-    """Texto em cp850: não é UTF-8 e tem byte 0x80-0x9f no meio de palavra.
-
-    Em latin-1 esses bytes são controles; em cp850 são letras acentuadas
-    (``Superintend\\x88ncia`` = Superintendência). Aspas e travessões do cp1252
-    também caem nessa faixa, mas vêm junto de espaço, não no meio da palavra.
-    """
-    if not _INNER_C1.search(sample):
-        return False
-    decoder = codecs.getincrementaldecoder("utf-8")()
-    try:
-        decoder.decode(sample, final=False)
-    except UnicodeDecodeError:
-        return True
-    return False
+    probe = head[:4096]
+    pairs = len(probe) // 2
+    if pairs >= 4:
+        even = probe[0 : pairs * 2 : 2].count(0)
+        odd = probe[1 : pairs * 2 : 2].count(0)
+        # texto latino em UTF-16: o byte alto é NUL em (quase) todos os caracteres
+        if odd > pairs * 0.4 and even == 0:
+            return "utf-16-le"
+        if even > pairs * 0.4 and odd == 0:
+            return "utf-16-be"
+    return _eight_bit_codec(head) if eight_bit else None
 
 
 def _transcode_to_utf8(path: Path, codec: str, target: Path) -> Path:
@@ -215,11 +251,10 @@ def _transcode_to_utf8(path: Path, codec: str, target: Path) -> Path:
     return target
 
 
-_CONTROL_RUN = re.compile(r"[\x00-\x20\x7f-\xa0\u200b-\u200f\u2028\u2029\ufeff]+")
+_CONTROL_RUN = re.compile(r"[\x00-\x1f\x7f-\x9f]+")
+_NUMBER = re.compile(r"[-+]?\d+([.,]\d+)*(e[-+]?\d+)?%?", re.IGNORECASE)
+_BLANK_NAME = re.compile(r"(_duplicated_\d+|__blank_\d+)?")
 MAX_COLUMN_NAME = 128
-
-
-_BLANK_NAME = re.compile(r"(_duplicated_\d+|__blank_\d+|__UNNAMED__\d+)?")
 
 
 def _blank(value: Any) -> bool:
@@ -231,10 +266,9 @@ def _blank_name(name: str) -> bool:
     """Nome de coluna sem conteúdo: vazio ou o ``_duplicated_N`` do polars.
 
     O polars dá ``_duplicated_N`` à segunda coluna de nome vazio (célula
-    mesclada, delimitador sobrando) e ``__UNNAMED__N`` ao cabeçalho vazio de
-    uma planilha; o nome em si continua vazio.
+    mesclada, delimitador sobrando); o nome em si continua vazio.
     """
-    return _BLANK_NAME.fullmatch(_CONTROL_RUN.sub(" ", name).strip()) is not None
+    return _BLANK_NAME.fullmatch(name.strip()) is not None
 
 
 def _unique(names: list[str]) -> list[str]:
@@ -248,49 +282,65 @@ def _unique(names: list[str]) -> list[str]:
 
 
 def _promote_header(df: pl.DataFrame) -> pl.DataFrame:
-    """Usa como cabeçalho a primeira linha densa quando o topo é preâmbulo.
+    """Usa como cabeçalho a primeira linha de nomes quando o topo é preâmbulo.
 
     Alguns CSV começam por título e linhas em branco (``multas``: "ANP - Agência
     Nacional..." e "RELAÇÃO DE MULTAS ..." antes do cabeçalho) ou por uma linha
     de grupos mesclados (``acervo-dados-tecnicos``). O leitor tomava essa
-    primeira linha como nomes de colunas. Só age quando menos da metade dos
-    nomes tem conteúdo e uma das 30 primeiras linhas tem ao menos 80% das
-    células preenchidas; arquivos com cabeçalho normal passam intactos.
+    primeira linha como nomes de colunas. Só age quando:
+
+    - menos da metade dos nomes lidos tem conteúdo (a linha é preâmbulo);
+    - toda linha entre ela e a candidata também é esparsa (menos da metade
+      preenchida), para nunca pular dado;
+    - a candidata tem ao menos 80% das células preenchidas e nenhuma numérica
+      (um cabeçalho de dados reais, como ``A;;;`` seguido de ``1;x;y;z``, fica).
     """
     width = df.width
     if width < 2 or not all(t == pl.String for t in df.schema.values()):
         return df
-    names_filled = sum(1 for c in df.columns if not _blank_name(c))
-    if names_filled >= width * 0.5:
+    if sum(1 for c in df.columns if not _blank_name(c)) >= width * 0.5:
         return df
     for i, row in enumerate(df.head(30).rows()):
         filled = sum(1 for v in row if not _blank(v))
-        if filled >= width * 0.8:
-            # vazio vira marcador único: o DataFrame não aceita nomes repetidos
-            header = [
-                f"__blank_{j}" if _blank(v) else str(v) for j, v in enumerate(row)
-            ]
-            body = df.slice(i + 1)
-            body.columns = _unique(header)
-            return body
+        if filled < width * 0.5:
+            continue  # mais preâmbulo
+        if filled < width * 0.8 or any(
+            not _blank(v) and _NUMBER.fullmatch(str(v).strip()) for v in row
+        ):
+            return df
+        # vazio vira marcador único: o DataFrame não aceita nomes repetidos
+        header = [f"__blank_{j}" if _blank(v) else str(v) for j, v in enumerate(row)]
+        body = df.slice(i + 1)
+        body.columns = _unique(header)
+        return body
     return df
 
 
-def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
-    """Garante nomes de colunas válidos: sem controle, não vazios, únicos, <= 128.
+def _valid_name(name: str) -> bool:
+    """Nome que o lake aceita: não vazio, sem controle e com até 128 caracteres."""
+    return (
+        bool(name.strip())
+        and len(name) <= MAX_COLUMN_NAME
+        and _CONTROL_RUN.search(name) is None
+    )
 
-    - Controles, quebras de linha e espaços repetidos viram um espaço só
-      (``"PCS GP\\n(kJ/m³)"`` -> ``"PCS GP (kJ/m³)"``).
+
+def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Corrige só os nomes de coluna inválidos; os válidos passam como estão.
+
+    - Controle e quebra de linha (``"PCS GP\\n(kJ/m³)"``) viram um espaço.
     - Nome vazio (delimitador sobrando no fim do cabeçalho, célula mesclada): a
       coluna é descartada quando não tem nenhum valor; com valores, ganha o
       nome estável ``coluna_<posição>`` (posição 1-based no arquivo).
-    - Nome com mais de 128 caracteres é cortado; repetidos ganham ``_2``, ``_3``.
+    - Nome com mais de 128 caracteres é cortado; repetido ganha ``_2``, ``_3``.
+
+    Espaços das pontas ou repetidos, e nomes como ``__UNNAMED__N``, não mudam.
     """
     keep: list[str] = []
     final: list[str] = []
     seen: set[str] = set()
     for pos, col in enumerate(df.columns, start=1):
-        name = _CONTROL_RUN.sub(" ", col).strip()
+        name = col
         if _blank_name(name):
             series = df[col]
             if series.dtype == pl.String:
@@ -298,7 +348,8 @@ def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
             if series.null_count() == series.len():
                 continue
             name = f"coluna_{pos}"
-        name = name[:MAX_COLUMN_NAME].rstrip()
+        elif not _valid_name(name):
+            name = _CONTROL_RUN.sub(" ", name).strip()[:MAX_COLUMN_NAME].rstrip()
         candidate, n = name, 1
         while candidate in seen:
             n += 1
@@ -365,10 +416,11 @@ def _read_csv_8bit(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
 def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     """Lê um CSV da ANP e devolve colunas com nomes válidos.
 
-    Aceita UTF-8 (com ou sem BOM), latin-1, cp850 e UTF-16 (os dois últimos
-    regravados em UTF-8 antes da leitura); o separador (``;`` ou ``,``) sai do
-    cabeçalho. Preâmbulo no topo é descartado (:func:`_promote_header`) e os
-    nomes passam por :func:`_clean_columns`.
+    Aceita UTF-8 (com ou sem BOM), latin-1 e, regravados em UTF-8 antes da
+    leitura, UTF-16, cp850 e mac_roman; o separador (``;`` ou ``,``) sai da
+    consistência das colunas. Preâmbulo no topo é descartado
+    (:func:`_promote_header`) e os nomes inválidos passam por
+    :func:`_clean_columns`.
 
     Args:
         path (Path): Caminho do arquivo CSV.
@@ -377,11 +429,14 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     Returns:
         pl.DataFrame: O DataFrame lido com tipos inferidos.
     """
-    codec = _transcode_codec(path)
+    codec = _transcode_codec(path, eight_bit=spec.get("encoding") is None)
     if codec is None:
         df = _read_csv_8bit(path, spec)
     else:
-        with tempfile.TemporaryDirectory() as tmp:
+        # ao lado do arquivo, no disco dele, quando dá para gravar lá; senão no temp
+        parent = path.absolute().parent  # sem seguir link: não grava no Drive
+        where = parent if os.access(parent, os.W_OK) else None
+        with tempfile.TemporaryDirectory(prefix=".anp-utf8-", dir=where) as tmp:
             utf8 = _transcode_to_utf8(path, codec, Path(tmp) / "utf8.csv")
             df = _read_csv_8bit(utf8, {**spec, "encoding": "utf-8"})
     if not spec.get("skip_rows"):
@@ -521,8 +576,7 @@ def _read_zip_csvs(
             with archive.open(member) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
             frames.append(read_csv(target, spec))
-    # colunas vazias descartadas em um membro e não em outro não podem quebrar a união
-    return pl.concat(frames, how="diagonal_relaxed")
+    return pl.concat(frames, how="vertical_relaxed")
 
 
 def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:

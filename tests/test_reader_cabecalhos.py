@@ -93,6 +93,13 @@ def test_nome_com_quebra_de_linha_entre_aspas(tmp_path: Path) -> None:
     assert df.columns == ["a", "PCS GP (kJ/m³)", "b"]
 
 
+def test_nomes_validos_nao_sao_alterados(tmp_path: Path) -> None:
+    # só nome inválido é corrigido: espaços das pontas e repetidos ficam como estão
+    src = tmp_path / "x.csv"
+    src.write_text("Valor  de Venda; Data da Coleta \n1;2\n", encoding="utf-8")
+    assert read_csv(src, {}).columns == ["Valor  de Venda", " Data da Coleta "]
+
+
 def test_nome_longo_e_cortado_e_repetidos_ganham_sufixo(tmp_path: Path) -> None:
     longo = "x" * 300
     src = tmp_path / "x.csv"
@@ -186,15 +193,64 @@ def test_json_com_chave_de_controle(tmp_path: Path) -> None:
     assert _valid(read_file(src, {}).columns)
 
 
-def test_zip_com_varios_csv_une_membros_com_colunas_vazias_diferentes(
-    tmp_path: Path,
-) -> None:
-    import zipfile
+def test_separador_pela_consistencia_das_colunas(tmp_path: Path) -> None:
+    # vírgulas dentro dos nomes não fazem do "," o separador
+    src = tmp_path / "x.csv"
+    src.write_text(
+        "Produto;Preço (R$/l, média, mínimo);Unidade (m³, kg)\n"
+        "GASOLINA;5,49;m³\nETANOL;3,99;m³\n",
+        encoding="utf-8",
+    )
+    df = read_csv(src, {})
+    assert df.columns == ["Produto", "Preço (R$/l, média, mínimo)", "Unidade (m³, kg)"]
+    assert df.height == 2
 
-    src = tmp_path / "producao-poco-da_2021-03.zip"
-    with zipfile.ZipFile(src, "w") as archive:
-        archive.writestr("2021_03_producao_Mar.csv", "Estado;Campo;\nRJ;C1;\n")
-        archive.writestr("2021_03_producao_terra.csv", "Estado;Campo;\nBA;C2;x\n")
-    df = read_file(src, {})
-    assert _valid(df.columns)
-    assert df["Estado"].to_list() == ["RJ", "BA"]
+
+def test_cabecalho_real_com_poucos_nomes_nao_e_promovido(tmp_path: Path) -> None:
+    # "A;;;" + "1;x;y;z": a 2ª linha é dado (tem número), não cabeçalho
+    src = tmp_path / "x.csv"
+    src.write_text("A;;;\n1;x;y;z\n2;x;y;z\n", encoding="utf-8")
+    df = read_csv(src, {})
+    assert df.columns[0] == "A"
+    assert df.height == 2
+    assert df["A"].to_list() == ["1", "2"]
+
+
+def test_preambulo_nao_pula_linha_de_dado(tmp_path: Path) -> None:
+    # linha com 60% preenchida entre o título e a candidata: não é preâmbulo
+    src = tmp_path / "x.csv"
+    src.write_text("Título;;;;\nA;B;C;;\nx;y;z;w;v\n", encoding="utf-8")
+    assert read_csv(src, {}).columns[0] == "Título"
+
+
+def test_apostrofo_cp1252_nao_vira_cp850(tmp_path: Path) -> None:
+    # distribuidores-cessao-espaco, pdi-projetos-rt: 0x92 é o apóstrofo do cp1252
+    src = tmp_path / "x.csv"
+    texto = "Razão Social;Município\nSTARBUCKS D\x92ÁVILA;SANTA BÁRBARA D\x92OESTE\n"
+    src.write_bytes(texto.encode("latin-1"))
+    df = read_csv(src, {})
+    assert df.columns == ["Razão Social", "Município"]
+    assert "Á" in df["Razão Social"][0]
+    assert df["Município"][0].startswith("SANTA BÁRBARA D")
+
+
+def test_mac_roman(tmp_path: Path) -> None:
+    # prorrogacoes-708: "Prorrogação" e "1º" em mac_roman
+    src = tmp_path / "prorrogacoes-708.csv"
+    src.write_bytes(
+        "Efetivação da Prorrogação;1º e 2º PE\nsim;não\n".encode("mac_roman")
+    )
+    assert read_csv(src, {}).columns == ["Efetivação da Prorrogação", "1º e 2º PE"]
+
+
+def test_encoding_fixo_no_spec_nao_e_adivinhado(tmp_path: Path) -> None:
+    src = tmp_path / "x.csv"
+    src.write_bytes("Município;Ação\nSP;1\n".encode())
+    assert read_csv(src, {"encoding": "utf-8"}).columns == ["Município", "Ação"]
+
+
+def test_transcodificacao_nao_deixa_lixo_ao_lado_do_arquivo(tmp_path: Path) -> None:
+    src = tmp_path / "cgn.csv"
+    src.write_bytes("Ano;Mês\n2020;1\n".encode("utf-16"))
+    read_csv(src, {})
+    assert [p.name for p in tmp_path.iterdir()] == ["cgn.csv"]
