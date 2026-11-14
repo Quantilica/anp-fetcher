@@ -7,6 +7,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.6.2] - 2026-11-14
+
+### Corrigido
+- Nomes de coluna válidos na conversão de CSV: UTF-16 (com ou sem BOM), cp850 e mac_roman são detectados (pela contagem de letras acentuadas, com margem mínima; o apóstrofo 0x92 do cp1252 não vira cp850) e regravados em UTF-8 num temporário do scratch do lake; o separador sai da consistência do número de campos nas primeiras linhas; preâmbulo (título ou linha de grupos mesclados antes do cabeçalho) é pulado só quando toda linha até o cabeçalho é esparsa e a candidata não tem números; nomes vazios viram `coluna_<posição>` (ou a coluna sai, se toda nula), quebras de linha e caracteres de controle viram espaço, nomes acima de 128 caracteres são cortados e repetidos ganham `_2`. Espaços nas pontas e `__UNNAMED__N` não mudam. No lake de 13/11/2026 isso afetava `comercializacao-gn` (UTF-16), `multas` (cp850), `prorrogacoes-708` (mac_roman), `acervo-dados-tecnicos`, `amostras-rochas-fluidos`, `producao-poco-abertos`, `distribuidores` e outros; os datasets já convertidos precisam de `quantilica lake build --force`.
+
 ### Alterado
 - `FetcherInfo.licenca` passa a declarar a licença da fonte: Sem licença declarada; dados públicos pela Lei 12.527/2011 (LAI) e Decreto 8.777/2016.
 
