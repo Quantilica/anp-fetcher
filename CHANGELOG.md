@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.9.0] - 2026-11-14
+
 ### Alterado
 - `movimentacao-gn` passa de tabela larga (13 colunas de identificação e uma coluna por dia: de 28 a 31, e 66 esquemas diferentes em 66 arquivos) para tabela longa com um esquema só em todas as partições (os `file_key` e os caminhos não mudam, então o `--force` substitui os Parquets no lugar, sem poda). Colunas, na ordem:
   - as 12 de identificação (`Código da Instalação de Transporte`, `Nome da Instalação de Transporte`, `Nome da Instalação de Gasoduto`, `Código da Instalação de Gasoduto`, `Tipo da instalação de Gasoduto`, `Nome do Município da Instalação de Gasoduto`, `Nome da UF da Instalação de Gasoduto`, `Nome do Operador da instalação de Gasoduto`, `Código do Operador da Instalação de Gasoduto`, `Nome do Carregador que usa a Instalação de Gasoduto`, `Código do Carregador que usa a Instalação de Gasoduto`, `Nome do Contrato da Instalação de Gasoduto`), todas texto, com o nome da safra mais recente. Entre as safras a fonte mudou só a grafia: `Tipo da Instalação do Gasoduto`/`Tipo da instalação de Gasoduto`, `Nome do Contrato da Instalação do Gasoduto`/`... de Gasoduto`, `Nome do Operador da Instalação de Gasoduto`/`Nome do Operador da instalação de Gasoduto` (só a caixa) e `Nome da variável`/`Nome da Variável`. O casamento ignora acento, caixa e `do`/`de`;
