@@ -997,6 +997,40 @@ def _excel_path(path: Path, tmp_dir: Path) -> Path:
     return fixed
 
 
+def _with_preamble(
+    frame: pl.DataFrame, raw: pl.DataFrame, path: Path, spec: dict[str, Any]
+) -> pl.DataFrame:
+    """Acrescenta ao dado colunas literais tiradas do preâmbulo da planilha.
+
+    As planilhas municipais abrem com o título (``VENDAS DE ASFALTO POR ESTADO E
+    MUNICÍPIO``) e a unidade (``UNIDADE DE MEDIDA: QUILO``); tirados do dado,
+    ficariam só no nome do arquivo. ``spec["preamble"]`` mapeia o nome da coluna
+    para uma regex cujo 1º grupo é o valor, aplicada às primeiras linhas do
+    topo; o valor sai como vem. Sem casar, vale ``spec["preamble_from_name"]``
+    (regex no ``base_id`` do arquivo) e o fato é avisado; sem nenhum dos dois, a
+    coluna fica nula, também com aviso.
+    """
+    top = [c for row in raw.head(_HEADER_SCAN).rows() for v in row if (c := _cell(v))]
+    from_name = spec.get("preamble_from_name", {})
+    columns = []
+    for name, pattern in spec["preamble"].items():
+        match = next((m for t in top if (m := re.search(pattern, t, re.I))), None)
+        value = match.group(1).strip() if match else None
+        if value is None:
+            named = re.search(
+                from_name.get(name, "(?!)"), parse_filename(path)["base_id"]
+            )
+            value = named.group(1).replace("-", " ").upper() if named else None
+            logger.warning(
+                "%s: %s não consta do preâmbulo; %s",
+                path.name,
+                name,
+                f"tirado do nome do arquivo ({value})" if value else "ficou nulo",
+            )
+        columns.append(pl.lit(value, dtype=pl.String).alias(name))
+    return frame.with_columns(columns)
+
+
 def read_excel(
     path: Path, spec: dict[str, Any]
 ) -> pl.DataFrame | dict[str, pl.DataFrame]:
@@ -1020,7 +1054,10 @@ def read_excel(
 
     def tidy(frame: pl.DataFrame) -> pl.DataFrame:
         if header:
+            raw = frame
             frame = _real_header(frame, headerless=True, options=header)
+            if spec.get("preamble") and "tabela" not in frame.columns:
+                frame = _with_preamble(frame, raw, path, spec)
         return _clean_columns(frame)
 
     with tempfile.TemporaryDirectory(

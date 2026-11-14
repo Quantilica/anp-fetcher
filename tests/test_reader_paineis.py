@@ -179,7 +179,15 @@ def test_planilha_municipal_acha_o_cabecalho_e_deixa_titulo_e_vazio_de_fora(
         ],
     )
     df = read_file(path, spec_for("vdpb"))
-    assert df.columns == ["CÓDIGO IBGE", "Município", "TOTAL GERAL"]
+    assert df.columns == [
+        "CÓDIGO IBGE",
+        "Município",
+        "TOTAL GERAL",
+        "produto",
+        "unidade",
+    ]
+    assert set(df["produto"]) == {"ASFALTO"}
+    assert set(df["unidade"]) == {"QUILO"}
     assert df.height == 5  # estado, municípios e total; título, unidade e vazio fora
     assert df["Município"].to_list() == [
         "RONDÔNIA",
@@ -193,3 +201,65 @@ def test_planilha_municipal_acha_o_cabecalho_e_deixa_titulo_e_vazio_de_fora(
 def test_painel_sem_tabela_reconhecida_passa_como_veio(tmp_path: Path) -> None:
     path = _planilha(tmp_path / "x.xlsx", [["a", "b"], [1, 2]])
     assert read_file(path, spec_for("ie")).width == 2
+
+
+def _municipal(path: Path, preambulo: list[list[object]]) -> Path:
+    return _planilha(
+        path,
+        [
+            *preambulo,
+            ["CÓDIGO IBGE", "Município", "Vendas"],
+            ["IBGE"],
+            ["1100023", "ARIQUEMES", 10],
+            [None, "TOTAL BRASIL", 10],
+        ],
+    )
+
+
+def test_planilha_municipal_leva_produto_e_unidade_do_preambulo(tmp_path: Path) -> None:
+    path = _municipal(
+        tmp_path / "vendas-municipais-etanol-hidratado_2005.xlsx",
+        [
+            ["AGÊNCIA NACIONAL DO PETRÓLEO, GÁS NATURAL E BIOCOMBUSTÍVEIS"],
+            ["VENDAS DE ALCOOL HIDRATADO POR ESTADO E MUNICÍPIO"],
+            ["UNIDADE DE MEDIDA: LITRO"],
+            ["ANO: 2005"],
+        ],
+    )
+    df = read_file(path, spec_for("vdpb"))
+    assert df.columns == ["CÓDIGO IBGE", "Município", "Vendas", "produto", "unidade"]
+    assert set(df["produto"]) == {"ALCOOL HIDRATADO"}  # como vem, sem o "VENDAS DE"
+    assert set(df["unidade"]) == {"LITRO"}  # sem o rótulo
+    assert df.height == 2
+
+
+def test_planilha_municipal_produto_sem_por_no_titulo(tmp_path: Path) -> None:
+    path = _municipal(
+        tmp_path / "vendas-municipais-gasolina-c_2001.xlsx",
+        [
+            ["AGÊNCIA NACIONAL DO PETRÓLEO"],
+            ["VENDAS DE GASOLINA C"],
+            ["UNIDADE DE MEDIDA: LITRO"],
+        ],
+    )
+    assert read_file(path, spec_for("vdpb"))["produto"][0] == "GASOLINA C"
+
+
+def test_planilha_municipal_sem_preambulo_usa_o_nome_do_arquivo_e_avisa(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path = _municipal(
+        tmp_path / "vendas-municipais-asfalto_2001.xlsx",
+        [["AGÊNCIA NACIONAL DO PETRÓLEO"], ["ANO 2001"]],
+    )
+    with caplog.at_level("WARNING"):
+        df = read_file(path, spec_for("vdpb"))
+    assert set(df["produto"]) == {"ASFALTO"}
+    assert df["unidade"].null_count() == df.height
+    assert "produto não consta do preâmbulo" in caplog.text
+    assert "unidade não consta do preâmbulo" in caplog.text
+
+
+def test_painel_do_vdpb_nao_ganha_produto_nem_unidade(tmp_path: Path) -> None:
+    df = read_file(_painel(tmp_path / "v.xlsx"), spec_for("vdpb"))
+    assert "produto" not in df.columns

@@ -85,7 +85,13 @@ _VENDAS_SPEC: dict[str, Any] = {
         "anchor": r"^c[oó]digo ibge",
         "levels": 1,  # só o ``IBGE`` repetido; a linha de baixo já é o 1º estado
         "drop_blank": True,
-    }
+    },
+    # colunas literais do preâmbulo das planilhas municipais (valor como vem)
+    "preamble": {
+        "produto": r"^vendas de (.+?)(?: por .*)?$",
+        "unidade": r"^unidade de medida:\s*(.+)$",
+    },
+    "preamble_from_name": {"produto": r"^vendas-municipais-(.+)$"},
 }
 
 PROCESSING_SPECS: dict[str, dict[str, Any]] = {
