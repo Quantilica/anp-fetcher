@@ -76,7 +76,7 @@ def test_zip_mar_e_terra_viram_dois_parquets_com_ambiente(tmp_path: Path) -> Non
     assert res2.converted == 0 and res2.skipped == 2
 
 
-def test_zip_mensal_com_presal_mantem_os_tres_ambientes(tmp_path: Path) -> None:
+def test_presal_vai_para_dataset_proprio_e_nao_duplica_a_soma(tmp_path: Path) -> None:
     group = "producao-poco-abertos"
     _zip(
         _group_dir(tmp_path, group) / "producao-poco-da_2023-12@20261105.zip",
@@ -86,17 +86,49 @@ def test_zip_mensal_com_presal_mantem_os_tres_ambientes(tmp_path: Path) -> None:
             "2023_12_producao_Mar.csv": _poco_csv("M", 3),
         },
     )
-    res = converter.convert(tmp_path / "raw", tmp_path / "lake")
+    _zip(
+        _group_dir(tmp_path, group) / "producao-poco-da_2015@20261105.zip",
+        {
+            "2015/2015_producao_mar.csv": _poco_csv("M", 3),
+            "2015/2015_producao_presal.csv": _poco_csv("P", 1),
+            "2015/2015_producao_terra.csv": _poco_csv("T", 2),
+        },
+    )
+    lake = tmp_path / "lake"
+    res = converter.convert(tmp_path / "raw", lake)
     assert not res.errors, res.errors
-    dataset = tmp_path / "lake" / SOURCE_ID / "producao-poco-abertos"
-    df = scan_dataset(dataset).collect()
-    assert df.height == 9
-    assert df.group_by("ambiente").len().sort("ambiente").rows() == [
+    base = lake / SOURCE_ID
+    assert sorted(p.name for p in base.iterdir()) == [
+        "producao-poco-abertos",
+        "producao-poco-abertos-anual",
+        "producao-poco-abertos-anual-presal",
+        "producao-poco-abertos-presal",
+    ]
+    mensal = scan_dataset(base / "producao-poco-abertos").collect()
+    assert mensal.group_by("ambiente").len().sort("ambiente").rows() == [
         ("mar", 3),
-        ("presal", 2),
         ("terra", 4),
     ]
-    assert set(df["mes"].to_list()) == {"12"}
+    assert set(mensal["mes"].to_list()) == {"12"}
+    presal = scan_dataset(base / "producao-poco-abertos-presal").collect()
+    assert presal.height == 2 and set(presal["ambiente"].to_list()) == {"presal"}
+    assert set(presal["mes"].to_list()) == {"12"}
+    anual = scan_dataset(base / "producao-poco-abertos-anual").collect()
+    assert sorted(anual["ambiente"].to_list()) == ["mar"] * 3 + ["terra"] * 2
+    anual_presal = scan_dataset(base / "producao-poco-abertos-anual-presal").collect()
+    assert anual_presal.height == 1 and set(anual_presal["ano"].to_list()) == {2015}
+    for dataset in base.iterdir():
+        assert check_dataset(dataset) == []
+
+    # o id do dataset de pré-sal seleciona o grupo, mas só grava o recorte
+    only = converter.convert(
+        tmp_path / "raw", tmp_path / "lake2", datasets=["producao-poco-abertos-presal"]
+    )
+    assert not only.errors, only.errors
+    assert only.converted == 1
+    assert [p.name for p in (tmp_path / "lake2" / SOURCE_ID).iterdir()] == [
+        "producao-poco-abertos-presal"
+    ]
 
 
 def test_anual_consolidado_vale_mais_que_os_meses(tmp_path: Path) -> None:

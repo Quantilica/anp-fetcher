@@ -362,7 +362,8 @@ def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
     (7z, planilha com extensão ``.zip``, ZIP inválido: o erro sai na conversão).
     Com vários membros cada um vira um item, com o ``file_key`` ``<zip>__<membro>``:
 
-    * grupos de produção por poço: o membro leva a coluna ``ambiente``;
+    * grupos de produção por poço: o membro leva a coluna ``ambiente`` e o
+      ``presal`` vai para o dataset ``<dataset>-presal``;
     * ``amostras-rochas-fluidos``/``movimentacao-derivados``: cada tabela vai
       para o dataset próprio (:func:`table_dataset_for_member`);
     * as depositárias levam a coluna ``membro`` (o nome do arquivo é a empresa).
@@ -404,6 +405,21 @@ def _zip_parts(group: str, plan: _Plan) -> list[_Plan]:
             )
         )
     return parts
+
+
+#: O pré-sal é um recorte do mar (as mesmas linhas já estão no ``mar``): vai para o
+#: dataset ``<dataset>-presal``, para somar mar+terra não duplicar nada.
+_PRESAL = "presal"
+
+
+def _dataset_of(group: str, plan: _Plan, finest: int) -> str:
+    """O dataset de um item: o da tabela, o ``-presal`` ou o da granularidade."""
+    if plan.table:
+        return plan.table
+    dataset = dataset_for_granularity(group, plan.keys, finest, path=plan.path)
+    if ("ambiente", _PRESAL) in plan.literals:
+        return f"{dataset}-{_PRESAL}"
+    return dataset
 
 
 def _is_json_in_zip_clothing(path: Path) -> bool:
@@ -483,8 +499,7 @@ def route_group(
     routed = [
         Routed(
             path=plan.path,
-            dataset_id=plan.table
-            or dataset_for_granularity(group, plan.keys, finest, path=plan.path),
+            dataset_id=_dataset_of(group, plan, finest),
             partition_keys=plan.keys,
             partition_values=plan.vals,
             member=plan.member,
@@ -537,8 +552,8 @@ LAKE_DATASET_ALIASES: dict[str, str] = {
 
 
 def _table_group(dataset: str) -> str | None:
-    """O grupo de um dataset de tabela (``amostras-rochas-fluidos-calha``)."""
-    for group in TABLE_DATASET_GROUPS:
+    """O grupo de um dataset derivado (``ppg-presal``, ``...-calha``)."""
+    for group in (*TABLE_DATASET_GROUPS, *_AMBIENTE_GROUPS):
         if dataset.startswith(f"{group}-"):
             return group
     return None
