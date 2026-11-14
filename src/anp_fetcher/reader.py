@@ -521,7 +521,8 @@ def _read_zip_csvs(
             with archive.open(member) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
             frames.append(read_csv(target, spec))
-    return pl.concat(frames, how="vertical_relaxed")
+    # colunas vazias descartadas em um membro e não em outro não podem quebrar a união
+    return pl.concat(frames, how="diagonal_relaxed")
 
 
 def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:

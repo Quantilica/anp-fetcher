@@ -184,3 +184,17 @@ def test_json_com_chave_de_controle(tmp_path: Path) -> None:
     src = tmp_path / "x.json"
     src.write_text('[{"a\\nb": 1, "": 2}]', encoding="utf-8")
     assert _valid(read_file(src, {}).columns)
+
+
+def test_zip_com_varios_csv_une_membros_com_colunas_vazias_diferentes(
+    tmp_path: Path,
+) -> None:
+    import zipfile
+
+    src = tmp_path / "producao-poco-da_2021-03.zip"
+    with zipfile.ZipFile(src, "w") as archive:
+        archive.writestr("2021_03_producao_Mar.csv", "Estado;Campo;\nRJ;C1;\n")
+        archive.writestr("2021_03_producao_terra.csv", "Estado;Campo;\nBA;C2;x\n")
+    df = read_file(src, {})
+    assert _valid(df.columns)
+    assert df["Estado"].to_list() == ["RJ", "BA"]
