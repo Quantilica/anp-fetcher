@@ -407,14 +407,15 @@ def test_comando_discover_texto_e_json(monkeypatch, html):
     r = runner.invoke(plugin.app, ["discover"])
     assert r.exit_code == 0, r.output
     assert "66 link(s) mensais" in r.output
-    assert (
-        "NOME" in r.output and "02-cados-abertos-preco-gasolina-etanol.csv" in r.output
-    )
+    assert "arquivo(s) com nome fora do padrão" in r.output
+    assert "02-cados-abertos" not in r.output  # o detalhe fica no --json
     assert "ATRASO" not in r.output
 
     r = runner.invoke(plugin.app, ["discover", "--json", "--fail-on-change"])
     assert r.exit_code == 0, r.output
-    assert json.loads(r.output)["has_changes"] is False
+    dados = json.loads(r.output)
+    assert dados["has_changes"] is False
+    assert any("02-cados-abertos" in i["pagina"] for i in dados["url_differs"])
 
 
 def test_comando_discover_fail_on_change_e_atraso(monkeypatch, html):

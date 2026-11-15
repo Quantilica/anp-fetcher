@@ -248,10 +248,11 @@ def discover_cmd(
                 f"ATRASO   {item['group']} {item['year']}-{item['month']:02d} "
                 "ainda não está na página"
             )
-        for item in report.url_differs:
+        if report.url_differs:
             _out(
-                f"NOME     {item['group']} {item['year']}-{item['month']:02d}: "
-                f"a página usa {item['pagina']} (o sync usa este)"
+                f"{len(report.url_differs)} arquivo(s) com nome fora do padrão "
+                "presumido pelo catálogo (o sync usa o nome da página; detalhes em "
+                "--json)."
             )
         if not report.has_changes:
             _out("Sem novidades em relação ao catálogo.")
