@@ -47,6 +47,7 @@ except ImportError as exc:
 from anp_fetcher import __version__
 from anp_fetcher.catalog import ALL_GROUP_KEYS, resolve_group
 from anp_fetcher.reader import (
+    QualityReport,
     collect_notes,
     csv_lacks_header,
     decompress,
@@ -59,7 +60,7 @@ from anp_fetcher.reader import (
     zip_data_members,
 )
 from anp_fetcher.storage import _GROUP_DIRS
-from anp_fetcher.wrangling import _apply_contract, spec_for
+from anp_fetcher.wrangling import _apply_contract, _log_quality, spec_for
 
 if TYPE_CHECKING:  # só tipagem: o core publicado antes do contrato não tem Planned
     from quantilica.core.lake import Planned
@@ -67,6 +68,27 @@ if TYPE_CHECKING:  # só tipagem: o core publicado antes do contrato não tem Pl
 SOURCE_ID = "anp"
 
 logger = logging.getLogger(__name__)
+
+
+class _QualityLakeWriter(LakeWriter):
+    """``LakeWriter`` que grava a qualidade da conversão no rodapé do Parquet.
+
+    O ``LakeWriter`` não aceita metadados extras por escrita: ``write_polars`` monta o
+    rodapé em ``_metadata``. Este escritor soma a ``quality_metadata`` (de
+    :meth:`QualityReport.to_metadata`) ao que o core grava, só durante a escrita que o
+    chamador marcou. Se o core renomear ``_metadata``, os testes de
+    ``tests/test_qualidade_nulos.py`` falham em vez de a qualidade sumir em silêncio.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.quality_metadata: dict[str, str] = {}
+
+    def _metadata(self, *args: Any, **kwargs: Any) -> dict[str, str]:
+        meta = super()._metadata(*args, **kwargs)
+        meta.update(self.quality_metadata)
+        return meta
+
 
 _YM = re.compile(r"^(?P<ano>\d{4})-(?P<mes>\d{2})$")
 _YS = re.compile(r"^(?P<ano>\d{4})-S(?P<semestre>[12])$")
@@ -962,7 +984,7 @@ class LakeConverter:
             if result.errors:
                 return result
 
-        writers: dict[str, LakeWriter] = {}
+        writers: dict[str, _QualityLakeWriter] = {}
 
         for group, routed in routes.items():
             spec = spec_for(group)
@@ -998,7 +1020,7 @@ class LakeConverter:
                 produced[item.path].add(_item_key(item) or file_key(item.path))
                 writer_key = f"{dataset_id}:" + ",".join(part_keys)
                 if writer_key not in writers:
-                    writers[writer_key] = LakeWriter(
+                    writers[writer_key] = _QualityLakeWriter(
                         lake_dir / SOURCE_ID / dataset_id,
                         DatasetDescriptor(
                             source_id=SOURCE_ID,
@@ -1051,7 +1073,7 @@ class LakeConverter:
 
     @staticmethod
     def _write_item(
-        writer: LakeWriter,
+        writer: _QualityLakeWriter,
         group: str,
         spec: dict[str, Any],
         item: Routed,
@@ -1066,7 +1088,11 @@ class LakeConverter:
         result.warnings.extend(f"{raw_file.name}: {note}" for note in notes)
         frames = list(data.items()) if isinstance(data, dict) else [(None, data)]
         for sheet, frame in frames:
-            norm = normalize_dtypes(frame, spec)
+            quality = QualityReport()
+            norm = normalize_dtypes(frame, spec, report=quality)
+            if quality.has_loss:
+                _log_quality(raw_file.name, quality)
+                result.warnings.append(f"{raw_file.name}: {quality.summary()}")
             norm = _apply_contract(group, norm, raw_file.name)
             if item.dataset_id == "participacoes_especiais":
                 # quatro recortes (uniao/estado/municipio/campo) com
@@ -1093,13 +1119,17 @@ class LakeConverter:
             elif sheet is not None:
                 file_key_override = composite_file_key(raw_file, sheet)
 
-            written = writer.write_polars(
-                norm,
-                raw_file,
-                partitions=item.partition_values,
-                file_key_name=file_key_override,
-                converter=f"anp-fetcher {__version__}",
-            )
+            writer.quality_metadata = quality.to_metadata()
+            try:
+                written = writer.write_polars(
+                    norm,
+                    raw_file,
+                    partitions=item.partition_values,
+                    file_key_name=file_key_override,
+                    converter=f"anp-fetcher {__version__}",
+                )
+            finally:
+                writer.quality_metadata = {}
             if written.status == "skipped":
                 result.skipped += 1
             else:

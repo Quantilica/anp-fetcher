@@ -14,6 +14,7 @@ import csv
 import difflib
 import io
 import itertools
+import json
 import logging
 import os
 import re
@@ -25,6 +26,7 @@ from calendar import monthrange
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
@@ -33,6 +35,7 @@ try:
     import fastexcel
     import polars as pl
     from quantilica.analytics.reader import (
+        DEFAULT_BR_NA,
         normalize_brazilian_numbers,
         read_brazilian_csv,
     )
@@ -1262,6 +1265,27 @@ def _is_utf8(path: Path) -> bool:
     return True
 
 
+def _read_na_values(spec: dict[str, Any]) -> list[str] | None:
+    """Marcadores que o leitor de CSV ainda transforma em nulo na leitura.
+
+    O leitor comum (``DEFAULT_BR_NA``) anula ``-``, ``N/D``, ``NA`` etc. em qualquer
+    coluna, sem registro. Num grupo com colunas numéricas ou de data, os marcadores
+    declarados em ``null_values`` chegam intactos a :func:`normalize_dtypes`, que os
+    conta; só o campo vazio continua nulo já na leitura (a estrutura do arquivo depende
+    disso). Sem colunas tipadas, devolve ``None``: a leitura fica como era.
+
+    Args:
+        spec (dict[str, Any]): Especificação de processamento do grupo.
+
+    Returns:
+        list[str] | None: ``na_values`` para o leitor, ou ``None`` para o padrão dele.
+    """
+    if not (spec.get("numeric_columns") or spec.get("date_columns")):
+        return None
+    declared = {str(v).strip().lower() for v in _null_values(spec)} - {""}
+    return [v for v in DEFAULT_BR_NA if v.strip().lower() not in declared]
+
+
 def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:
     """Lê um CSV da ANP de 8 bits (utf-8 com fallback latin-1).
 
@@ -1277,6 +1301,9 @@ def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFra
         "separator": _sniff_separator(path, spec.get("separator", ";")),
         "infer_schema_length": spec.get("infer_schema_length", 0),
     }
+    na_values = _read_na_values(spec)
+    if na_values is not None:
+        kwargs["na_values"] = na_values
     if spec.get("skip_rows"):
         kwargs["skip_rows"] = spec["skip_rows"]
     kwargs.update(extra)
@@ -1319,6 +1346,48 @@ def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFra
 
 def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     """Lê um CSV da ANP e devolve colunas com nomes válidos.
+
+    Nas colunas que não são numéricas nem de data, os marcadores de ausência do leitor
+    comum (``-``, ``N/D``, ``NA``...) continuam virando nulo, como sempre; nas colunas
+    tipadas eles chegam intactos a :func:`normalize_dtypes`, que os conta.
+
+    Args:
+        path (Path): Caminho do arquivo CSV.
+        spec (dict[str, Any]): Especificação de processamento do grupo.
+
+    Returns:
+        pl.DataFrame: O DataFrame lido com tipos inferidos.
+    """
+    df = _read_csv_frame(path, spec)
+    return _null_text_markers(df, spec)
+
+
+def _null_text_markers(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
+    """Anula, nas colunas de texto, os marcadores que a leitura deixou passar.
+
+    :func:`_read_na_values` tira da leitura os marcadores declarados em ``null_values``
+    para que as colunas tipadas os contem. Nas demais colunas, o leitor comum os
+    anulava; esta função refaz isso (comparação exata, como o leitor) para a saída de
+    texto não mudar.
+    """
+    na = _read_na_values(spec)
+    if na is None:
+        return df
+    released = [v for v in DEFAULT_BR_NA if v not in na]
+    typed = {*spec.get("numeric_columns", []), *spec.get("date_columns", {})}
+    cols = [c for c in df.columns if c not in typed and df[c].dtype == pl.Utf8]
+    if not released or not cols:
+        return df
+    return df.with_columns(
+        [
+            pl.when(pl.col(c).is_in(released)).then(None).otherwise(pl.col(c)).alias(c)
+            for c in cols
+        ]
+    )
+
+
+def _read_csv_frame(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
+    """Lê um CSV da ANP e devolve colunas com nomes válidos (sem anular texto).
 
     Aceita UTF-8 (com ou sem BOM), latin-1 e, regravados em UTF-8 antes da
     leitura, UTF-16, cp850 e mac_roman; o separador (``;`` ou ``,``) sai da
@@ -1737,28 +1806,174 @@ def _read_zip_csvs(
     return pl.concat(frames, how="vertical_relaxed")
 
 
-def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
+# Ausência declarada pela fonte numa coluna numérica ou de data: vira nulo e é contada.
+# A comparação ignora espaços e caixa; ``""`` (célula vazia) vale sempre, mesmo que o
+# grupo declare outra lista. Os sete primeiros são os marcadores da ANP; os cinco
+# últimos são os que o leitor comum de CSV (``DEFAULT_BR_NA``) já transformava em nulo
+# sem registro, e continuam valendo para os arquivos que convertiam antes, agora
+# contados.
+DEFAULT_NULL_VALUES: tuple[str, ...] = (
+    "",
+    "-",
+    "--",
+    "N/D",
+    "ND",
+    "...",
+    "*",
+    "NA",
+    "n.a.",
+    "n.d.",
+    "não disp",
+    "-9999",
+)
+_QUALITY_EXAMPLES = 5
+_EXAMPLE_WIDTH = 40
+META_QUALITY = "anp.quality"
+# Chave do core para "valores que a conversão tipada transformou em nulo".
+META_CAST_NULLS = "quantilica.cast_nulls"
+
+
+@dataclass
+class ColumnQuality:
+    """O que virou nulo numa coluna tipada (``numeric_columns`` ou ``date_columns``).
+
+    Attributes:
+        sentinels: Valor declarado como ausência (como veio, sem espaços; ``""`` para
+            célula vazia) -> quantas vezes apareceu.
+        invalid: Valores fora da lista que viraram nulo dentro da tolerância
+            (``max_invalid_frac``).
+        invalid_examples: Até cinco desses valores, distintos.
+    """
+
+    sentinels: dict[str, int] = field(default_factory=dict)
+    invalid: int = 0
+    invalid_examples: list[str] = field(default_factory=list)
+
+    @property
+    def lost(self) -> int:
+        """Valores não vazios que viraram nulo (sentinelas e inválidos)."""
+        return self.invalid + sum(n for v, n in self.sentinels.items() if v)
+
+
+@dataclass
+class QualityReport:
+    """Conversões para nulo feitas por :func:`normalize_dtypes`, por coluna.
+
+    Só entram colunas em que algo virou nulo. Célula vazia conta (``sentinels[""]``) mas
+    não é perda: não aciona :attr:`has_loss` nem o aviso no log.
+    """
+
+    rows: int = 0
+    columns: dict[str, ColumnQuality] = field(default_factory=dict)
+
+    @property
+    def has_loss(self) -> bool:
+        """Há valor não vazio (sentinela ou inválido) convertido para nulo."""
+        return any(c.lost for c in self.columns.values())
+
+    def summary(self) -> str:
+        """Texto curto para o log: coluna, contagem e exemplos, só do que é perda."""
+        parts = []
+        for name, col in self.columns.items():
+            if not col.lost:
+                continue
+            bits = []
+            marks = {v: n for v, n in sorted(col.sentinels.items()) if v}
+            if marks:
+                bits.append(
+                    "sentinela(s) " + ", ".join(f"{v!r} x{n}" for v, n in marks.items())
+                )
+            if col.invalid:
+                bits.append(
+                    f"{col.invalid} inválido(s) dentro da tolerância, "
+                    f"ex.: {col.invalid_examples}"
+                )
+            parts.append(f"{name!r}: " + "; ".join(bits))
+        return f"valores convertidos em nulo ({self.rows} linhas) — " + " | ".join(
+            parts
+        )
+
+    def to_metadata(self) -> dict[str, str]:
+        """Chaves do rodapé do Parquet (vazio se nada virou nulo).
+
+        - ``anp.quality``: JSON com ``rows``, ``null_sentinels`` (coluna -> valor ->
+          contagem) e ``invalid_to_null`` (coluna -> ``count`` e ``examples``);
+        - ``quantilica.cast_nulls``: JSON coluna -> valores inválidos que viraram nulo,
+          o mesmo sentido que o core dá à chave.
+        """
+        if not self.columns:
+            return {}
+        quality: dict[str, Any] = {"rows": self.rows}
+        sentinels = {
+            n: dict(sorted(c.sentinels.items()))
+            for n, c in self.columns.items()
+            if c.sentinels
+        }
+        invalid = {
+            n: {"count": c.invalid, "examples": c.invalid_examples}
+            for n, c in self.columns.items()
+            if c.invalid
+        }
+        if sentinels:
+            quality["null_sentinels"] = sentinels
+        if invalid:
+            quality["invalid_to_null"] = invalid
+        meta = {META_QUALITY: json.dumps(quality, ensure_ascii=False, sort_keys=True)}
+        if invalid:
+            meta[META_CAST_NULLS] = json.dumps(
+                {n: v["count"] for n, v in invalid.items()}, sort_keys=True
+            )
+        return meta
+
+
+def _null_values(spec: dict[str, Any]) -> list[str]:
+    """``null_values`` do grupo, ou o padrão."""
+    if "null_values" in spec:
+        return list(spec["null_values"])
+    return list(DEFAULT_NULL_VALUES)
+
+
+def normalize_dtypes(
+    df: pl.DataFrame,
+    spec: dict[str, Any],
+    *,
+    report: QualityReport | None = None,
+) -> pl.DataFrame:
     """Normaliza dtypes: strings sem espaços, números e datas tipados.
 
     A conversão de números brasileiros (``,`` decimal, ``.`` de milhar) é
     delegada a ``quantilica.analytics.reader.normalize_brazilian_numbers``;
     as datas usam o formato de ``date_columns``. Colunas ausentes no
-    DataFrame são ignoradas. Valor vazio vira nulo; valor não vazio que não
-    converte levanta erro.
+    DataFrame são ignoradas. Nas colunas numéricas e de data:
+
+    - o valor de ``null_values`` (padrão :data:`DEFAULT_NULL_VALUES`) é ausência
+      declarada: vira nulo e é contado;
+    - o resto que não converte é erro, salvo até ``max_invalid_frac`` das linhas
+      (padrão 0, ou seja, nenhuma): dentro da tolerância vira nulo e é contado.
+
+    Nada vira nulo sem entrar em ``report``. Colunas de texto não passam por isso:
+    ``-`` numa coluna de texto é conteúdo.
 
     Args:
         df (pl.DataFrame): O DataFrame a normalizar.
-        spec (dict[str, Any]): Especificação com ``numeric_columns`` e
-            ``date_columns`` (coluna → formato ``strptime``).
+        spec (dict[str, Any]): Especificação com ``numeric_columns``,
+            ``date_columns`` (coluna → formato ``strptime``) e, opcionalmente,
+            ``null_values`` e ``max_invalid_frac``.
+        report (QualityReport | None): Recebe, se informado, as conversões para nulo.
 
     Returns:
         pl.DataFrame: O DataFrame normalizado.
 
     Raises:
-        ValueError: Se um valor não vazio não converter.
+        ValueError: Se mais que ``max_invalid_frac`` das linhas de uma coluna não
+            converter; a mensagem traz a coluna, a quantidade e até cinco exemplos.
     """
     numeric = list(spec.get("numeric_columns", []))
     dates = dict(spec.get("date_columns", {}))
+    sentinels = {str(v).strip().lower() for v in _null_values(spec)} | {""}
+    tolerance = float(spec.get("max_invalid_frac", 0.0))
+    report = report if report is not None else QualityReport()
+    report.rows = df.height
     df = df.with_columns(
         [
             pl.col(col).str.strip_chars()
@@ -1766,24 +1981,29 @@ def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
             if df[col].dtype == pl.Utf8
         ]
     )
-    # Vazio é ausência; qualquer outro valor que não converta é erro, não nulo.
-    df = df.with_columns(
-        [
-            pl.when(pl.col(col) == "").then(None).otherwise(pl.col(col)).alias(col)
-            for col in [*numeric, *dates]
-            if col in df.columns and df[col].dtype == pl.Utf8
-        ]
-    )
-    to_number = [c for c in numeric if c in df.columns and df[c].dtype == pl.Utf8]
+    typed = [
+        col
+        for col in dict.fromkeys([*numeric, *dates])
+        if col in df.columns and df[col].dtype == pl.Utf8
+    ]
+    for col in typed:
+        found = _count_sentinels(df[col], sentinels)
+        if found:
+            report.columns.setdefault(col, ColumnQuality()).sentinels = found
+            is_null = df[col].str.to_lowercase().is_in(sorted(sentinels))
+            df = df.with_columns(
+                pl.when(is_null).then(None).otherwise(pl.col(col)).alias(col)
+            )
+    to_number = [c for c in numeric if c in typed]
     before = {c: df[c] for c in to_number}
     df = normalize_brazilian_numbers(df, to_number)
     for col, raw in before.items():
-        _check_conversion(col, raw, df[col])
+        _check_conversion(col, raw, df[col], tolerance, report)
     for col, fmt in dates.items():
-        if col in df.columns and df[col].dtype == pl.Utf8:
+        if col in typed:
             raw = df[col]
             df = df.with_columns(pl.col(col).str.strptime(pl.Date, fmt, strict=False))
-            _check_conversion(col, raw, df[col])
+            _check_conversion(col, raw, df[col], tolerance, report)
     code_cols = [
         c for c in df.columns if any(k in c.lower() for k in ("ibge", "cnpj", "poco"))
     ]
@@ -1794,18 +2014,45 @@ def normalize_dtypes(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
     return df
 
 
-def _check_conversion(col: str, raw: pl.Series, converted: pl.Series) -> None:
-    """Falha se algum valor não vazio virou nulo na conversão.
+def _count_sentinels(values: pl.Series, sentinels: set[str]) -> dict[str, int]:
+    """Quantas vezes cada valor de ``sentinels`` aparece (como veio) em ``values``."""
+    hits = values.filter(values.str.to_lowercase().is_in(sorted(sentinels)))
+    if not hits.len():
+        return {}
+    counts = hits.value_counts()
+    return {str(v): int(n) for v, n in counts.iter_rows()}
+
+
+def _check_conversion(
+    col: str,
+    raw: pl.Series,
+    converted: pl.Series,
+    tolerance: float,
+    report: QualityReport,
+) -> None:
+    """Falha se mais que ``tolerance`` das linhas virou nulo na conversão.
+
+    Dentro da tolerância, os valores que viraram nulo entram em ``report``.
 
     Raises:
         ValueError: Com a coluna, a quantidade e até cinco exemplos.
     """
     lost = raw.filter(raw.is_not_null() & converted.is_null())
-    if lost.len():
-        examples = lost.unique().head(5).to_list()
+    if not lost.len():
+        return
+    examples = [
+        v if len(v) <= _EXAMPLE_WIDTH else v[: _EXAMPLE_WIDTH - 1] + "…"
+        for v in lost.unique(maintain_order=True).head(_QUALITY_EXAMPLES).to_list()
+    ]
+    frac = lost.len() / max(raw.len(), 1)
+    if frac > tolerance:
         raise ValueError(
             f"Coluna {col!r}: {lost.len()} valor(es) não convertido(s), ex.: {examples}"
+            f" ({frac:.2%} das linhas; tolerância {tolerance:.2%})"
         )
+    entry = report.columns.setdefault(col, ColumnQuality())
+    entry.invalid = lost.len()
+    entry.invalid_examples = examples
 
 
 def provenance_metadata(path: Path) -> dict[str, str]:

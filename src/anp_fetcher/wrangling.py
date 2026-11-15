@@ -25,6 +25,8 @@ except ImportError as exc:
 
 from .contracts import CONTRACTS
 from .reader import (
+    DEFAULT_NULL_VALUES,
+    QualityReport,
     extracted_data,
     normalize_dtypes,
     parse_filename,
@@ -40,6 +42,11 @@ DEFAULT_SPEC: dict[str, Any] = {
     "separator": ";",
     "sheet": None,  # None = primeira aba; "all" = todas (dict); N = N-ésima
     "numeric_columns": [],
+    # Ausência declarada nas colunas numéricas e de data: vira nulo e é contada.
+    "null_values": list(DEFAULT_NULL_VALUES),
+    # Fração das linhas de uma coluna tipada que pode virar nulo por não converter
+    # (e ser contada); acima disso o arquivo falha. 0 = nenhuma.
+    "max_invalid_frac": 0.0,
     "skip_rows": 0,
     "infer_schema_length": 0,
 }
@@ -159,6 +166,12 @@ def spec_for(group: str) -> dict[str, Any]:
     return {**DEFAULT_SPEC, **PROCESSING_SPECS.get(group, {})}
 
 
+def _log_quality(name: str, quality: QualityReport) -> None:
+    """Avisa no log o que virou nulo na conversão (célula vazia não conta)."""
+    if quality.has_loss:
+        logger.warning("%s: %s", name, quality.summary())
+
+
 def _target_path(
     meta: dict[str, Any], group_dir: str, out_dir: Path, sheet: str | None = None
 ) -> Path:
@@ -271,7 +284,9 @@ def convert_one(
             if target.exists():
                 logger.debug("Pulando %s (já convertido)", target.name)
                 continue
-            frame = normalize_dtypes(frame, spec)
+            quality = QualityReport()
+            frame = normalize_dtypes(frame, spec, report=quality)
+            _log_quality(raw_file.name, quality)
             frame = _apply_contract(group, frame, raw_file.name)
             written.append(write_parquet(frame, target, source_path=source_path))
     else:
@@ -279,7 +294,9 @@ def convert_one(
         if target.exists():
             logger.debug("Pulando %s (já convertido)", target.name)
             return []
-        data = normalize_dtypes(data, spec)
+        quality = QualityReport()
+        data = normalize_dtypes(data, spec, report=quality)
+        _log_quality(raw_file.name, quality)
         data = _apply_contract(group, data, raw_file.name)
         written.append(write_parquet(data, target, source_path=source_path))
 

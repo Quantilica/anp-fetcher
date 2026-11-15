@@ -94,6 +94,21 @@ normaliza dtypes (números com vírgula decimal, strings sem espaços) e injeta 
 proveniência do `DownloadManifest` nos metadados do Parquet (`quantilica.*`).
 Grupos-chave (SHPC, reservas) têm `DataContract` de validação aplicado.
 
+#### Valores que viram nulo
+
+Nas colunas numéricas e de data, a conversão separa ausência declarada de lixo:
+
+- `null_values` (padrão: vazio, `-`, `--`, `N/D`, `ND`, `...`, `*`, mais `NA`, `n.a.`, `n.d.`,
+  `não disp` e `-9999`, que o leitor comum de CSV já anulava) viram nulo e são **contados**;
+- qualquer outro valor que não converte derruba o arquivo, com a coluna, a quantidade e até
+  cinco exemplos, a menos que o grupo declare `max_invalid_frac` (fração das linhas; padrão 0):
+  dentro dela os valores viram nulo e também são contados.
+
+Nada vira nulo sem registro: a contagem por coluna (e até cinco exemplos dos inválidos) vai
+para o rodapé do Parquet (`anp.quality`, JSON; `quantilica.cast_nulls` repete só os inválidos),
+para o log e para `ConvertResult.warnings`. Célula vazia entra na contagem, mas não gera aviso.
+Colunas de texto não passam por isso: `-` num texto é conteúdo.
+
 ### Integração com `quantilica-cli`
 
 Se o `quantilica-cli` estiver instalado no mesmo ambiente, o `anp-fetcher` é detectado
