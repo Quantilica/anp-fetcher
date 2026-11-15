@@ -7,7 +7,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+- `convert_one` (`wrangling`) não deixa mais a pasta `quantilica_extract_*` no temp do sistema quando o ZIP tem subpasta: removia só a pasta do arquivo extraído, não a raiz da extração. A extração passa a ficar sob um gerenciador de contexto (`extracted_data`, novo em `anp_fetcher.reader`), que remove a raiz inteira em sucesso, em erro e em interrupção. Nenhum caminho do fetcher chama mais `decompress_archive` sem `output_dir` (que o core 0.22.0 passa a avisar com `DeprecationWarning`).
+
+### Alterado
+- Depende de `quantilica-core>=0.22.0` (era `>=0.19.0`), que traz `extracted_archive`.
+
 ### Adicionado
+- `anp_fetcher.reader.extracted_data(path)`: gerenciador de contexto que descompacta um ZIP/7z e sempre remove a raiz da extração; falhas sobem como `RuntimeError`, como em `decompress`.
+- Testes: ZIP com subpasta sem resíduo de `quantilica_extract_*` no `TMPDIR` (`convert_one`, `read_file` e `lake build`) e sem `DeprecationWarning` do core.
 - Testes: identidade do registro conferida.
 
 ## [2.9.0] - 2026-11-14

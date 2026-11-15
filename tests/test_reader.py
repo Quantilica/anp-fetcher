@@ -179,7 +179,7 @@ def test_decompress_zip(tmp_path):
     inner.write_bytes(b"\xd0\xcf\x11\xe0 fake-xls")
     with zipfile.ZipFile(raw, "w") as zf:
         zf.write(inner, "producao_poco_2005.xls")
-    extracted = decompress(raw)
+    extracted = decompress(raw, tmp_path / "saida")
     assert extracted.suffix == ".xls"
     assert extracted.exists()
 

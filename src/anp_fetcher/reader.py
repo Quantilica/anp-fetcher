@@ -23,7 +23,7 @@ import unicodedata
 import zipfile
 from calendar import monthrange
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import date, timedelta
 from pathlib import Path
@@ -44,7 +44,7 @@ except ImportError as exc:
         "--index https://index.quantilica.com/simple/"
     ) from exc
 from quantilica.core.exceptions import StorageError
-from quantilica.core.files import decompress_archive
+from quantilica.core.files import decompress_archive, extracted_archive
 from quantilica.core.manifests import DownloadManifest, read_manifest_sidecar
 
 logger = logging.getLogger(__name__)
@@ -129,7 +129,8 @@ def decompress(path: Path, output_dir: Path | None = None) -> Path:
     Args:
         path (Path): O caminho do arquivo compactado.
         output_dir (Path | None): Pasta de destino. Sem ela, a extração vai para
-            uma pasta temporária que o chamador precisa remover.
+            uma pasta temporária que o chamador precisa remover (o core avisa
+            com ``DeprecationWarning``); prefira :func:`extracted_data`.
 
     Returns:
         Path: O caminho do arquivo extraído (primeiro csv/xls/xlsx encontrado).
@@ -144,6 +145,36 @@ def decompress(path: Path, output_dir: Path | None = None) -> Path:
         )
     except StorageError as exc:
         raise RuntimeError(f"falha ao descompactar {path}: {exc}") from exc
+
+
+@contextmanager
+def extracted_data(path: Path) -> Iterator[Path]:
+    """Descompacta um ZIP/7z numa pasta que sempre é removida ao sair do ``with``.
+
+    Faz o que :func:`decompress` faz, com a pasta de extração (a raiz inteira,
+    subpastas incluídas) sob a guarda de
+    :func:`quantilica.core.files.extracted_archive`: some em sucesso, em exceção
+    e em interrupção. O caminho devolvido só vale dentro do bloco. Falhas de
+    extração sobem como ``RuntimeError``, como em :func:`decompress`.
+
+    Args:
+        path (Path): O caminho do arquivo compactado.
+
+    Yields:
+        Path: O arquivo extraído (primeiro csv/xls/xlsx encontrado).
+
+    Raises:
+        RuntimeError: Se a extração falhar ou não produzir arquivos de dados.
+    """
+    logger.info("Descompactando %s", path)
+    with ExitStack() as stack:
+        try:
+            inner = stack.enter_context(
+                extracted_archive(path, target_extensions=(".csv", ".xls", ".xlsx"))
+            )
+        except StorageError as exc:
+            raise RuntimeError(f"falha ao descompactar {path}: {exc}") from exc
+        yield inner
 
 
 # Membros de ZIP que o leitor abre. O JSON que a ANP publica ao lado de cada CSV
