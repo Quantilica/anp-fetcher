@@ -81,7 +81,8 @@ def list_datasets_descoberto(group: str | None = None) -> list[dict[str, Any]]:
 
     2023 a 2025 ficam como no catálogo estático. De 2026 em diante os nomes dos
     arquivos saem do padrão sem aviso; a página é consultada uma vez por processo e, se
-    falhar, vale a URL presumida do catálogo (com aviso no log).
+    falhar, vale a URL presumida do catálogo (com aviso no log). O comando ``list`` não
+    consulta a página.
 
     Args:
         group (str | None): Id ou alias do grupo; ``None`` lista tudo, sem descoberta.
@@ -109,6 +110,7 @@ class AnpFetcherApp(FetcherApp):
         self._dead_groups: set[str] = set()
         super().__init__(*args, **kwargs)
         self._wrap_sync()
+        self._wrap_list()
 
     def download_datasets(self, entries, output_dir, workers=4, *, force=False):
         """Baixa e guarda os grupos em que toda entrada deu HTTP 404."""
@@ -123,6 +125,21 @@ class AnpFetcherApp(FetcherApp):
         plan = super().check_datasets(entries, output_dir, workers=workers)
         alerts.report(alerts.dead_groups_from_plan(plan.items))
         return plan
+
+    def _wrap_list(self) -> None:
+        """``list`` só mostra o catálogo: não consulta a página do SHPC."""
+        for command in self.app.registered_commands:
+            if command.name == "list" and command.callback is not None:
+                command.callback = self._without_discovery(command.callback)
+
+    @staticmethod
+    def _without_discovery(original: Any) -> Any:
+        @functools.wraps(original)
+        def listing(*args: Any, **kwargs: Any) -> None:
+            with discover.discovery_disabled():
+                original(*args, **kwargs)
+
+        return listing
 
     def _wrap_sync(self) -> None:
         """``sync`` sai != 0 com grupo morto, preservando o código do ``sync``."""
@@ -243,6 +260,8 @@ def discover_cmd(
                 f"NOVO     {item['group']} {item['year']}-{item['month']:02d}: "
                 f"{item['url']}"
             )
+        for url in report.unclassified:
+            _out(f"NAO RECONHECIDO {url}")
         for item in report.late:
             _out(
                 f"ATRASO   {item['group']} {item['year']}-{item['month']:02d} "

@@ -141,27 +141,44 @@ _shpc_glp_entries: list[DatasetEntry] = [
 # ---------------------------------------------------------------------------
 
 
+# Nomes de 2026 fora do padrão, conferidos na página em novembro de 2026: abril sem
+# extensão; junho, agosto e setembro com ``AAAA-MM`` repetido; outubro curto;
+# fevereiro de gasolina e etanol com erro de digitação. Só reserva: a fonte é a página
+# (``anp_fetcher.discover``), e estes nomes entram em ``fallback_urls`` para o caso de
+# ela não responder. A chave é (mês, produto); ``None`` vale para os três produtos.
+_DSAN_2026_KNOWN_NAMES: dict[tuple[int, str | None], str] = {
+    (2, "gasolina-etanol"): "02-cados-abertos-preco-gasolina-etanol.csv",
+    (4, None): "04-dados-abertos-precos-{product}",
+    (6, None): "06-dados-abertos-precos-2026-06-{product}.csv",
+    (8, None): "08-dados-abertos-precos-2026-08-{product}.csv",
+    (9, None): "09-dados-abertos-precos-2026-09-{product}.csv",
+    (10, None): "10-{product}.csv",
+}
+
+
 def _dsan_url(
     year: int, month: int, product_old: str, product_new: str
 ) -> tuple[str, str, list[str]]:
     """URL presumida do arquivo mensal do SHPC (padrão da ANP, sem consultar a página).
 
-    De 2026 em diante os nomes saem do padrão sem aviso (abril sem extensão,
-    ``AAAA-MM`` repetido no meio, nomes curtos): ``anp_fetcher.discover`` lê os
-    links reais da página e o ``sync`` usa esses; esta URL é a reserva para quando a
-    página não responde.
+    De 2026 em diante os nomes saem do padrão sem aviso: ``anp_fetcher.discover`` lê os
+    links reais da página e o ``sync`` usa esses. Esta URL é a reserva para quando a
+    página não responde; as reservas dela (``fallback_urls``) são o mesmo nome em xlsx
+    e os nomes irregulares já conhecidos do mês.
     """
     if year <= 2025:
         return f"{_SHPC_DSAN}/{year}/precos-{product_old}-{month:02d}.csv", "csv", []
-    # For 2026 onwards, default to csv but add xlsx as fallback (and vice versa)
-    ext = "csv"
-    fallback_ext = "xlsx"
-    url = f"{_SHPC_DSAN}/{year}/{month:02d}-dados-abertos-precos-{product_new}.{ext}"
-    fallback_url = (
-        f"{_SHPC_DSAN}/{year}/"
-        f"{month:02d}-dados-abertos-precos-{product_new}.{fallback_ext}"
-    )
-    return url, ext, [fallback_url]
+    base = f"{_SHPC_DSAN}/{year}"
+    url = f"{base}/{month:02d}-dados-abertos-precos-{product_new}.csv"
+    fallbacks = [f"{base}/{month:02d}-dados-abertos-precos-{product_new}.xlsx"]
+    if year == 2026:
+        for key in ((month, product_new), (month, None)):
+            known = _DSAN_2026_KNOWN_NAMES.get(key)
+            if known is not None:
+                known_url = f"{base}/{known.format(product=product_new)}"
+                if known_url != url:
+                    fallbacks.append(known_url)
+    return url, "csv", fallbacks
 
 
 _SHPC_PUBLICATION_LAG_MONTHS = 1  # o mês corrente ainda não foi publicado

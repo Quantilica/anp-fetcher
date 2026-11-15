@@ -299,9 +299,34 @@ def test_shpc_monthly_2026_url_presumida_e_so_reserva():
     entries = [e for e in GROUPS["shpc-glp-mensal"]["entries"] if e["year"] == 2026]
     for e in entries:
         assert e["url"].endswith(f"/2026/{e['month']:02d}-dados-abertos-precos-glp.csv")
-        assert e["fallback_urls"] == [e["url"][:-3] + "xlsx"]
+        assert e["fallback_urls"][0] == e["url"][:-3] + "xlsx"
     antigos = [e for e in GROUPS["shpc-glp-mensal"]["entries"] if e["year"] < 2026]
     assert all("fallback_urls" not in e for e in antigos)
+
+
+def test_shpc_monthly_2026_reserva_traz_os_nomes_irregulares_conhecidos():
+    # Se a página não responder, o sync ainda tenta os nomes que a ANP usou.
+    def reserva(grupo, mes):
+        e = next(
+            e
+            for e in GROUPS[grupo]["entries"]
+            if e["year"] == 2026 and e["month"] == mes
+        )
+        return {u.rsplit("/", 1)[1] for u in e["fallback_urls"]}
+
+    assert "04-dados-abertos-precos-glp" in reserva("shpc-glp-mensal", 4)
+    assert "06-dados-abertos-precos-2026-06-diesel-gnv.csv" in reserva(
+        "shpc-diesel-gnv", 6
+    )
+    assert "10-gasolina-etanol.csv" in reserva("shpc-gasolina-etanol", 10)
+    assert "02-cados-abertos-preco-gasolina-etanol.csv" in reserva(
+        "shpc-gasolina-etanol", 2
+    )
+    assert "02-cados-abertos-preco-gasolina-etanol.csv" not in reserva(
+        "shpc-glp-mensal", 2
+    )
+    # mês regular: só o xlsx de reserva
+    assert reserva("shpc-glp-mensal", 5) == {"05-dados-abertos-precos-glp.xlsx"}
 
 
 def test_shpc_monthly_has_month_field():
