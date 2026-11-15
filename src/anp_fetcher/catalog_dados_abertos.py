@@ -141,25 +141,18 @@ _shpc_glp_entries: list[DatasetEntry] = [
 # ---------------------------------------------------------------------------
 
 
-# Nomes de 2026 fora do padrão, conferidos na página "Série histórica de preços
-# de combustíveis" em 26/10/2026: abril sem extensão; junho, agosto e setembro
-# com o ano e o mês repetidos no nome.
-_DSAN_2026_NAMES: dict[int, str] = {
-    4: "04-dados-abertos-precos-{product}",
-    6: "06-dados-abertos-precos-2026-06-{product}.csv",
-    8: "08-dados-abertos-precos-2026-08-{product}.csv",
-    9: "09-dados-abertos-precos-2026-09-{product}.csv",
-}
-
-
 def _dsan_url(
     year: int, month: int, product_old: str, product_new: str
 ) -> tuple[str, str, list[str]]:
+    """URL presumida do arquivo mensal do SHPC (padrão da ANP, sem consultar a página).
+
+    De 2026 em diante os nomes saem do padrão sem aviso (abril sem extensão,
+    ``AAAA-MM`` repetido no meio, nomes curtos): ``anp_fetcher.discover`` lê os
+    links reais da página e o ``sync`` usa esses; esta URL é a reserva para quando a
+    página não responde.
+    """
     if year <= 2025:
         return f"{_SHPC_DSAN}/{year}/precos-{product_old}-{month:02d}.csv", "csv", []
-    if year == 2026 and month in _DSAN_2026_NAMES:
-        name = _DSAN_2026_NAMES[month].format(product=product_new)
-        return f"{_SHPC_DSAN}/{year}/{name}", "csv", []
     # For 2026 onwards, default to csv but add xlsx as fallback (and vice versa)
     ext = "csv"
     fallback_ext = "xlsx"
@@ -191,64 +184,36 @@ def _monthly_dates(today: dt.date | None = None) -> list[tuple[int, int]]:
 
 _MONTHLY_DATES: list[tuple[int, int]] = _monthly_dates()
 
-# shpc-diesel-gnv
-_shpc_diesel_entries: list[DatasetEntry] = []
-for _y, _m in _MONTHLY_DATES:
-    _url, _ext, _fallbacks = _dsan_url(_y, _m, "diesel-gnv", "diesel-gnv")
-    _shpc_diesel_entries.append(
-        _mon_entry(
-            "shpc-diesel-gnv",
-            "shpc-diesel-gnv",
-            "Preços diesel (S-500, S-10) + GNV",
-            _y,
-            _m,
-            _url,
-            _ext,
-        )
-    )
-    if _fallbacks:
-        _shpc_diesel_entries[-1]["fallback_urls"] = _fallbacks
+# Produto no nome do arquivo da ANP -> (grupo do catálogo, prefixo do nome).
+SHPC_MONTHLY_PRODUCTS: dict[str, tuple[str, str]] = {
+    "diesel-gnv": ("shpc-diesel-gnv", "Preços diesel (S-500, S-10) + GNV"),
+    "gasolina-etanol": ("shpc-gasolina-etanol", "Preços gasolina C + etanol hidratado"),
+    "glp": ("shpc-glp-mensal", "Preços GLP P13 (mensal)"),
+}
 
-# shpc-gasolina-etanol
-_shpc_gas_etanol_entries: list[DatasetEntry] = []
-for _y, _m in _MONTHLY_DATES:
-    _fallbacks = []
-    if (_y, _m) == (2026, 2):
-        _url = f"{_SHPC_DSAN}/2026/02-cados-abertos-preco-gasolina-etanol.csv"
-        _ext = "csv"
-    else:
-        _url, _ext, _fallbacks = _dsan_url(_y, _m, "gasolina-etanol", "gasolina-etanol")
-    _shpc_gas_etanol_entries.append(
-        _mon_entry(
-            "shpc-gasolina-etanol",
-            "shpc-gasolina-etanol",
-            "Preços gasolina C + etanol hidratado",
-            _y,
-            _m,
-            _url,
-            _ext,
-        )
-    )
-    if _fallbacks:
-        _shpc_gas_etanol_entries[-1]["fallback_urls"] = _fallbacks
 
-# shpc-glp-mensal
-_shpc_glp_mensal_entries: list[DatasetEntry] = []
-for _y, _m in _MONTHLY_DATES:
-    _url, _ext, _fallbacks = _dsan_url(_y, _m, "glp", "glp")
-    _shpc_glp_mensal_entries.append(
-        _mon_entry(
-            "shpc-glp-mensal",
-            "shpc-glp-mensal",
-            "Preços GLP P13 (mensal)",
-            _y,
-            _m,
-            _url,
-            _ext,
-        )
-    )
-    if _fallbacks:
-        _shpc_glp_mensal_entries[-1]["fallback_urls"] = _fallbacks
+def shpc_monthly_entry(
+    product: str, year: int, month: int, url: str, ext: str
+) -> DatasetEntry:
+    """Entrada do SHPC mensal de ``product`` (chave de ``SHPC_MONTHLY_PRODUCTS``)."""
+    group, prefix = SHPC_MONTHLY_PRODUCTS[product]
+    return _mon_entry(group, group, prefix, year, month, url, ext)
+
+
+def _shpc_monthly_entries(product: str) -> list[DatasetEntry]:
+    entries: list[DatasetEntry] = []
+    for year, month in _MONTHLY_DATES:
+        url, ext, fallbacks = _dsan_url(year, month, product, product)
+        entry = shpc_monthly_entry(product, year, month, url, ext)
+        if fallbacks:
+            entry["fallback_urls"] = fallbacks
+        entries.append(entry)
+    return entries
+
+
+_shpc_diesel_entries = _shpc_monthly_entries("diesel-gnv")
+_shpc_gas_etanol_entries = _shpc_monthly_entries("gasolina-etanol")
+_shpc_glp_mensal_entries = _shpc_monthly_entries("glp")
 
 # ---------------------------------------------------------------------------
 # shpc-4s — Últimas 4 Semanas

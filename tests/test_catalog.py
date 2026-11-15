@@ -293,12 +293,15 @@ def test_shpc_monthly_acompanha_a_data():
     assert _monthly_dates(dt.date(2027, 3, 1))[-2:] == [(2027, 1), (2027, 2)]
 
 
-def test_shpc_monthly_2026_irregular_names():
-    urls = {e["month"]: e["url"] for e in GROUPS["shpc-glp-mensal"]["entries"]
-            if e["year"] == 2026}  # fmt: skip
-    assert urls[4].endswith("/2026/04-dados-abertos-precos-glp")
-    assert urls[5].endswith("/2026/05-dados-abertos-precos-glp.csv")
-    assert urls[9].endswith("/2026/09-dados-abertos-precos-2026-09-glp.csv")
+def test_shpc_monthly_2026_url_presumida_e_so_reserva():
+    # O catálogo estático só presume o padrão (csv, com xlsx de reserva); os nomes
+    # irregulares de 2026 vêm da página (tests/test_discover.py).
+    entries = [e for e in GROUPS["shpc-glp-mensal"]["entries"] if e["year"] == 2026]
+    for e in entries:
+        assert e["url"].endswith(f"/2026/{e['month']:02d}-dados-abertos-precos-glp.csv")
+        assert e["fallback_urls"] == [e["url"][:-3] + "xlsx"]
+    antigos = [e for e in GROUPS["shpc-glp-mensal"]["entries"] if e["year"] < 2026]
+    assert all("fallback_urls" not in e for e in antigos)
 
 
 def test_shpc_monthly_has_month_field():
@@ -311,15 +314,6 @@ def test_shpc_monthly_has_month_field():
 
 def test_shpc_monthly_april_2026_is_xlsx():
     pass
-
-
-def test_shpc_gasolina_etanol_feb_2026_typo_url():
-    e = next(
-        e
-        for e in GROUPS["shpc-gasolina-etanol"]["entries"]
-        if e["year"] == 2026 and e["month"] == 2
-    )
-    assert "cados-abertos-preco-gasolina-etanol" in e["url"]
 
 
 # ---------------------------------------------------------------------------

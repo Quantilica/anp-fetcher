@@ -7,7 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+- `anp-fetcher discover` e `anp_fetcher.discover`: leem a página "Série histórica de preços de combustíveis", extraem os links `shpc/dsan/{ano}/` e classificam cada um por (ano, mês, produto) com uma regra tolerante (mês no início do nome, `glp`, `diesel-gnv` ou `gasolina-etanol` no fim, extensão opcional, qualquer coisa no meio). O comando lista os meses publicados que o catálogo não tem e avisa quando o mês anterior ao corrente ainda não está na página depois do dia 15 (atraso da ANP); aceita `--json` e `--fail-on-change`.
+- Testes com um recorte salvo da página (2025 e 2026), sem rede: os nomes de abril a setembro de 2026 geram as mesmas 18 URLs que o catálogo trazia à mão, e um mês novo com nome inventado entra sem mudar código.
+
+### Alterado
+- `shpc-diesel-gnv`, `shpc-gasolina-etanol` e `shpc-glp-mensal`: de 2026 em diante o `sync`, o `check` e o `list` usam os links da página (uma consulta por execução); meses que a página traz e o catálogo não tem entram sozinhos. Se a página falhar, o log avisa e valem as URLs presumidas pelo padrão (`MM-dados-abertos-precos-{produto}.csv`, com `.xlsx` de reserva). 2023 a 2025 continuam no catálogo estático.
+- O catálogo deixa de listar à mão os nomes irregulares de 2026 (abril sem extensão, `AAAA-MM` repetido em junho, agosto e setembro, o erro de digitação de fevereiro em gasolina e etanol): viraram gabarito do teste da regra.
+
 ### Corrigido
+- Outubro de 2026 (`10-glp.csv`, `10-diesel-gnv.csv`, `10-gasolina-etanol.csv`) dava 404 com a URL presumida; a descoberta lê o nome real.
 - CI: o pyproject declara o PyPI antes do índice Quantilica (`[[tool.uv.index]]`), e o workflow perde `--index` e `--index-strategy`. Com a estratégia padrão `first-index`, o `uv sync` só consulta o índice para o que não está no PyPI (`quantilica-analytics`) e deixa de receber o 503 intermitente que o GitHub Pages devolve a caminhos inexistentes.
 
 ## [2.10.0] - 2026-11-14

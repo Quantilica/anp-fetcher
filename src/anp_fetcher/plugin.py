@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import datetime as dt
 import functools
+import json
 import logging
 from pathlib import Path
 from typing import Any
 
 import typer
 from quantilica.cli.sdk import CheckPlan, FetcherApp, make_resolve_groups
+from quantilica.cli.ui import get_console
 from quantilica.core.registry import FetcherInfo
 from quantilica.core.sync import FreshnessPolicy
 
-from . import alerts
-from .catalog import GROUP_ALIASES, GROUPS, list_datasets
+from . import alerts, discover
+from .catalog import GROUP_ALIASES, GROUPS, list_datasets, resolve_group
 from .storage import DataRepository
 
 # Resolver canônico (elimina a duplicação de _resolve_groups):
@@ -66,6 +68,33 @@ def path_builder(
 
 
 logger = logging.getLogger(__name__)
+console = get_console()
+
+
+def _out(text: str) -> None:
+    """Imprime texto literal no console Rich compartilhado (sem markup/quebra)."""
+    console.print(text, markup=False, highlight=False, emoji=False, soft_wrap=True)
+
+
+def list_datasets_descoberto(group: str | None = None) -> list[dict[str, Any]]:
+    """Entradas do catálogo; nos grupos mensais do SHPC, com os links da página da ANP.
+
+    2023 a 2025 ficam como no catálogo estático. De 2026 em diante os nomes dos
+    arquivos saem do padrão sem aviso; a página é consultada uma vez por processo e, se
+    falhar, vale a URL presumida do catálogo (com aviso no log).
+
+    Args:
+        group (str | None): Id ou alias do grupo; ``None`` lista tudo, sem descoberta.
+
+    Returns:
+        list[dict[str, Any]]: Entradas do grupo.
+    """
+    entries = list_datasets(group)
+    canon = resolve_group(group) if group is not None else None
+    if canon is None:
+        return entries  # type: ignore[return-value]
+    return discover.entries_for_group(canon, entries)  # type: ignore[return-value]
+
 
 _DEFAULT_OUTPUT = Path("/data/anp")
 
@@ -168,7 +197,7 @@ fetcher = AnpFetcherApp(
     ),
     groups_dict=GROUPS,
     aliases_dict=GROUP_ALIASES,
-    list_datasets=list_datasets,
+    list_datasets=list_datasets_descoberto,
     path_builder=path_builder,
     freshness_policy=FreshnessPolicy.REMOTE_ONLY,
 )
@@ -193,6 +222,44 @@ def convert(
     return lake.converter.convert(input_dir, lake_dir, datasets=dataset, force=force)
 
 
+def discover_cmd(
+    as_json: bool = typer.Option(False, "--json", help="Saída em JSON"),
+    fail_on_change: bool = typer.Option(
+        False, "--fail-on-change", help="Sai com código 1 se houver novidade ou atraso"
+    ),
+) -> None:
+    """Compara a página do SHPC mensal com o catálogo (meses novos e atraso da ANP)."""
+    try:
+        report = discover.discover()
+    except Exception as exc:
+        _out(f"Não consegui ler a página do SHPC: {exc}")
+        raise typer.Exit(2) from None
+    if as_json:
+        _out(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+    else:
+        _out(f"{report.known} link(s) mensais do SHPC na página.")
+        for item in report.new_months:
+            _out(
+                f"NOVO     {item['group']} {item['year']}-{item['month']:02d}: "
+                f"{item['url']}"
+            )
+        for item in report.late:
+            _out(
+                f"ATRASO   {item['group']} {item['year']}-{item['month']:02d} "
+                "ainda não está na página"
+            )
+        for item in report.url_differs:
+            _out(
+                f"NOME     {item['group']} {item['year']}-{item['month']:02d}: "
+                f"a página usa {item['pagina']} (o sync usa este)"
+            )
+        if not report.has_changes:
+            _out("Sem novidades em relação ao catálogo.")
+    if fail_on_change and report.has_changes:
+        raise typer.Exit(1)
+
+
+fetcher.attach_command(discover_cmd, name="discover")
 fetcher.command_convert(convert)
 fetcher.command_pipeline(convert)
 

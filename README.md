@@ -59,6 +59,20 @@ além dos grupos de E&P: fase de exploração (`blocos-contrato`, `pocos-explora
 Use `anp-fetcher list` para ver todos os grupos e aliases (ex.: `blocos` → `blocos-contrato`,
 `reservas` → `reservas-nacionais`).
 
+### Série histórica de preços mensal (SHPC): links descobertos
+
+A ANP muda os nomes dos arquivos mensais de preços sem aviso (extensão ausente, `AAAA-MM`
+repetido no meio, nomes curtos). Por isso, de 2026 em diante os grupos `shpc-diesel-gnv`,
+`shpc-gasolina-etanol` e `shpc-glp-mensal` usam os links lidos da página "Série histórica de
+preços de combustíveis" a cada `sync`/`check`; 2023 a 2025 seguem o catálogo estático. Se a
+página não responder, o fetcher avisa no log e usa a URL presumida pelo padrão.
+
+```bash
+# Meses publicados que o catálogo não tem e atraso da ANP (mês anterior ausente depois do dia 15)
+anp-fetcher discover
+anp-fetcher discover --json --fail-on-change
+```
+
 ### Converter para Parquet
 
 Após o `sync`, os dados brutos podem ser convertidos para Parquet (requer o

@@ -43,3 +43,22 @@ def guarda_extracao_sem_residuo(
             "remova a raiz da extração.",
             pytrace=False,
         )
+
+
+@pytest.fixture(autouse=True)
+def sem_rede_na_descoberta_do_shpc(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Iterator[None]:
+    """Nenhum teste consulta a página da ANP: a descoberta cai para a URL presumida.
+
+    Os testes de ``anp_fetcher.discover`` trocam ``_download_page`` pela fixture salva.
+    """
+    from anp_fetcher import discover
+
+    def _sem_rede(client: object, url: str) -> str:
+        raise RuntimeError("sem rede nos testes")
+
+    discover.reset_cache()
+    monkeypatch.setattr(discover, "_download_page", _sem_rede)
+    yield
+    discover.reset_cache()
