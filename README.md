@@ -64,11 +64,15 @@ Use `anp-fetcher list` para ver todos os grupos e aliases (ex.: `blocos` → `bl
 A ANP muda os nomes dos arquivos mensais de preços sem aviso (extensão ausente, `AAAA-MM`
 repetido no meio, nomes curtos). Por isso, de 2026 em diante os grupos `shpc-diesel-gnv`,
 `shpc-gasolina-etanol` e `shpc-glp-mensal` usam os links lidos da página "Série histórica de
-preços de combustíveis" a cada `sync`/`check`; 2023 a 2025 seguem o catálogo estático. Se a
-página não responder, o fetcher avisa no log e usa a URL presumida pelo padrão.
+preços de combustíveis" a cada `sync`/`check` (o `list` só mostra o catálogo); 2023 a 2025
+seguem o catálogo estático. Se a página não responder, ou não listar um arquivo de 2026 em
+diante, o fetcher avisa no log e usa a URL presumida pelo padrão, com os nomes irregulares já
+conhecidos como reserva. Links de `shpc/dsan` que a regra de nomes não reconhece também são
+avisados.
 
 ```bash
-# Meses publicados que o catálogo não tem e atraso da ANP (mês anterior ausente depois do dia 15)
+# Meses publicados que o catálogo não tem, links não reconhecidos e atraso da ANP
+# (mês anterior ausente depois do dia 15)
 anp-fetcher discover
 anp-fetcher discover --json --fail-on-change
 ```
@@ -101,12 +105,16 @@ Nas colunas numéricas e de data, a conversão separa ausência declarada de lix
 - `null_values` (padrão: vazio, `-`, `--`, `N/D`, `ND`, `...`, `*`, mais `NA`, `n.a.`, `n.d.`,
   `não disp` e `-9999`, que o leitor comum de CSV já anulava) viram nulo e são **contados**;
 - qualquer outro valor que não converte derruba o arquivo, com a coluna, a quantidade e até
-  cinco exemplos, a menos que o grupo declare `max_invalid_frac` (fração das linhas; padrão 0):
-  dentro dela os valores viram nulo e também são contados.
+  cinco exemplos, a menos que o grupo declare `max_invalid_frac` (fração dos valores não nulos
+  da coluna, depois das sentinelas; padrão 0): dentro dela os valores viram nulo e também são
+  contados. Nos grupos `ie-abertos` e `pb-abertos` (colunas com sinal), `-9999` é número, não
+  marcador.
 
 Nada vira nulo sem registro: a contagem por coluna (e até cinco exemplos dos inválidos) vai
 para o rodapé do Parquet (`anp.quality`, JSON; `quantilica.cast_nulls` repete só os inválidos),
-para o log e para `ConvertResult.warnings`. Célula vazia entra na contagem, mas não gera aviso.
+para o log e para `ConvertResult.warnings` (o comando `convert` grava o rodapé; a rotina antiga
+`wrangling.convert_group`/`convert_one` só registra no log). Célula vazia entra na contagem,
+mas não gera aviso.
 Colunas de texto não passam por isso: `-` num texto é conteúdo.
 
 ### Integração com `quantilica-cli`

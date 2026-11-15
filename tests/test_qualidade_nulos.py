@@ -23,6 +23,7 @@ from anp_fetcher.reader import (  # noqa: E402
     QualityReport,
     _read_na_values,
     normalize_dtypes,
+    read_csv,
 )
 from anp_fetcher.storage import _GROUP_DIRS  # noqa: E402
 from anp_fetcher.wrangling import DEFAULT_SPEC, convert_one, spec_for  # noqa: E402
@@ -138,14 +139,80 @@ def test_marcador_legado_do_leitor_agora_e_contado():
     }
 
 
-def test_leitura_deixa_passar_os_marcadores_declarados_so_com_colunas_tipadas():
+def test_leitura_so_anula_o_vazio_em_grupo_tipado():
     # grupo sem colunas tipadas: leitura como era (o leitor comum anula "-" e "N/D")
     assert _read_na_values({"separator": ";"}) is None
-    # com colunas tipadas, só o campo vazio continua nulo já na leitura
+    # com colunas tipadas, só o campo vazio é nulo na leitura, qualquer que seja o
+    # ``null_values`` do grupo: o resto chega à conversão, que conta ou rejeita
     assert _read_na_values(spec_for("vdpb-abertos")) == [""]
-    # grupo que declara menos marcadores deixa o leitor anular o resto
-    na = _read_na_values({"numeric_columns": ["V"], "null_values": ["-"]})
-    assert na is not None and "-" not in na and "N/D" in na and "" in na
+    assert _read_na_values({"numeric_columns": ["V"], "null_values": ["-"]}) == [""]
+
+
+def test_null_values_reduzido_nao_deixa_marcador_sumir_na_leitura(tmp_path):
+    # "N/D" e "-9999" não estão no ``null_values`` deste grupo: antes o leitor os
+    # anulava na coluna tipada sem contar nem falhar.
+    src = tmp_path / "a.csv"
+    src.write_text(
+        "PRODUTO;VENDAS\nGLP;-\nGLP;N/D\nGLP;-9999\nGLP;5\n", encoding="utf-8"
+    )
+    spec = {**DEFAULT_SPEC, "numeric_columns": ["VENDAS"], "null_values": ["-"]}
+    df = read_csv(src, spec)
+    assert df["VENDAS"].to_list() == ["-", "N/D", "-9999", "5"]
+    with pytest.raises(ValueError, match="VENDAS.*'N/D'"):
+        normalize_dtypes(df, spec)
+    # dentro da tolerância, vira nulo e conta
+    rep = QualityReport()
+    out = normalize_dtypes(df, {**spec, "max_invalid_frac": 0.5}, report=rep)
+    assert out["VENDAS"].to_list() == [None, None, -9999.0, 5.0]
+    assert rep.columns["VENDAS"].sentinels == {"-": 1}
+    assert rep.columns["VENDAS"].invalid_examples == ["N/D"]
+
+
+def test_ie_abertos_e_pb_abertos_tratam_9999_como_valor():
+    for grupo in ("ie-abertos", "pb-abertos"):
+        assert "-9999" not in spec_for(grupo)["null_values"]
+        out, rep = _norm(
+            ["-9999", "-"], spec_for(grupo) | {"numeric_columns": ["VENDAS"]}
+        )
+        assert out["VENDAS"].to_list() == [-9999.0, None]
+    assert "-9999" in spec_for("vdpb-abertos")["null_values"]
+
+
+def test_coluna_sem_nome_so_com_marcador_continua_descartada(tmp_path):
+    # ";" a mais no fim do cabeçalho e "-" numa linha: a coluna sem nome só tem
+    # ausência e some, como no leitor antigo (não vira ``coluna_5`` toda nula).
+    src = tmp_path / "a.csv"
+    src.write_text("ANO;PRODUTO;VENDAS;\n2020;GLP;5;\n2021;GLP;6;-\n", encoding="utf-8")
+    spec = {**DEFAULT_SPEC, "numeric_columns": ["VENDAS"]}
+    assert read_csv(src, spec).columns == ["ANO", "PRODUTO", "VENDAS"]
+    # com valor de verdade, a coluna fica
+    src.write_text(
+        "ANO;PRODUTO;VENDAS;\n2020;GLP;5;x\n2021;GLP;6;-\n", encoding="utf-8"
+    )
+    df = read_csv(src, spec)
+    assert df.columns == ["ANO", "PRODUTO", "VENDAS", "coluna_4"]
+    assert df["coluna_4"].to_list() == ["x", None]
+
+
+def test_preambulo_com_marcador_ainda_acha_o_cabecalho(tmp_path):
+    # a linha de "-" é preâmbulo (para o leitor antigo era vazia), não o cabeçalho
+    src = tmp_path / "a.csv"
+    src.write_text(
+        "TITULO;;;\n-;-;-;-\nANO;PRODUTO;VENDAS;OBS\n2020;GLP;5;a\n",
+        encoding="utf-8",
+    )
+    spec = {**DEFAULT_SPEC, "numeric_columns": ["VENDAS"]}
+    assert read_csv(src, spec).columns == ["ANO", "PRODUTO", "VENDAS", "OBS"]
+
+
+def test_tolerancia_pelos_valores_nao_nulos_e_nao_pelas_linhas():
+    # coluna esparsa: 2 valores, 1 inválido = 50% dos valores (não 1% das linhas)
+    valores = [None] * 98 + ["1", "abc"]
+    df = pl.DataFrame({"VENDAS": valores}, schema={"VENDAS": pl.String})
+    with pytest.raises(ValueError, match="50.00% dos valores não nulos"):
+        normalize_dtypes(df, {**NUM, "max_invalid_frac": 0.05})
+    out = normalize_dtypes(df, {**NUM, "max_invalid_frac": 0.5})
+    assert out["VENDAS"].null_count() == 99
 
 
 def test_texto_de_grupo_tipado_segue_anulado_como_antes(tmp_path):
@@ -203,7 +270,7 @@ def test_lixo_acima_da_tolerancia_levanta_com_coluna_e_exemplos():
     msg = str(exc.value)
     assert "'VENDAS'" in msg and "2 valor(es)" in msg
     assert "['abc', 'def']" in msg
-    assert "20.00% das linhas" in msg and "tolerância 10.00%" in msg
+    assert "20.00% dos valores não nulos" in msg and "tolerância 10.00%" in msg
 
 
 def test_exemplos_sao_no_maximo_cinco():

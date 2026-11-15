@@ -390,9 +390,16 @@ _BLANK_NAME = re.compile(r"(_duplicated_\d+|__blank_\d+)?")
 MAX_COLUMN_NAME = 128
 
 
+#: Marcadores de ausência que a leitura em curso deixa passar como texto (grupos com
+#: colunas tipadas, ver :func:`_read_na_values`). Para a estrutura do arquivo
+#: (cabeçalho, coluna sem nome, preâmbulo) valem como célula vazia, como valiam quando
+#: o leitor os anulava.
+_RELEASED: ContextVar[frozenset[str]] = ContextVar("anp_released", default=frozenset())
+
+
 def _blank(value: Any) -> bool:
-    """Célula sem conteúdo: nula ou só espaços."""
-    return value is None or str(value).strip() == ""
+    """Célula sem conteúdo: nula, só espaços ou marcador de ausência liberado."""
+    return value is None or str(value).strip() == "" or str(value) in _RELEASED.get()
 
 
 def _blank_name(name: str) -> bool:
@@ -457,7 +464,9 @@ _MIN_FALLBACK_WIDTH = 8  # folhas estreitas (formulários de preço) só pelo â
 
 def _cell(value: Any) -> str:
     """Texto da célula: espaços repetidos e quebras viram um espaço; vazio é ``""``."""
-    return "" if value is None else re.sub(r"\s+", " ", str(value)).strip()
+    if value is None or str(value) in _RELEASED.get():
+        return ""
+    return re.sub(r"\s+", " ", str(value)).strip()
 
 
 def _data_like(text: str) -> bool:
@@ -918,6 +927,9 @@ def _clean_columns(df: pl.DataFrame) -> pl.DataFrame:
         if _blank_name(name):
             series = df[col]
             if series.dtype == pl.String:
+                released = _RELEASED.get()
+                if released:
+                    series = series.filter(~series.is_in(sorted(released)))
                 series = series.str.strip_chars().replace("", None)
             if series.null_count() == series.len():
                 continue
@@ -1265,14 +1277,21 @@ def _is_utf8(path: Path) -> bool:
     return True
 
 
+def _typed(spec: dict[str, Any]) -> bool:
+    """O grupo tem colunas numéricas ou de data?"""
+    return bool(spec.get("numeric_columns") or spec.get("date_columns"))
+
+
 def _read_na_values(spec: dict[str, Any]) -> list[str] | None:
-    """Marcadores que o leitor de CSV ainda transforma em nulo na leitura.
+    """Marcadores que o leitor de CSV transforma em nulo na leitura.
 
     O leitor comum (``DEFAULT_BR_NA``) anula ``-``, ``N/D``, ``NA`` etc. em qualquer
-    coluna, sem registro. Num grupo com colunas numéricas ou de data, os marcadores
-    declarados em ``null_values`` chegam intactos a :func:`normalize_dtypes`, que os
-    conta; só o campo vazio continua nulo já na leitura (a estrutura do arquivo depende
-    disso). Sem colunas tipadas, devolve ``None``: a leitura fica como era.
+    coluna, sem registro. Num grupo com colunas numéricas ou de data, só o campo vazio
+    continua nulo já na leitura (a estrutura do arquivo depende disso); os marcadores
+    chegam como texto a :func:`normalize_dtypes`, que conta os declarados em
+    ``null_values`` e trata os demais como valor inválido (tolerância ou erro). Nas
+    colunas de texto :func:`_null_text_markers` os anula depois. Sem colunas tipadas,
+    devolve ``None``: a leitura fica como era.
 
     Args:
         spec (dict[str, Any]): Especificação de processamento do grupo.
@@ -1280,10 +1299,14 @@ def _read_na_values(spec: dict[str, Any]) -> list[str] | None:
     Returns:
         list[str] | None: ``na_values`` para o leitor, ou ``None`` para o padrão dele.
     """
-    if not (spec.get("numeric_columns") or spec.get("date_columns")):
-        return None
-    declared = {str(v).strip().lower() for v in _null_values(spec)} - {""}
-    return [v for v in DEFAULT_BR_NA if v.strip().lower() not in declared]
+    return [""] if _typed(spec) else None
+
+
+def _released_markers(spec: dict[str, Any]) -> frozenset[str]:
+    """Marcadores do leitor comum que a leitura deste grupo deixa passar como texto."""
+    if not _typed(spec):
+        return frozenset()
+    return frozenset(v for v in DEFAULT_BR_NA if v != "")
 
 
 def _read_csv_8bit(path: Path, spec: dict[str, Any], **extra: Any) -> pl.DataFrame:
@@ -1349,7 +1372,8 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
 
     Nas colunas que não são numéricas nem de data, os marcadores de ausência do leitor
     comum (``-``, ``N/D``, ``NA``...) continuam virando nulo, como sempre; nas colunas
-    tipadas eles chegam intactos a :func:`normalize_dtypes`, que os conta.
+    tipadas eles chegam intactos a :func:`normalize_dtypes`, que conta os declarados em
+    ``null_values`` e trata os outros como valor inválido.
 
     Args:
         path (Path): Caminho do arquivo CSV.
@@ -1358,22 +1382,24 @@ def read_csv(path: Path, spec: dict[str, Any]) -> pl.DataFrame:
     Returns:
         pl.DataFrame: O DataFrame lido com tipos inferidos.
     """
-    df = _read_csv_frame(path, spec)
+    token = _RELEASED.set(_released_markers(spec))
+    try:
+        df = _read_csv_frame(path, spec)
+    finally:
+        _RELEASED.reset(token)
     return _null_text_markers(df, spec)
 
 
 def _null_text_markers(df: pl.DataFrame, spec: dict[str, Any]) -> pl.DataFrame:
     """Anula, nas colunas de texto, os marcadores que a leitura deixou passar.
 
-    :func:`_read_na_values` tira da leitura os marcadores declarados em ``null_values``
-    para que as colunas tipadas os contem. Nas demais colunas, o leitor comum os
-    anulava; esta função refaz isso (comparação exata, como o leitor) para a saída de
-    texto não mudar.
+    Em grupos com colunas tipadas a leitura não anula ``DEFAULT_BR_NA`` (ver
+    :func:`_read_na_values`). Nas colunas que não são numéricas nem de data o leitor
+    comum o anulava; esta função refaz isso (comparação exata, como o leitor) para a
+    saída de texto não mudar. As colunas tipadas ficam como texto, para
+    :func:`normalize_dtypes` contar ou rejeitar cada valor.
     """
-    na = _read_na_values(spec)
-    if na is None:
-        return df
-    released = [v for v in DEFAULT_BR_NA if v not in na]
+    released = sorted(_released_markers(spec))
     typed = {*spec.get("numeric_columns", []), *spec.get("date_columns", {})}
     cols = [c for c in df.columns if c not in typed and df[c].dtype == pl.Utf8]
     if not released or not cols:
@@ -1948,8 +1974,9 @@ def normalize_dtypes(
 
     - o valor de ``null_values`` (padrão :data:`DEFAULT_NULL_VALUES`) é ausência
       declarada: vira nulo e é contado;
-    - o resto que não converte é erro, salvo até ``max_invalid_frac`` das linhas
-      (padrão 0, ou seja, nenhuma): dentro da tolerância vira nulo e é contado.
+    - o resto que não converte é erro, salvo até ``max_invalid_frac`` dos valores não
+      nulos da coluna, já descontadas as sentinelas (padrão 0, ou seja, nenhum):
+      dentro da tolerância vira nulo e é contado.
 
     Nada vira nulo sem entrar em ``report``. Colunas de texto não passam por isso:
     ``-`` numa coluna de texto é conteúdo.
@@ -1965,8 +1992,9 @@ def normalize_dtypes(
         pl.DataFrame: O DataFrame normalizado.
 
     Raises:
-        ValueError: Se mais que ``max_invalid_frac`` das linhas de uma coluna não
-            converter; a mensagem traz a coluna, a quantidade e até cinco exemplos.
+        ValueError: Se mais que ``max_invalid_frac`` dos valores não nulos de uma
+            coluna não converter; a mensagem traz a coluna, a quantidade e até cinco
+            exemplos.
     """
     numeric = list(spec.get("numeric_columns", []))
     dates = dict(spec.get("date_columns", {}))
@@ -1995,6 +2023,18 @@ def normalize_dtypes(
                 pl.when(is_null).then(None).otherwise(pl.col(col)).alias(col)
             )
     to_number = [c for c in numeric if c in typed]
+    if "-9999" not in sentinels:
+        # ``-9999`` é valor neste grupo (coluna com sinal), mas o conversor comum o
+        # tem como marcador de ausência e o anularia: ``-9999.0`` passa como número.
+        df = df.with_columns(
+            [
+                pl.when(pl.col(c) == "-9999")
+                .then(pl.lit("-9999.0"))
+                .otherwise(pl.col(c))
+                .alias(c)
+                for c in to_number
+            ]
+        )
     before = {c: df[c] for c in to_number}
     df = normalize_brazilian_numbers(df, to_number)
     for col, raw in before.items():
@@ -2030,7 +2070,7 @@ def _check_conversion(
     tolerance: float,
     report: QualityReport,
 ) -> None:
-    """Falha se mais que ``tolerance`` das linhas virou nulo na conversão.
+    """Falha se mais que ``tolerance`` dos valores não nulos virou nulo na conversão.
 
     Dentro da tolerância, os valores que viraram nulo entram em ``report``.
 
@@ -2044,11 +2084,11 @@ def _check_conversion(
         v if len(v) <= _EXAMPLE_WIDTH else v[: _EXAMPLE_WIDTH - 1] + "…"
         for v in lost.unique(maintain_order=True).head(_QUALITY_EXAMPLES).to_list()
     ]
-    frac = lost.len() / max(raw.len(), 1)
+    frac = lost.len() / max(raw.len() - raw.null_count(), 1)
     if frac > tolerance:
         raise ValueError(
             f"Coluna {col!r}: {lost.len()} valor(es) não convertido(s), ex.: {examples}"
-            f" ({frac:.2%} das linhas; tolerância {tolerance:.2%})"
+            f" ({frac:.2%} dos valores não nulos; tolerância {tolerance:.2%})"
         )
     entry = report.columns.setdefault(col, ColumnQuality())
     entry.invalid = lost.len()

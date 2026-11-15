@@ -132,6 +132,10 @@ _MOVIMENTACAO_GN_SPEC: dict[str, Any] = {
     }
 }
 
+# Saldos (``IMPORTADO / EXPORTADO``, ``DISPÊNDIO / RECEITA``) têm sinal: ``-9999`` pode
+# ser valor, não marcador de ausência.
+_NULL_VALUES_COM_SINAL = [v for v in DEFAULT_NULL_VALUES if v != "-9999"]
+
 PROCESSING_SPECS: dict[str, dict[str, Any]] = {
     "movimentacao-gn": _MOVIMENTACAO_GN_SPEC,
     "ie": _PAINEL_SPEC,
@@ -148,9 +152,15 @@ PROCESSING_SPECS: dict[str, dict[str, Any]] = {
     "shpc-glp-mensal": _SHPC_SPEC,
     "shpc-4s": _SHPC_SPEC,
     "vdpb-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
-    "ie-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
+    "ie-abertos": {
+        "numeric_columns": _ABERTOS_NUMERIC,
+        "null_values": _NULL_VALUES_COM_SINAL,
+    },
     "pp-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
-    "pb-abertos": {"numeric_columns": _ABERTOS_NUMERIC},
+    "pb-abertos": {
+        "numeric_columns": _ABERTOS_NUMERIC,
+        "null_values": _NULL_VALUES_COM_SINAL,
+    },
 }
 
 
