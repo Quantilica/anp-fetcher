@@ -1,0 +1,261 @@
+{
+  "fonte": "anp",
+  "dataset": "producao-mar",
+  "gerado_em": "2026-11-16T01:33:34+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Mês/Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Estado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Instalação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produção de Óleo (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produção de Condensado (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produção de Gás Associado (Mm³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produção de Gás Não Associado (Mm³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produção de Água (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Gás (Mm³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Água para Recuperação Secundária (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Água para Descarte (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Gás Carbônico (Mm³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Nitrogênio (Mm³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Vapor de Água (t)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Polímeros (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Injeção de Outros Fluidos (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Ano]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Mês/Ano]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Estado]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Bacia]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Campo]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Poço]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Ambiente]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Instalação]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Produção de Óleo (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Produção de Condensado (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Produção de Gás Associado (Mm³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Produção de Gás Não Associado (Mm³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Produção de Água (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Gás (Mm³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Água para Recuperação Secundária (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Água para Descarte (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Gás Carbônico (Mm³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Nitrogênio (Mm³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Vapor de Água (t)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Polímeros (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[Injeção de Outros Fluidos (m³)]",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 6
+}

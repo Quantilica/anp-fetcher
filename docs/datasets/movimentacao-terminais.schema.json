@@ -1,0 +1,87 @@
+{
+  "fonte": "anp",
+  "dataset": "movimentacao-terminais",
+  "gerado_em": "2026-11-16T01:43:08+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "mes_de_referencia",
+      "tipos": [
+        "date32[day]"
+      ]
+    },
+    {
+      "nome": "codigo_anp_do_terminal",
+      "tipos": [
+        "int64"
+      ]
+    },
+    {
+      "nome": "nome_do_terminal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "municipio_do_terminal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "uf",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "sentido_da_operacao",
+      "tipos": [
+        "int64"
+      ]
+    },
+    {
+      "nome": "tipo_da_operacao",
+      "tipos": [
+        "int64"
+      ]
+    },
+    {
+      "nome": "modo_de_transporte",
+      "tipos": [
+        "int64"
+      ]
+    },
+    {
+      "nome": "codigo_anp_do_produto",
+      "tipos": [
+        "int64"
+      ]
+    },
+    {
+      "nome": "descricao_do_produto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "sentido_modal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "volume_m3",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "nome_da_instalacao",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

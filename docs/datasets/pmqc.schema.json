@@ -1,0 +1,164 @@
+{
+  "fonte": "anp",
+  "dataset": "pmqc",
+  "gerado_em": "2026-11-16T01:38:55+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "DataColeta",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "IdNumeric",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "GrupoProduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Produto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "RazaoSocialPosto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "CnpjPosto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Distribuidora",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Endereço",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Complemento",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Bairro",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Município",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Latitude",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Longitude",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Uf",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "RegiaoPolitica",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Ensaio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Resultado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "UnidadeEnsaio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Conforme",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016-02",
+      "periodo_fim": "2026-06"
+    }
+  ],
+  "arquivos": 37
+}

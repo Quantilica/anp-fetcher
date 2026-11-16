@@ -1,0 +1,140 @@
+{
+  "fonte": "anp",
+  "dataset": "shpc-ca",
+  "gerado_em": "2026-11-16T01:27:26+00:00",
+  "particoes": [
+    "ano",
+    "semestre"
+  ],
+  "colunas": [
+    {
+      "nome": "Regiao - Sigla",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Estado - Sigla",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Municipio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Revenda",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "CNPJ da Revenda",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Nome da Rua",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Numero Rua",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Complemento",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Bairro",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Cep",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Produto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Data da Coleta",
+      "tipos": [
+        "date32[day]"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Valor de Venda",
+      "tipos": [
+        "double"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Valor de Compra",
+      "tipos": [
+        "double"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Unidade de Medida",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Bandeira",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2004",
+      "periodo_fim": "2025"
+    }
+  ],
+  "arquivos": 4
+}

@@ -1,0 +1,404 @@
+{
+  "fonte": "anp",
+  "dataset": "producao-poco-abertos",
+  "gerado_em": "2026-11-16T01:37:23+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "Estado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Nome Poço ANP",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Nome Poço Operador",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Operador",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Número do Contrato",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Período",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Óleo (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Condensado (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Petróleo (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Gás Natural (Mm³/dia) Associado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Gás Natural (Mm³/dia) Não Associado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Gás Natural (Mm³/dia) Gás Total",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Volume Gás Royalties (Mm³/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Água (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Instalação Destino",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Tipo Instalação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Tempo de Produção (hs por mês)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Período da Carga",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Corrente",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Grau API",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Fração de Destilados Leves Corte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Fração de Destilados Leves Volume",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Fração de Destilados Médios Corte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Fração de Destilados Médios Volume",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Fração de Destilados Pesados Corte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Fração de Destilados Pesados Volume",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Metano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Etano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Propano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Iso-Butano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Butano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Iso-Pentano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes n-Pentano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Hexanos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Heptanos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Octanos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Nonanos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Decanos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Undecanos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Oxigênio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Nitrogênio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "% em Volumes Gás Carbônico",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Densidade GLP Gás",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Densidade GLP Líquido",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "PCS GP (kJ/m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "Data de atualização",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2023-02"
+    },
+    {
+      "nome": "ambiente",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2008",
+      "periodo_fim": "2023-02"
+    }
+  ],
+  "arquivos": 50
+}

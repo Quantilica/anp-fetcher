@@ -1,0 +1,153 @@
+{
+  "fonte": "anp",
+  "dataset": "situacao-pocos",
+  "gerado_em": "2026-11-16T01:43:19+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Nome_poço_anp",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operador_atual",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_início_perfuração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_término_perfuração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_conclusão_poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_início_operação_(mês/ano)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_última_operação_(mês/ano)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_início_produção_(mês/ano)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_última_produçaõ_(mês/ano)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_início_injeção_(mês/ano)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_última_injeção_(mês/ano)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Em_operação_(produção_ou_injeção)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Latitude_da_base",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Longitude_da_base",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Estado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_de_referência_situação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_atualização_da_situação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Situação_do_poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Método_de_elevação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Última_intervenção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_última_intervenção",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

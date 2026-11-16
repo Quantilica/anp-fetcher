@@ -1,0 +1,547 @@
+{
+  "fonte": "anp",
+  "dataset": "amostras-rochas-fluidos",
+  "gerado_em": "2026-11-16T01:43:11+00:00",
+  "particoes": [
+    "ano"
+  ],
+  "colunas": [
+    {
+      "nome": "Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Caixas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Depositária",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Depósito",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Cidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Município/Estado do Depósito",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Poços e Levantamentos ↓",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código API do poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº de caixas de amostras de calha",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº de caixas de testemunhos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº de caixas de amostras laterais",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Observações ↓",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia sedimentar",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Código do poço (API)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Nomedopoço(ANP)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Total de caixas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Profundidade topo (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Profundidade base (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Data de conclusão do poço",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Município/Estado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Nome do poço (ANP)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Identificador da caixa",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Profundidade da lâmina (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Tipo de amostra de origem",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Quantidade de células bioestratigráficas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021",
+      "periodo_fim": "2021"
+    },
+    {
+      "nome": "SERVIÇOS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "UNIDADE",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "VALOR (R$)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "membro",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "VALOR 2018 (R$)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2018"
+    },
+    {
+      "nome": "VALOR (R$)_2",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2020"
+    },
+    {
+      "nome": "VALOR 2020 (R$)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2020"
+    },
+    {
+      "nome": "VALOR",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "SERVIÇO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "coluna_2",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "Detalhes",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "Valores unitários (R$)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2023"
+    },
+    {
+      "nome": "coluna_6",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2023"
+    },
+    {
+      "nome": "VALOR (USD)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2023"
+    },
+    {
+      "nome": "SERVIÇO [Detalhes]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2023"
+    },
+    {
+      "nome": "coluna_3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022",
+      "periodo_fim": "2023"
+    },
+    {
+      "nome": "Valor unitário (R$)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2026"
+    },
+    {
+      "nome": "z",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Valor unitário (R$) incl. impostos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "coluna_5",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "coluna_4",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Tipo fluido",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2019"
+    },
+    {
+      "nome": "Quantidade de amostras",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2019"
+    },
+    {
+      "nome": "Volume (L)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Tipo de container",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Tipo de fluido",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Quantidade de amostra",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Baciasedimentar",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Códigodopoço(API)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Profundidadedalâmina(m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Tipodeamostradeorigem",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Quantidadedelâminasdelgadas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Quantidadedelâminasbioestratigráficas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Datadeconclusãodopoço",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Quantidade de lâminas delgadas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Quantidade de lâminas bioestratigráficas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "coluna_11",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2024"
+    },
+    {
+      "nome": "coluna_12",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2024"
+    },
+    {
+      "nome": "Profundidade (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Número do testemunho",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Profundidade do plugue (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Orientação do plugue (H ou V)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2017",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Município",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Profundidade bas (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    }
+  ],
+  "arquivos": 319
+}

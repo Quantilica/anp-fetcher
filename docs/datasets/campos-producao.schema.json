@@ -1,0 +1,147 @@
+{
+  "fonte": "anp",
+  "dataset": "campos-producao",
+  "gerado_em": "2026-11-16T01:28:02+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "CODIGO_CAMPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CAMPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "BACIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "AMBIENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ESTADO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RODADA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SITUACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RAZAO_SOCIAL/CONCESSIONARIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PARTICIPACAO (%)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OPERADOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ULTIMO_MES_PRODUCAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NUM_VERTICE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LATITUDE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LONGITUDE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SIGLA_CAMPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NOME_CONTRATO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NUMERO_CONTRATO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SITUACAO_CAMPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA_ASSINATURA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TERMINO_FASE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA_INICIO_PRODUCAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA_TERMINO_PRODUCAO",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 4
+}

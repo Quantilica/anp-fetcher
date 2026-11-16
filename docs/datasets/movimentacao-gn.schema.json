@@ -1,0 +1,148 @@
+{
+  "fonte": "anp",
+  "dataset": "movimentacao-gn",
+  "gerado_em": "2026-11-16T01:42:20+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "Código da Instalação de Transporte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome da Instalação de Transporte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome da Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Código da Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Tipo da instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome do Município da Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome da UF da Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome do Operador da instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Código do Operador da Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome do Carregador que usa a Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Código do Carregador que usa a Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "Nome do Contrato da Instalação de Gasoduto",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "variavel",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "unidade",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "variavel_fonte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "data",
+      "tipos": [
+        "date32[day]"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    },
+    {
+      "nome": "valor",
+      "tipos": [
+        "double"
+      ],
+      "periodo_inicio": "2021-01",
+      "periodo_fim": "2026-06"
+    }
+  ],
+  "arquivos": 6
+}

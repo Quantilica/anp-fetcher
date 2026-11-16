@@ -1,0 +1,435 @@
+{
+  "fonte": "anp",
+  "dataset": "ppg",
+  "gerado_em": "2026-11-16T01:38:36+00:00",
+  "particoes": [
+    "ano"
+  ],
+  "colunas": [
+    {
+      "nome": "Estado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Operador",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Número do Contrato",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Período",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Petróleo (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Total Gás Natural (Mm³/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2009"
+    },
+    {
+      "nome": "Nome Poço ANP",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Nome Poço Operador",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Óleo (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Condensado (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Gás Natural (Mm³/dia) Associado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Gás Natural (Mm³/dia) Não Associado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Gás Natural (Mm³/dia) Gás Total",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Volume Gás Royalties (Mm³/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Água (bbl/dia)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Instalação Destino",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Tipo Instalação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "Tempo de Produção (hs por mês)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "ambiente",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2017"
+    },
+    {
+      "nome": "NOM_BACIA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "NOM_CAMPO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "PERIODO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "OLEO_M3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "CONDENSADO_M3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "GAS_ASSOCIADO_M3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "GAS_N_ASSOCIADO_M3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "AGUA_M3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "planilha",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "tabela",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "tabela_fonte",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Mês",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ANO 2000",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2001",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2002",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2003",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2004",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2005",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2006",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2007",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2008",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2009",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2010",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2011",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2012",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2013",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2014",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2015",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2016",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2017",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2018",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2019",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2020",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2021",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2022",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2023",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2024",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2025",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2026",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "VARIAÇÃO DO ACUMULADO NO ANO (%)",
+      "tipos": [
+        "double"
+      ]
+    }
+  ],
+  "arquivos": 9
+}

@@ -1,0 +1,81 @@
+{
+  "fonte": "anp",
+  "dataset": "intervencoes-pocos",
+  "gerado_em": "2026-11-16T01:44:15+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Nome_poço_anp",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome_poço_operador",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operador_atual",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operador_epoca",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Sonda",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Objetivo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_início",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_término",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Dias_em_intervenção",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 5
+}

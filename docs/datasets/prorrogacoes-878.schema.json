@@ -1,0 +1,60 @@
+{
+  "fonte": "anp",
+  "dataset": "prorrogacoes-878",
+  "gerado_em": "2026-11-16T01:32:30+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "Bloco",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "Contrato",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "Operador",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "Etapa Prorrogada",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "Efetivação da Prorrogação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2025-08"
+    },
+    {
+      "nome": "Data de Adesão à Resolução",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2026-07",
+      "periodo_fim": "2026-07"
+    }
+  ],
+  "arquivos": 6
+}

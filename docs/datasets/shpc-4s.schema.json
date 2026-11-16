@@ -1,0 +1,105 @@
+{
+  "fonte": "anp",
+  "dataset": "shpc-4s",
+  "gerado_em": "2026-11-16T01:27:26+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Regiao - Sigla",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Estado - Sigla",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Municipio",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Revenda",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ da Revenda",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome da Rua",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Numero Rua",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Complemento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bairro",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Cep",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data da Coleta",
+      "tipos": [
+        "date32[day]"
+      ]
+    },
+    {
+      "nome": "Valor de Venda",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "Valor de Compra",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "Unidade de Medida",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bandeira",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 3
+}

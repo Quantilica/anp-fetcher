@@ -1,0 +1,341 @@
+{
+  "fonte": "anp",
+  "dataset": "producao-fdp-terra",
+  "gerado_em": "2026-11-16T01:35:15+00:00",
+  "particoes": [
+    "ano",
+    "semestre",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "Mês/Ano",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Estado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Poço",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Instalação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Produção de Óleo (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Produção de Condensado (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Produção de Gás Associado (Mm³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Produção de Gás Não Associado (Mm³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Produção de Água (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Gás (Mm³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Água para Recuperação Secundária (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Água para Descarte (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Gás Carbônico (Mm³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Nitrogênio (Mm³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Vapor de Água (t)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Polímeros (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "Injeção de Outros Fluidos (m³)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "1966",
+      "periodo_fim": "2019-06"
+    },
+    {
+      "nome": "[Ano]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Mês/Ano]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Estado]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Bacia]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Campo]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Poço]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Ambiente]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Instalação]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Produção de Óleo (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Produção de Condensado (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Produção de Gás Associado (Mm³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Produção de Gás Não Associado (Mm³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Produção de Água (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Gás (Mm³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Água para Recuperação Secundária (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Água para Descarte (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Gás Carbônico (Mm³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Nitrogênio (Mm³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Vapor de Água (t)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Polímeros (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    },
+    {
+      "nome": "[Injeção de Outros Fluidos (m³)]",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-03",
+      "periodo_fim": "2026-03"
+    }
+  ],
+  "arquivos": 6
+}

@@ -1,0 +1,140 @@
+{
+  "fonte": "anp",
+  "dataset": "pocos-exploratorios",
+  "gerado_em": "2026-11-16T01:44:45+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "POÇO ANP",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "BLOCO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "BACIA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "ESTADO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "AMBIENTE",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "OPERADOR",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "INÍCIO DA PERFURAÇÃO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "CONCLUSÃO DO POÇO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "NOTIFICAÇÃO DE DESCOBERTA ?",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DATA DA NOTIFICAÇÃO DE DESCOBERTA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-03",
+      "periodo_fim": "2024-01"
+    },
+    {
+      "nome": "BACIAS AGRUPADAS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-01",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "PROFUNDIDADE FINAL (m)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-01",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DATA DA 1ª NOTIFICAÇÃO DE DESCOBERTA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-11",
+      "periodo_fim": "2024-11"
+    },
+    {
+      "nome": "FLUIDO NOTIFICAÇÃO DESCOBERTA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-11",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "ATINGIU PRÉ-SAL?",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-09",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DATA 1ª DESCOBERTA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2025-09",
+      "periodo_fim": "2026-07"
+    }
+  ],
+  "arquivos": 6
+}

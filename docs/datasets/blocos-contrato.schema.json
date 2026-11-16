@@ -1,0 +1,188 @@
+{
+  "fonte": "anp",
+  "dataset": "blocos-contrato",
+  "gerado_em": "2026-11-16T01:29:38+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "BLOCO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "CONTRATO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "OPERADOR",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "CONTRATADOS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "BACIA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "AMBIENTE",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "ÁREA (MIL km²)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "RODADA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "PERÍODO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "PRESENÇA PAD",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DATA ASSINATURA CONTRATO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DATA INÍCIO SUSPENSÃO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "1º PE VENCIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "2º PE VENCIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "3º PE VENCIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "ÚLTIMO PAD VENCIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "FASE EXPLORATÓRIA VENCIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "UTs COMPROMISSADAS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "QTD POÇOS PERFURADOS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "POÇOS PERFURADOS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-04",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "BACIAS AGRUPADAS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "REGIME CONTRATUAL",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-02",
+      "periodo_fim": "2026-07"
+    }
+  ],
+  "arquivos": 6
+}

@@ -1,0 +1,228 @@
+{
+  "fonte": "anp",
+  "dataset": "producao-zona",
+  "gerado_em": "2026-11-16T01:40:41+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "Zona",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Pré-sal",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Período",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Época",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Idade",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Grupo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Formação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Membro",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2023-10"
+    },
+    {
+      "nome": "Nome poço ANP",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Data",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Óleo (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Condensado (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Petróleo (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Gás associado (Mil m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Gás não associado (Mil m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Gás total (Mil m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Água (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Água injetada para descarte (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Água injetada para rec. secundária (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Vapor injetado (t/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Gás injetado (Mil m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "CO2 injetado (Mil m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "N2 injetado (Mil m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    },
+    {
+      "nome": "Outros fluidos injetados (m³/d)",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2014-10",
+      "periodo_fim": "2026-09"
+    }
+  ],
+  "arquivos": 6
+}

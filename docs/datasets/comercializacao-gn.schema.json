@@ -1,0 +1,51 @@
+{
+  "fonte": "anp",
+  "dataset": "comercializacao-gn",
+  "gerado_em": "2026-11-16T01:44:42+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Mês",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Preço em Reais por MMBtu",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Volume em mil metros cúbicos/dia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TipoMercado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RegiãoAgregada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "BaciaAgregada",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 3
+}

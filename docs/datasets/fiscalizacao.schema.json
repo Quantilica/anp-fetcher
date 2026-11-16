@@ -1,0 +1,75 @@
+{
+  "fonte": "anp",
+  "dataset": "fiscalizacao",
+  "gerado_em": "2026-11-16T01:38:23+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Município",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bairro",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ENDEREÇO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ/CPF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Agente Econômico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Segmento Fiscalizado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA DO DF",
+      "tipos": [
+        "date32[day]"
+      ]
+    },
+    {
+      "nome": "Número do Documento",
+      "tipos": [
+        "int64"
+      ]
+    },
+    {
+      "nome": "Procedimento de Fiscalização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Resultado",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 2
+}

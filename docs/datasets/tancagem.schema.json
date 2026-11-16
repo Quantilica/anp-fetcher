@@ -1,0 +1,108 @@
+{
+  "fonte": "anp",
+  "dataset": "tancagem",
+  "gerado_em": "2026-11-16T01:35:58+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "Data",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "NomeEmpresarial",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "Uf",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "Municipio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "Cnpj",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "CodInstalacao",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "Segmento",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "DetalheInstalacao",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "Tag",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "TipoDaUnidade",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "GrupoDeProdutos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    },
+    {
+      "nome": "TancagemM3",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2022-12",
+      "periodo_fim": "2026-02"
+    }
+  ],
+  "arquivos": 6
+}

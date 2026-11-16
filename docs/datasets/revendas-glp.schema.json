@@ -1,0 +1,93 @@
+{
+  "fonte": "anp",
+  "dataset": "revendas-glp",
+  "gerado_em": "2026-11-16T01:34:50+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "CODIGOISIMP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "AUTORIZACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATAPUBLICACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RAZAOSOCIAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ENDERECO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "COMPLEMENTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "BAIRRO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CEP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MUNICIPIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DISTRIBUIDORA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATAVINCULACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CLASSE",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

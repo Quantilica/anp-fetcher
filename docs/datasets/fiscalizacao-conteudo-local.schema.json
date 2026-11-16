@@ -1,0 +1,1041 @@
+{
+  "fonte": "anp",
+  "dataset": "fiscalizacao-conteudo-local",
+  "gerado_em": "2026-11-16T01:39:38+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Rodada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Contrato de Concessão",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data da Declaração de Comercialidade:",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Término da Etapa de Desenvolvimento:",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operador",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número do Processo de Análise",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data Abertura do Processo de Fiscalização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data de Emissão do Relatório Fiscalização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Situação Atual do Processo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Multa Aplicada Auto de Infração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número do Processo de Auto de Infração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número do Auto de Infração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data de Emissão do Auto de Infração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Multa Aplicada após Decisão de Julgamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Multa Recolhida (R$)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data de Recolhimento  da Multa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Situação da Multa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Construção de Poços",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Sistema de Coleta e Escoamento da Produção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - UEP Construção, Integração e Montagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - UEP Engenharia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - UEP Máquinas e Equipamentos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Construção de Poços",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Sistema de Coleta e Escoamento da Produção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - UEP Construção, Integração e Montagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - UEP Engenharia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - UEP Máquinas e Equipamentos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data de Declaração de Comercialidade:",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Total na Etapa de Desenvolvimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado CL -  Total na Etapa de Desenvolvimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data da Declaração de Comercialidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Área 1",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Área 2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Área 1",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Área 2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Total na Etapa de Desenvolvimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.1 Afretamento de Sonda",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.2.1 Cabeça de Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.2.2 Revestimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.2.3 Coluna de Produção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.2.4 Equipamentos de Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.2.5 Brocas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.3.1 Sistema Elétrico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.3.2 Sistema de Automação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.3.3 Sistema de Telecomunicações",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.3.4 Sistema de Medição Fiscal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.3.5 Instrumentação de Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.4 Apoio Logístico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - I.5 Árvore de Natal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - II.10 Gerenciamento, Construção e Montagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - II.2 Manifolds",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - II.5 Dutos de Escoamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - II.6 Sistema de Bombeio",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - II.8 Engenharia Básica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - II.9 Engenharia de Detalhamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.1 Engenharia Básica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.2 Engenharia de Detalhamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.3 Gerenciamento de Serviço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.1 Vasos de Pressão",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.10 Compressores Alternativos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.11 Motores a Diesel (até 600 HP)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.12 Válvulas até 24''",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.13 Filtros",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.14 Queimadores",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.15 Proteção Catódica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - IIL.11.4.16 Sistema Elétrico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - IIL.11.4.17 Sistema de Automação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.18 Sistema de Telecomunicação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL -III.11.4.19 Sistema de Medição Fiscal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.2 Fornos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.20 Instrumentação de Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.3 Tanques",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.4 Torres de Processo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.5 Torres de Resfriamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.6 Trocadores de Calor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.7 Bombas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.8 Turbinas a vapor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.4.9 Compressores Parafusos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - III.11.5 Construção e Montagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado CL - I.1 Afretamento de Sonda",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado CL - I.2.1 Cabeça de Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado CL - I.2.2 Revestimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado CL - I.2.3 Coluna de Produção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.2.4 Equipamentos de Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.2.5 Brocas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.3.1 Sistema Elétrico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.3.2 Sistema de Automação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.3.3 Sistema de Telecomunicações",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.3.4 Sistema de Medição Fiscal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.3.5 Instrumentação de Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.4 Apoio Logístico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - I.5 Árvore de Natal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - II.10 Gerenciamento, Construção e Montagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - II.2 Manifolds",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - II.5 Dutos de Escoamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - II.6 Sistema de Bombeio",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - II.8 Engenharia Básica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - II.9 Engenharia de Detalhamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.1 Engenharia Básica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.2 Engenharia de Detalhamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.3 Gerenciamento de Serviço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.1 Vasos de Pressão",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.10 Compressores Alternativos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado CL - III.11.4.11 Motores a Diesel (até 600 HP)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.12 Válvulas até 24''",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.13 Filtros",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.14 Queimadores",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.15 Proteção Catódica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - IIL.11.4.16 Sistema Elétrico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - IIL.11.4.17 Sistema de Automação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.18 Sistema de Telecomunicação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL -III.11.4.19 Sistema de Medição Fiscal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.2 Fornos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.20 Instrumentação de Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.3 Tanques",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.4 Torres de Processo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.5 Torres de Resfriamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.6 Trocadores de Calor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.7 Bombas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.8 Turbinas a vapor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.4.9 Compressores Parafusos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - III.11.5 Construção e Montagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Realizado  CL - Total na Etapa de Desenvolvimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data da Declarção de Comercialidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Término da Etapa de Desenvolvimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bloco",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data de Assinatura do Contrato:",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Término da Fase de Exploração:",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL -  Aquisição de Dados de Geologia e Geofísica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL -  Interpretação e Processamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Perfuração + Completação + Avaliação de Poços",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Total na Fase de Exploração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado -  Aquisição de Dados de Geologia e Geofísica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado -  Interpretação e Processamento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Perfuração + Completação + Avaliação de Poços",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Total na Fase de Exploração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Contrato de Concessão:",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Aquisição",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Processamento e Interpretação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Afretamento Sonda/Sonda Perfuração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Perfuração + Completação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Cabeça de Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Revestimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Coluna de Produção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Equipamentos do Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Brocas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Sistemas Auxiliares",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Sistema Elétrico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Sistema de Automação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Sistema de Telecomunicações",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Sistema de Medição Fiscal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Instrumentação de Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Compromisso CL - Apoio Logístico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Aquisição",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Processamento e Interpretação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Afretamento Sonda/Sonda Perfuração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Perfuração + Completação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Cabeça de Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Revestimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Coluna de Produção",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Equipamentos do Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Brocas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Sistemas Auxiliares",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Sistema Elétrico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Sistema de Automação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Sistema de Telecomunicações",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Sistema de Medição Fiscal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Instrumentação de Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CL Realizado - Apoio Logístico",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 7
+}

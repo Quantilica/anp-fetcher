@@ -1,0 +1,93 @@
+{
+  "fonte": "anp",
+  "dataset": "autorizacoes-gn",
+  "gerado_em": "2026-11-16T01:44:42+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Empresa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TipoDaAutorizacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TipoDeInstalacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NomeDaInstalacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Gasoduto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Trecho",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Extensao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Diametro",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Capacidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TipoDoAto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NumeroDoAto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DataDaOutorga",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DataDePublicacaoDOU",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Observacao",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

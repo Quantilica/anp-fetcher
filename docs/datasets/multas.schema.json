@@ -1,0 +1,111 @@
+{
+  "fonte": "anp",
+  "dataset": "multas",
+  "gerado_em": "2026-11-16T01:36:38+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Status Processo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Superintendência",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número do Processo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Auto de Infração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ/CPF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Razão Social",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data Transito Julgado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Vencimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Valor da Multa Aplicada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Valor Total Pago (*) (**)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Valor  da Multa Aplicada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número do DUF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Valor da Multa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Valor Total Pago",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Vencimento da Multa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_10",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Vencimento GRM",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 7
+}

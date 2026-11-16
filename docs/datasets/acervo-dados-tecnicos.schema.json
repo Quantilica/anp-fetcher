@@ -1,0 +1,783 @@
+{
+  "fonte": "anp",
+  "dataset": "acervo-dados-tecnicos",
+  "gerado_em": "2026-11-16T01:41:26+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Poço",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Extensão do Arquivo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Fonte dos Dados",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo de Geoquímica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Topo (m)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Base (m)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Cromatografia Gasosa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Cromatografia Líquida",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Relatório",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Análise de Óleo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Análise de Gás",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Análise de Fluidos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Análise de Água",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Biomarcadores",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Aromáticos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Saturados",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Isótopos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Espectrometria de Massas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Diamantoides",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Carbono Orgânico Total",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Pirólise",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Inclusões Fluidas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Sumário de Óleo Cru",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PVT",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Re/Os de Asfaltenos",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Litogeoquímica",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Reflectância de Vitrinita",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Viscosidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CADASTRO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OPERADOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ESTADO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "BACIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CAMPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TITULARIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LATITUDE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LONGITUDE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATUM",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DIRECAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NOME DO ESTUDO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ESTUDO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EMPRESA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NATUREZA DA AQUISIÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA CONCLUSÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Natureza da atividade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Início Aquisição",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Término Aquisição",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Confidencialidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Shape",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "POCO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "POCO_OPERADOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "BLOCO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SIG_CAMPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TERRA_MAR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "POCO_POS_ANP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CATEGORIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RECLASSIFICACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SITUACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "INICIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TERMINO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CONCLUSAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LATITUDE_BASE_4C",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LONGITUDE_BASE_4C",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LATITUDE_BASE_DD",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LONGITUDE_BASE_DD",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATUM_HORIZONTAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO_DE_COORDENADA_DE_BASE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROFUNDIDADE_VERTICAL_M",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROFUNDIDADE_SONDADOR_M",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROFUNDIDADE_MEDIDA_M",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "REFERENCIA_DE_PROFUNDIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MESA_ROTATIVA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "COTA_ALTIMETRICA_M",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LAMINA_D_AGUA_M",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATUM_VERTICAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UNIDADE_ESTRATIGRAFICA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "GEOLOGIA_GRUPO_FINAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "GEOLOGIA_FORMACAO_FINAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "GEOLOGIA_MEMBRO_FINAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CDPE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "AGP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PC",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PAG",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PERFIS_CONVENCIONAIS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DURANTE_PERFURACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PERFIS_DIGITAIS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PERFIS_PROCESSADOS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PERFIS_ESPECIAIS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "AMOSTRA_LATERAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SISMICA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TABELA_TEMPO_PROFUNDIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DADOS_DIRECIONAIS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TESTE_A_CABO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TESTE_DE_FORMACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CANHONEIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TESTEMUNHO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "GEOQUIMICA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SIG_SONDA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NOM_SONDA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DHA_ATUALIZACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ATINGIU_PRESAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Categoria",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Autorização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Inicio",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Término Real",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Público em",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ato Normativo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tecnologia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bloco",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "E.A.D",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operadora",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NOME",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TAMANHO (GB)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DT_GERACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROJETO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO_PROCESSAMENTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CONFIDENCIALIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LEVANTAMENTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO_PROC",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROGRAMA SÍSMICO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PÚBLICO EM",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CONF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "LEVANT",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 15
+}

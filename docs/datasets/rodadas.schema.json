@@ -1,0 +1,189 @@
+{
+  "fonte": "anp",
+  "dataset": "rodadas",
+  "gerado_em": "2026-11-16T01:34:34+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Rodada de Licitações",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Setor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bloco",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Habilitação Mínima",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bonus Mínimo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Localização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bloco arrematado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo de solicitação ¹",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data do requerimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Entrega da documentação completa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Processo de cessão",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Rodada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Contrato",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente operacional",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Antes da cessão",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Cedente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Cessionária",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Após efetivação da cessão",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Decisão de Diretoria nº",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data da aprovação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Assinatura do Termo Aditivo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Prazo (dias) ²",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Empresa/Consórcio(*operador)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bônus",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Conteúlo Local  - Exploração",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Conteúdo Local Médio -  Desenvolvimento",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PEM (UT)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PEM (R$)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Pontos",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 3
+}

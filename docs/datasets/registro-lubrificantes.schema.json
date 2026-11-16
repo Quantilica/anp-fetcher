@@ -1,0 +1,129 @@
+{
+  "fonte": "anp",
+  "dataset": "registro-lubrificantes",
+  "gerado_em": "2026-11-16T01:34:50+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "REG",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SITUACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROCESSO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ANO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MARCA_COMERCIAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DETENTOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ_DETENTOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO_EMPRESA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO_PRODUTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "FINALIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "APLICACAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PRODUTOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ORIGEM",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SAE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ISO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "NLGI",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ND",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "COMPOSICAO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ACONDICIONAMENTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OBS.",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

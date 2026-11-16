@@ -1,0 +1,57 @@
+{
+  "fonte": "anp",
+  "dataset": "armazenagem-terminais",
+  "gerado_em": "2026-11-16T01:35:58+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Tipo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Municipio",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operador",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Numero_de_tanques",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Capacidade_nominal_petroleo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Capacidade_nominal_derivados_biocombustiveis",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Capacidade_nominal_GLP",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

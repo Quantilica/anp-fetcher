@@ -1,0 +1,81 @@
+{
+  "fonte": "anp",
+  "dataset": "concessionarios",
+  "gerado_em": "2026-11-16T01:35:33+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Nome Fantasia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Razão Social",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Grupo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "País",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "BID",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número Contrato",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Fase",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "% Participação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 2
+}

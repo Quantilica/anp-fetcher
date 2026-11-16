@@ -1,0 +1,116 @@
+{
+  "fonte": "anp",
+  "dataset": "pads-concluidos",
+  "gerado_em": "2026-11-16T01:31:41+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "CÓDIGO DO PAD",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "BLOCO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "BACIA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "OPERADOR",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "RODADA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "INÍCIO EFETIVO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "TÉRMINO EFETIVO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DECLAROU COMERCIALIDADE",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "CAMPO/ÁREA DE DESENVOLVIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2023-03"
+    },
+    {
+      "nome": "BACIAS AGRUPADAS",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-12",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "AMBIENTE",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-12",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "ÁREA DE DESENVOLVIMENTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-12",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "REGIME CONTRATUAL",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024-10",
+      "periodo_fim": "2026-07"
+    }
+  ],
+  "arquivos": 6
+}

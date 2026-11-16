@@ -1,0 +1,84 @@
+{
+  "fonte": "anp",
+  "dataset": "processos-sancionadores",
+  "gerado_em": "2026-11-16T01:33:36+00:00",
+  "particoes": [
+    "ano",
+    "mes"
+  ],
+  "colunas": [
+    {
+      "nome": "EMPRESA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "CNPJ/CPF",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "Nº PROCESSO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "Nº DF",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "DATA DO AUTO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "MOTIVO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "SITUAÇÃO PROCESSUAL",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "MULTA APLICADA",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    },
+    {
+      "nome": "RECURSO",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2023-02",
+      "periodo_fim": "2026-07"
+    }
+  ],
+  "arquivos": 6
+}

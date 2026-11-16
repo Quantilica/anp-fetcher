@@ -1,0 +1,87 @@
+{
+  "fonte": "anp",
+  "dataset": "plataformas-operacao",
+  "gerado_em": "2026-11-16T01:43:19+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "[SIGLA DA INSTALAÇÃO]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[NOME DA INSTALAÇÃO]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[CAMPOS]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[BACIA]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[OPERADOR]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[CLASSIFICAÇÃO]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[LÂMINA D'ÁGUA (m)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[SISTEMA DE ESCOAMENTO]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[ANO DE INÍCIO DE OPERAÇÃO]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[LATITUDE]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[LONGITUDE]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[CAPACIDADE DE PRODUÇÃO DE PETRÓLEO (bbl/d)]",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "[CAPACIDADE DE PRODUÇÃO DE GÁS NATURAL (Mil m³/d)]",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

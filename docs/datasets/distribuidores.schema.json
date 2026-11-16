@@ -1,0 +1,291 @@
+{
+  "fonte": "anp",
+  "dataset": "distribuidores",
+  "gerado_em": "2026-11-16T01:37:32+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "TIPO DE CONTRATO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RAZÃO SOCIAL DA CEDENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ DA CEDENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "N° AO DA CEDENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MUNICÍPIO DA CEDENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF DA CEDENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "RAZÃO SOCIAL DA CESSIONÁRIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ DA CESSIONÁRIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "N° DA AEA CESSIONÁRIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "INÍCIO CONTRATO (ATO DE HOMOLOGAÇÃO)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROCESSO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TÉRMINO CONTRATO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME (m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Gasolina A",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Gasolina A - Premium",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Gasolina C",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "B100",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EAC",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EHC",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Óleo Diesel A S500",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Óleo Diesel A S10",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Óleo Diesel B S500",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Óleo Diesel B S10",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Diesel C S10",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Óleo Diesel Mar",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OC - 1A",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OC - 1B",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "GAV",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "QAV",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Querosene Iluminante",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código Agente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código Agente i-SIMP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome Reduzido",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Razão Social",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Endereço da Matriz",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bairro",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Municipio",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CEP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Situação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Início da Situação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data Publicação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo de Ato",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo de Autorização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Número da Autorização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data Fim",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 3
+}
