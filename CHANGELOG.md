@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+
+## [2.11.1] - 2026-11-16
 ### Corrigido
 - `multas-2021`: o servidor entrega `multas-2021-junho22.xlsx` como CSV em texto (BOM e título "ANP - Agência..."), e a validação do download, que segue a extensão do nome salvo, o recusava como ZIP inválido; a coleta diária saía parcial (exit 3). A entrada agora salva o arquivo como `multas-2021@AAAAMMDD.csv` (a URL de origem não muda); o leitor e o conversor do lake já liam o conteúdo como CSV. Declarar só o formato esperado não bastava: a checagem por extensão roda antes dele.
 
