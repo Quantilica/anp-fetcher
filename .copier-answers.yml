@@ -1,0 +1,19 @@
+_commit: v0.2.1
+_src_path: /home/dk/code/Quantilica/fetcher-template
+author_email: daniel@dkko.me
+author_name: Komesu, D.K.
+cadencia: monthly
+description: A commandline utility to download ANP (Agência Nacional do Petróleo)
+    statistical data
+domain: petroleo
+dominio: energia
+has_lake: true
+homepage: https://www.gov.br/anp/
+licenca: Sem licença declarada; dados públicos pela Lei 12.527/2011 (LAI) e Decreto
+    8.777/2016
+orgao: Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP)
+package_name: anp-fetcher
+package_slug: anp_fetcher
+protocol: http
+source_id: anp
+source_name: ANP - Dados Estatísticos e Dados Abertos
