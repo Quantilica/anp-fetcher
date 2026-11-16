@@ -1,0 +1,103 @@
+{
+  "fonte": "anp",
+  "dataset": "reservas-nacionais",
+  "gerado_em": "2026-11-16T03:13:38+00:00",
+  "particoes": [
+    "ano"
+  ],
+  "colunas": [
+    {
+      "nome": "Campo/Área de desenvolvimento",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Estado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "VOIP (bbl)",
+      "tipos": [
+        "double",
+        "int64"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "VGIP (m³)",
+      "tipos": [
+        "double",
+        "int64"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Petróleo Acumulado (bbl)",
+      "tipos": [
+        "double",
+        "int64"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Gás Natural Acumulado (m³)",
+      "tipos": [
+        "double",
+        "int64"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Fração Recuperada de Petróleo",
+      "tipos": [
+        "double"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Situação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "Classificação",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2020",
+      "periodo_fim": "2020"
+    },
+    {
+      "nome": "ANO_REFERENCIA_BAR - Ano",
+      "tipos": [
+        "int64"
+      ],
+      "periodo_inicio": "2021",
+      "periodo_fim": "2021"
+    }
+  ],
+  "arquivos": 6
+}

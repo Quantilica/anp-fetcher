@@ -1,0 +1,369 @@
+{
+  "fonte": "anp",
+  "dataset": "movimentacao-derivados",
+  "gerado_em": "2026-11-16T03:23:24+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Mês",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código Operação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome Operação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código do Produto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome do Produto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código Agente Regulado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Agente Regulado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região Origem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região Destinatário",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Mercado Destinatário",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Quantidade de Produto (mil m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Quantidade de Produto(mil ton)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF Origem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF Destino",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF de Origem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF de Destino",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Distribuidor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Fornecedor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Fornecedor Destino",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Distribuidor Origem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Localidade Destino",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código de Embalagem GLP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Quantidade de Produto (mil ton)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código da Embalagem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Descrição do Produto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Quantidade de produto (mil m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Período",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Produto",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Classificação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Sub Classificação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Modal",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Qtd  Produto Líquido",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Vendedor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Comprador",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região de Origem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região do Destinatário",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF do Destinatário",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Volume(L)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código do Regulado - ANP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região do Produtor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF do Produtor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código da Operação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Descrição da Operação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região da coleta",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF da coleta",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código do Município - ANP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Código do Município - IBGE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Município da coleta",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Volume coletado(L)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região da Coleta",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF da Coleta",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Volume Coletado(L)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Coletor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF do certificado",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Volume(mil m³)",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região de Destino",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 48
+}

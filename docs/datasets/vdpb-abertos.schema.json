@@ -1,0 +1,129 @@
+{
+  "fonte": "anp",
+  "dataset": "vdpb-abertos",
+  "gerado_em": "2026-11-16T03:16:10+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Mês/Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região Origem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Região Destino",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Vendas de Biodiesel",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MÊS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "GRANDE REGIÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UNIDADE DA FEDERAÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PRODUTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VENDAS",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "COMBUSTÍVEL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "REGIÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ESTADO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VASILHAME",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CÓDIGO IBGE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MUNICÍPIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "P13",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "OUTROS",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "SEGMENTO",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 23
+}

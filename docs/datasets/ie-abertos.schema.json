@@ -1,0 +1,57 @@
+{
+  "fonte": "anp",
+  "dataset": "ie-abertos",
+  "gerado_em": "2026-11-16T03:13:32+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "ANO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MÊS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PRODUTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OPERAÇÃO COMERCIAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "IMPORTADO / EXPORTADO",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "DISPÊNDIO / RECEITA",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "IMPORTADO",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "DISPÊNDIO",
+      "tipos": [
+        "double"
+      ]
+    }
+  ],
+  "arquivos": 4
+}

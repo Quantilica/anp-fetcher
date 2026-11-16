@@ -1,0 +1,429 @@
+{
+  "fonte": "anp",
+  "dataset": "royalties",
+  "gerado_em": "2026-11-16T03:21:50+00:00",
+  "particoes": [
+    "ano"
+  ],
+  "colunas": [
+    {
+      "nome": "competencia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "caixa",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "estados",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "municipios",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "fundo especial",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "comando da marinha",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "mct",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "fundo social",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "educacao e saude",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "acre",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "alagoas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "amazonas",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "amapa",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "bahia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "ceara",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "espirito santo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "goias",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "maranhao",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "minas gerais",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "mato grosso do sul",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "mato grosso",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "para",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "paraiba",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "pernambuco",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "piaui",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "parana",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "rio de janeiro",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "rio grande do norte",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "rondonia",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "roraima",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "rio grande do sul",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "santa catarina",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "sergipe",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "sao paulo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "tocantins",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "distrito federal",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2016",
+      "periodo_fim": "2016"
+    },
+    {
+      "nome": "municipio",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "estado",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "royalties minimos",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "royalties excedentes",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2009",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "coluna_8",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2019",
+      "periodo_fim": "2019"
+    },
+    {
+      "nome": "coluna_9",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2019",
+      "periodo_fim": "2019"
+    },
+    {
+      "nome": "campo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2010",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "valor",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "recorte",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "conta",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "data",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2010",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "contrato",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2010",
+      "periodo_fim": "2023"
+    },
+    {
+      "nome": "preco",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2010",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "código do campo",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "corrente",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2018",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "preço",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2021",
+      "periodo_fim": "2025"
+    },
+    {
+      "nome": "coluna_7",
+      "tipos": [
+        "large_string"
+      ],
+      "periodo_inicio": "2024",
+      "periodo_fim": "2025"
+    }
+  ],
+  "arquivos": 79
+}

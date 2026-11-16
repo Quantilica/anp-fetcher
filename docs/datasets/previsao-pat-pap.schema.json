@@ -1,0 +1,171 @@
+{
+  "fonte": "anp",
+  "dataset": "previsao-pat-pap",
+  "gerado_em": "2026-11-16T03:12:28+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "BACIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "AMBIENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ANO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TIPO ATIVIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "QUANTIDADE ATIVIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UNIDADE DA ATIVIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ATIVIDADE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "INVESTIMENTO R$",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "INVESTIMENTO US$",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME PETRÓLEO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO PETRÓLEO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME GÁS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO GÁS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME GÁS SEM CO2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO GÁS SEM CO2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME PETRÓLEO EQUIVALENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO PETRÓLEO EQUIVALENTE",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME INJEÇÃO ÁGUA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO INJEÇÃO ÁGUA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME INJEÇÃO GÁS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO INJEÇÃO GÁS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PERCENTUAL INJEÇÃO TOTAL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME INJEÇÃO GÁS SEM CO2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO INJEÇAÕ GÁS SEM CO2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PERCENTUAL INJEÇÃO SEM CO2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VOLUME QUEIMA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VAZÃO QUEIMA",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 4
+}

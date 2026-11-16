@@ -1,0 +1,165 @@
+{
+  "fonte": "anp",
+  "dataset": "incidentes",
+  "gerado_em": "2026-11-16T03:15:22+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Numero",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Classificacao_do_incidente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo_de_Ferimento_barra_Fatalidade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Empresa",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CNPJ",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_de_criacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Autoridades_comunicadas",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Instalacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_da_primeira_observacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Hora_da_primeira_observacao",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Latitude",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Longitude",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Endereco",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Situacao_atual_descarga",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data_estimada_do_incidente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Hora_do_incidente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Numero_de_feridos_graves",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Numero_Fatalidades",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Breve_Descricao_Incidente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Codigo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Numero_IMO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Substancias",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Volume",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Tipo_de_incidente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DSC_GRAVIDADE_TIPO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DSC_QUASE_ACIDENTE_ACIDENTE",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 5
+}

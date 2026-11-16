@@ -1,0 +1,69 @@
+{
+  "fonte": "anp",
+  "dataset": "pp-abertos",
+  "gerado_em": "2026-11-16T03:20:38+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "ANO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MÊS",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UNIDADE DA FEDERAÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "REFINARIA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PRODUTO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PRODUÇÃO",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "PRODUTOR",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "CENTRAL PETROQUÍMICA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "MATÉRIA PRIMA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PROCESSADO",
+      "tipos": [
+        "double"
+      ]
+    }
+  ],
+  "arquivos": 6
+}

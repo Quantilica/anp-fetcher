@@ -1,0 +1,75 @@
+{
+  "fonte": "anp",
+  "dataset": "aditamento-conteudo-local",
+  "gerado_em": "2026-11-16T03:10:28+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Ordem",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Solicitação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Data do Protocolo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Contrato",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Operador do Contrato",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nome do Bloco / Campo",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Localização",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Rodada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Status",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Link Extrato DOU",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 1
+}

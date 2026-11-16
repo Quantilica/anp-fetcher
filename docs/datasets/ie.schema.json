@@ -1,0 +1,201 @@
+{
+  "fonte": "anp",
+  "dataset": "ie",
+  "gerado_em": "2026-11-16T03:14:44+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "planilha",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "tabela",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "tabela_fonte",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Mês",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ANO 2000",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2001",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2002",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2003",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2004",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2005",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2006",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2007",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2008",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2009",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2010",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2011",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2012",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2013",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2014",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2015",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2016",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2017",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2018",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2019",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2020",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2021",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2022",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2023",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2024",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2025",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "ANO 2026",
+      "tipos": [
+        "double"
+      ]
+    },
+    {
+      "nome": "VARIAÇÃO DO ACUMULADO NO ANO (%)",
+      "tipos": [
+        "double"
+      ]
+    }
+  ],
+  "arquivos": 2
+}

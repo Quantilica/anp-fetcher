@@ -1,0 +1,255 @@
+{
+  "fonte": "anp",
+  "dataset": "pdi",
+  "gerado_em": "2026-11-16T03:19:02+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Área",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Grupo Econômico",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Valor da Obrigação",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Aportes realizados pelas Petrolíferas no PRH-ANP - Cláusula PD&I",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_2",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_3",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_4",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_5",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_6",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_7",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_8",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_9",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "coluna_10",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº ANP",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TITULO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EMPRESA RESPONSÁVEL",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DEMAIS PROPONENTES",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "QUALIFICAÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "OBJETIVO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "ÁREA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TEMA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "SUBTEMA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EMPRESA PETROLÍFERA EXECUTORA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EMPRESA BRASILEIRA EXECUTORA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "INSTITUIÇÃO EXECUTORA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UNIDADE DE PESQUISA EXECUTORA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº AUTORIZAÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA INÍCIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "PRAZO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "VALOR CLAUSULA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº PROJETO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "TÍTULO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "EMPRESA PETROLÍFERA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA DE INÍCIO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA DE TÉRMINO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "INSTITUIÇÃO CREDENCIADA EXECUTORA",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "AUTORIZAÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "DATA DE PUBLICAÇÃO",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Nº CRED.",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "UF",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 5
+}

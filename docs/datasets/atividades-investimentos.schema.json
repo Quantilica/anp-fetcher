@@ -1,0 +1,57 @@
+{
+  "fonte": "anp",
+  "dataset": "atividades-investimentos",
+  "gerado_em": "2026-11-16T03:11:39+00:00",
+  "particoes": [],
+  "colunas": [
+    {
+      "nome": "Bacia",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ambiente",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Ano",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Atividade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Quantidade realizada",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Unidade da Atividade",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Investimento R$",
+      "tipos": [
+        "large_string"
+      ]
+    },
+    {
+      "nome": "Investimento US$",
+      "tipos": [
+        "large_string"
+      ]
+    }
+  ],
+  "arquivos": 2
+}
