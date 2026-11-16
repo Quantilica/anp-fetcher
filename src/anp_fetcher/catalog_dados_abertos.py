@@ -2036,8 +2036,11 @@ _multas_entries: list[DatasetEntry] = [
         _SOURCE,
         "multas-2021",
         "Multas aplicadas pela ANP — 2021",
+        # O servidor entrega este ".xlsx" como CSV em texto (BOM + título). A
+        # validação do download segue a extensão do nome salvo, então a entrada
+        # grava como ".csv" (ZIP inválido, todo dia, enquanto o nome era ".xlsx").
         f"{_MAV}/multas-2021-junho22.xlsx",
-        "xlsx",
+        "csv",
     ),
     _static(
         "multas",

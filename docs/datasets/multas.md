@@ -88,7 +88,7 @@ Relação das multas aplicadas administrativamente pela ANP, decorrentes de autu
 ## Origem e coleta
 
 - **Fonte:** ANP, Centro de Gestão de Créditos (CGC); contato cobranca@anp.gov.br (metadados da ANP); os arquivos citam o Sistema de Controle de Multas (SICOM) como fonte. A extração é anual, e o status do processo representa a situação no momento dela.
-- **Catálogo do fetcher:** 7 arquivos: `multas-2016-2019`, `multas-2020`, `multas-2021`, `multas-2022`, `multas-2023`, `multas-2024` e `multas-2025` (conferido em 2026-11-15). O arquivo de 2021 é publicado como `multas-2021-junho22.xlsx` mas é um CSV em texto; a página oficial também publica as versões em Excel de 2024 e 2025.
+- **Catálogo do fetcher:** 7 arquivos: `multas-2016-2019`, `multas-2020`, `multas-2021`, `multas-2022`, `multas-2023`, `multas-2024` e `multas-2025` (conferido em 2026-11-15). O arquivo de 2021 é publicado como `multas-2021-junho22.xlsx` mas é um CSV em texto, e o fetcher o grava como `.csv`; a página oficial também publica as versões em Excel de 2024 e 2025.
 - **Cobertura:** os metadados dão início em 01/01/2016 e cobertura federal; o arquivo de 2025 é o último da página (conferido em 2026-11-15).
 - **Preâmbulo e codificação:** cada arquivo começa com linhas de título (órgão, «RELAÇÃO DE MULTAS APLICADAS EM AAAA», data de extração e a fonte, «Sistema de Controle de Multas - SICOM») antes do cabeçalho. Os arquivos de 2016-2019 a 2022 e 2024 são UTF-8 com BOM; os de 2023 e 2025 estão em CP850 (DOS), e o conversor acha o cabeçalho e lê o texto sem corrupção (conferido na amostra: `PETRÓLEO` e demais acentos corretos).
 - **Datas de extração do relatório** (do preâmbulo): 2016-2019, 06/02/2020; 2020, fevereiro/2021; 2021, junho/2022; 2022, abril/2022; 2023, junho/2024; 2024, março/2025; 2025, janeiro/2026. O arquivo de 2022 foi extraído em abril de 2022, antes do fim do ano de vencimento, e portanto não reflete a situação do exercício completo.
@@ -101,7 +101,7 @@ Os sete arquivos do catálogo, todos no lake:
 |---|---|---|---|---|
 | `multas-2016-2019` | 16.440 | 10 | 2016 a 2019 | formato de valor `33000,00`; a coluna de vencimento tem espaço no fim do nome |
 | `multas-2020` | 2.026 | 10 | 2020 | valores como `R$ 5.000,00`; nomes de coluna de valor com espaços no início e no fim |
-| `multas-2021` | 4.976 | 10 | 2021 | o arquivo se chama `.xlsx` no catálogo, mas é um CSV em texto |
+| `multas-2021` | 4.976 | 10 | 2021 | a URL termina em `.xlsx`, mas o arquivo é um CSV em texto (gravado como `.csv`) |
 | `multas-2022` | 2.996 | 10 | 2022 | `Número do DUF` no lugar de `Auto de Infração`; `Valor da Multa` e `Valor Total Pago` |
 | `multas-2023` | 3.074 | 9 | 2023 | sem `Data Transito Julgado`; `Vencimento da Multa`; valores `R$ -` quando nada foi pago |
 | `multas-2024` | 3.004 | 10 | 2024 | sem `Data Transito Julgado`; coluna sem nome (`coluna_10`); valores sem `R$` |
