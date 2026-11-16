@@ -354,7 +354,10 @@ def test_conversao_nao_deixa_temporarios(
     res = converter.convert(tmp_path / "raw", tmp_path / "lake")
     assert not res.errors, res.errors
     assert res.converted == 3
-    assert list(scratch.iterdir()) == []
+    # A pasta de spill do Polars (`polars-<pid>`) é do processo: o analytics a cria
+    # uma vez e só a remove na saída do processo.
+    sobras = [p for p in scratch.iterdir() if not p.name.startswith("polars-")]
+    assert sobras == []
 
 
 def test_zip_data_members_ignora_ruido_pdf_e_json(tmp_path: Path) -> None:
