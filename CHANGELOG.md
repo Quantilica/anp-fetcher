@@ -8,6 +8,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Não lançado]
 
 ### Alterado
+- **Build do lake sem mudança não lê o bruto.** O sha256 do bruto vem do sidecar `.manifest.json` (`quantilica.analytics.lake.sha256_file`) em vez de uma leitura completa do arquivo, e o roteamento não abre mais um ZIP que o lake já tem inteiro e em dia (nem `is_zipfile`, nem o índice de membros, nem os 64 bytes de checagem de JSON): o rodapé do Parquet prova que ele é um ZIP de membro único. ZIP com vários membros (e o ZIP anual do PMQC) ainda tem o índice aberto para rotear, mas nenhum membro é extraído nem lido quando está em dia.
 - CI e infraestrutura alinhados ao template (fetcher-template v0.2.1).
 
 ## [2.11.1] - 2026-11-16

@@ -29,12 +29,12 @@ try:
     import polars as pl
     import pyarrow.parquet as pq
     from quantilica.analytics import lake as analytics_lake
-    from quantilica.analytics.lake import META_FILE_KEY, LakeWriter
-    from quantilica.core.files import sha256_file
+    from quantilica.analytics.lake import META_FILE_KEY, LakeWriter, origin_matches
     from quantilica.core.lake import (
         DatasetDescriptor,
         composite_file_key,
         file_key,
+        partition_dir,
         partition_types_for,
     )
 except ImportError as exc:
@@ -608,8 +608,73 @@ def _is_json_in_zip_clothing(path: Path) -> bool:
     return head[:1] in (b"{", b"[")
 
 
+#: Primeira versão que grava um Parquet por membro de ZIP de vários membros. Um ZIP
+#: gravado inteiro por versão anterior pode ter vários membros e tem de ser
+#: reaberto para migrar (``_prune_zip_parts``).
+_ZIP_MEMBERS_SINCE = (2, 10, 0)
+_CONVERTER_VERSION = re.compile(r"^anp-fetcher (\d+)\.(\d+)\.(\d+)")
+
+
+def _written_with_zip_members(part: Path) -> bool:
+    """Se o Parquet foi gravado por um conversor que já abria ZIP por membro."""
+    try:
+        meta = pq.ParquetFile(part).metadata.metadata or {}
+    except Exception:
+        return False
+    found = _CONVERTER_VERSION.match(meta.get(b"quantilica.converter", b"").decode())
+    return bool(found) and tuple(map(int, found.groups())) >= _ZIP_MEMBERS_SINCE
+
+
+def _recorded_whole_zips(
+    group: str, chosen: list[Path], lake_dir: Path | None
+) -> set[Path]:
+    """ZIPs que o lake já tem inteiros (um só membro), com o sha256 de agora.
+
+    O rodapé de um ZIP convertido por inteiro guarda o ``file_key`` do arquivo e o
+    sha256 dele: é a prova de que ele é um ZIP de verdade, de membro único, sem
+    abri-lo (nem o ``is_zipfile`` nem o índice de membros), desde que gravado por um
+    conversor que já separava os membros (``_ZIP_MEMBERS_SINCE``). Só stat, sidecar
+    e rodapés. Os ZIPs anuais do PMQC ficam de fora: viram um item por mês e nunca
+    são gravados inteiros.
+    """
+    if lake_dir is None:
+        return set()
+    root = lake_dir / SOURCE_ID
+    if not root.is_dir():
+        return set()
+    routed = set(DATASET_ROUTES.get(group, {}).values())
+    candidates = sorted(
+        d.name
+        for d in root.iterdir()
+        if d.is_dir()
+        and (d.name == group or d.name.startswith(f"{group}-") or d.name in routed)
+    )
+    found: set[Path] = set()
+    for path in chosen:
+        if path.suffix.lower() != ".zip":
+            continue
+        keys, vals = resolve_partitions(parse_filename(path))
+        if group == "pmqc" and keys == ["ano"]:
+            continue
+        key = file_key(path)
+        # Só calcula o sha256 de quem já tem Parquet no lake (de um ZIP fora do
+        # alvo ou novo nem se fala).
+        pastas = []
+        for name in candidates:
+            d = partition_dir(root / name, {k: vals[k] for k in keys})
+            if d.is_dir():
+                partes = sorted(d.glob(f"{glob.escape(key)}*.parquet"))
+                if partes and all(_written_with_zip_members(p) for p in partes):
+                    pastas.append(d)
+        if pastas:
+            digest = _digest(path)
+            if any(origin_matches(d, key, digest) for d in pastas):
+                found.add(path)
+    return found
+
+
 def route_group(
-    group: str, src_group_dir: Path
+    group: str, src_group_dir: Path, lake_dir: Path | None = None
 ) -> tuple[list[Routed], list[tuple[Path, str]]]:
     """Roteia os arquivos de um grupo: os convertidos e os ignorados, com motivo.
 
@@ -621,6 +686,9 @@ def route_group(
     motivo do inventário: ``"gemeo"`` (mesmo conteúdo em outro formato),
     ``"nao_tabular"`` (formato que o leitor não abre) ou ``"superado"``
     (versão anterior do mesmo formato).
+
+    Com ``lake_dir``, um ZIP que o lake já tem inteiro e em dia não é aberto para
+    rotear (ver :func:`_recorded_whole_zips`); sem ele, todo ZIP é aberto.
     """
     files = raw_files(src_group_dir)
     best = _best_by_base(files)
@@ -628,7 +696,8 @@ def route_group(
     chosen = sorted(path for _, _, path in best.values())
     # JSON com extensão .zip: o leitor não abre, e não pode tomar o lugar do mês
     # que o ZIP anual traz em CSV.
-    json_as_zip = {p for p in chosen if _is_json_in_zip_clothing(p)}
+    whole = _recorded_whole_zips(group, chosen, lake_dir)
+    json_as_zip = {p for p in chosen if p not in whole and _is_json_in_zip_clothing(p)}
     chosen = [p for p in chosen if p not in json_as_zip]
     resolved = [_Plan(f, *resolve_partitions(parse_filename(f))) for f in chosen]
     expanded_away: set[Path] = set()
@@ -669,7 +738,11 @@ def route_group(
         resolved = pmqc
     expanded: list[_Plan] = []
     for plan in resolved:
-        parts = _zip_parts(group, plan) if plan.member is None else []
+        parts = (
+            _zip_parts(group, plan)
+            if plan.member is None and plan.path not in whole
+            else []
+        )
         expanded.extend(parts or [plan])
     resolved = expanded
     finest = max((len(plan.keys) for plan in resolved if not plan.table), default=0)
@@ -825,7 +898,8 @@ def _digest(path: Path) -> str:
     signature = (stat.st_size, stat.st_mtime_ns)
     cached = _DIGESTS.get(path)
     if cached is None or cached[0] != signature:
-        _DIGESTS[path] = (signature, sha256_file(path))
+        # Com sidecar válido o arquivo não é lido (pode estar numa montagem lenta).
+        _DIGESTS[path] = (signature, analytics_lake.sha256_file(path))
     return _DIGESTS[path][1]
 
 
@@ -970,7 +1044,7 @@ class LakeConverter:
         for group in target_groups:
             src_group_dir = input_dir / _GROUP_DIRS[group]
             if src_group_dir.exists():
-                routes[group] = route_group(group, src_group_dir)[0]
+                routes[group] = route_group(group, src_group_dir, lake_dir)[0]
         if target_datasets:
             known = {item.dataset_id for items in routes.values() for item in items}
             for d in sorted(target_datasets):

@@ -671,12 +671,11 @@ def test_skip_nao_extrai_nem_hasheia_cada_membro(
     import quantilica.analytics.lake as analytics_lake
 
     real_sha = analytics_lake.sha256_file
-    for module in (analytics_lake, lake):
-        monkeypatch.setattr(
-            module,
-            "sha256_file",
-            lambda p, *a, **k: hashed.append(p) or real_sha(p, *a, **k),
-        )
+    monkeypatch.setattr(
+        analytics_lake,
+        "sha256_file",
+        lambda p, *a, **k: hashed.append(p) or real_sha(p, *a, **k),
+    )
     lake._DIGESTS.clear()
     res2 = converter.convert(tmp_path / "raw", tmp_path / "lake")
     assert res2.converted == 0 and res2.skipped == 2
