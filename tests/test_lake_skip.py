@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import builtins
 import hashlib
+import io
 import json
 import zipfile
 from pathlib import Path
@@ -200,3 +202,182 @@ def test_zip_gravado_inteiro_por_conversor_antigo_ainda_e_reaberto(
         "producao-poco-da_2005__2005_producao_mar",
         "producao-poco-da_2005__2005_producao_terra",
     ]
+
+
+ZIP_POCO = "producao-poco-da_2005@20261105.zip"
+MEMBROS = [
+    "producao-poco-da_2005__2005_producao_mar",
+    "producao-poco-da_2005__2005_producao_terra",
+]
+
+
+def _gravar_inteiro(raw: Path, lake: Path, tag: str) -> Path:
+    """O ZIP de vários membros gravado inteiro (um Parquet com a chave do ZIP)."""
+    import polars as pl
+    from quantilica.analytics.lake import LakeWriter
+    from quantilica.core.lake import DatasetDescriptor, partition_types_for
+
+    zpath = raw / _GROUP_DIRS[POCO] / ZIP_POCO
+    LakeWriter(
+        lake / "anp" / POCO,
+        DatasetDescriptor(
+            source_id="anp",
+            dataset_id=POCO,
+            alias=POCO,
+            partition_keys=["ano"],
+            partition_types=partition_types_for(["ano"]),
+        ),
+    ).write_polars(
+        pl.DataFrame({"x": [1]}), zpath, partitions={"ano": "2005"}, converter=tag
+    )
+    return zpath
+
+
+def _nomes(lake: Path) -> list[str]:
+    return sorted(p.stem for p in (lake / "anp" / POCO).rglob("*.parquet"))
+
+
+def test_force_reroteia_o_zip_que_o_lake_tem_inteiro(
+    tmp_path: Path, aberturas: list[str]
+) -> None:
+    """O registro de ZIP inteiro dispensa abrir o ZIP, mas não vale com force."""
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    _gravar_inteiro(raw, lake, lake_mod._converter_tag())
+    aberturas.clear()
+
+    sem_force = converter.convert(raw, lake, datasets=[POCO])
+    assert (sem_force.converted, sem_force.skipped, sem_force.errors) == (0, 1, [])
+    assert aberturas == []
+    assert _nomes(lake) == ["producao-poco-da_2005"]
+
+    res = converter.convert(raw, lake, datasets=[POCO], force=True)
+
+    assert not res.errors, res.errors
+    assert res.converted == 2 and res.skipped == 0
+    assert _nomes(lake) == MEMBROS  # um por membro; o inteiro saiu
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "anp-fetcher 2.12.0 roteamento=2",  # roteamento de outra revisão
+        "anp-fetcher 99.0.0",  # versão futura sem revisão: não se presume
+        "anp-fetcher 2.9.0",  # anterior aos membros
+        "quantilica-analytics",
+    ],
+)
+def test_so_a_mesma_revisao_de_roteamento_dispensa_abrir_o_zip(
+    tmp_path: Path, tag: str
+) -> None:
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    _gravar_inteiro(raw, lake, tag)
+
+    res = converter.convert(raw, lake, datasets=[POCO])
+
+    assert not res.errors, res.errors
+    assert res.converted == 2
+    assert _nomes(lake) == MEMBROS
+
+
+@pytest.mark.parametrize("tag", ["anp-fetcher 2.11.1", "anp-fetcher 2.10.0"])
+def test_gravado_antes_da_revisao_no_rodape_vale_como_revisao_1(
+    tmp_path: Path, aberturas: list[str], tag: str
+) -> None:
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    _gravar_inteiro(raw, lake, tag)
+    aberturas.clear()
+
+    res = converter.convert(raw, lake, datasets=[POCO])
+
+    assert (res.converted, res.skipped, res.errors) == (0, 1, [])
+    assert aberturas == []
+
+
+def test_o_rodape_grava_versao_e_revisao_de_roteamento(tmp_path: Path) -> None:
+    import pyarrow.parquet as pq
+
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    converter.convert(raw, lake, datasets=[GLP])
+    for parquet in (lake / "anp" / GLP).rglob("*.parquet"):
+        tag = pq.ParquetFile(parquet).metadata.metadata[b"quantilica.converter"]
+        assert tag.decode().endswith(f" roteamento={lake_mod._ROUTING_REVISION}")
+
+
+def test_sha256_com_erro_de_es_no_roteamento_nao_derruba_o_convert(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    converter.convert(raw, lake, datasets=[GLP])
+
+    def falha(path):  # noqa: ANN001, ANN202
+        raise OSError(5, "Input/output error")
+
+    monkeypatch.setattr(lake_mod, "_digest", falha)
+
+    res = converter.convert(raw, lake, datasets=[GLP])  # não levanta
+
+    assert res.errors  # cada item reporta o erro; o ZIP foi roteado abrindo-o
+    assert res.converted == 0
+
+
+def test_conversao_interrompida_num_membro_de_zip_e_completada(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    original = type(converter)._write_item
+
+    def cai_no_segundo(writer, group, spec, item, source_path, result):  # noqa: ANN001, ANN202
+        if item.member and "terra" in item.member:
+            raise RuntimeError("sem espaço em disco")
+        return original(writer, group, spec, item, source_path, result)
+
+    with monkeypatch.context() as m:
+        m.setattr(type(converter), "_write_item", staticmethod(cai_no_segundo))
+        r1 = converter.convert(raw, lake, datasets=[POCO])
+    assert (r1.converted, len(r1.errors)) == (1, 1)
+
+    r2 = converter.convert(raw, lake, datasets=[POCO])
+    assert (r2.converted, r2.skipped, r2.errors) == (1, 1, [])
+    r3 = converter.convert(raw, lake, datasets=[POCO])
+    assert (r3.converted, r3.skipped, r3.errors) == (0, 2, [])
+    assert _nomes(lake) == MEMBROS
+
+
+@pytest.fixture
+def sem_abrir_csv(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):  # noqa: ANN201
+    """Devolve ``armar()``: depois dela, nenhum CSV do bruto é aberto (``open``,
+    ``io.open`` ou ``Path.open``). ZIPs e sidecars podem."""
+    raiz = str((tmp_path / "raw").resolve())
+
+    def vigia(original):  # noqa: ANN001, ANN202
+        def aberto(file, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN202
+            nome = str(file) if isinstance(file, str | Path) else ""
+            if nome.startswith(raiz) and nome.lower().endswith(".csv"):
+                raise AssertionError(f"bruto aberto: {nome}")
+            return original(file, *args, **kwargs)
+
+        return aberto
+
+    def armar() -> None:
+        monkeypatch.setattr(builtins, "open", vigia(builtins.open))
+        monkeypatch.setattr(io, "open", vigia(io.open))
+        original_path_open = Path.open
+
+        def path_open(self, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN202
+            return vigia(lambda f, *a, **k: original_path_open(Path(f), *a, **k))(
+                self, *args, **kwargs
+            )
+
+        monkeypatch.setattr(Path, "open", path_open)
+
+    return armar
+
+
+def test_segunda_rodada_nao_abre_csv_do_bruto(
+    tmp_path: Path, sem_abrir_csv, sem_hash_por_leitura: None
+) -> None:
+    raw, lake = _bruto(tmp_path), tmp_path / "lake"
+    assert not converter.convert(raw, lake).errors
+    sem_abrir_csv()
+    res = converter.convert(raw, lake)
+    assert (res.converted, res.skipped, res.errors) == (0, 4, [])

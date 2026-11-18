@@ -608,21 +608,50 @@ def _is_json_in_zip_clothing(path: Path) -> bool:
     return head[:1] in (b"{", b"[")
 
 
-#: Primeira versão que grava um Parquet por membro de ZIP de vários membros. Um ZIP
-#: gravado inteiro por versão anterior pode ter vários membros e tem de ser
-#: reaberto para migrar (``_prune_zip_parts``).
-_ZIP_MEMBERS_SINCE = (2, 10, 0)
-_CONVERTER_VERSION = re.compile(r"^anp-fetcher (\d+)\.(\d+)\.(\d+)")
+#: Revisão da regra que roteia ZIP (um Parquet por membro de dados; ZIP de membro
+#: único vai inteiro). É gravada no rodapé de cada Parquet (``quantilica.converter``,
+#: ``anp-fetcher <versão> roteamento=<revisão>``) e conferida por **igualdade**: um
+#: ZIP registrado como inteiro só deixa de ser aberto para rotear se foi gravado com
+#: esta mesma revisão. Suba-a quando a regra de roteamento mudar (membros, chaves,
+#: datasets, partições): os ZIPs gravados com outra voltam a ser abertos.
+_ROUTING_REVISION = 1
+#: Antes de a revisão ir no rodapé, a regra desta revisão valia de ``2.10.0`` a
+#: ``2.11.x``: o rodapé só trazia ``anp-fetcher <versão>``. Um ZIP gravado inteiro por
+#: versão anterior pode ter vários membros e tem de ser reaberto para migrar
+#: (``_prune_zip_parts``).
+_ROUTING_UNTAGGED_FROM = (2, 10, 0)
+_ROUTING_UNTAGGED_UNTIL = (2, 12, 0)
+_CONVERTER_VERSION = re.compile(
+    r"^anp-fetcher (\d+)\.(\d+)\.(\d+)(?: roteamento=(\d+))?"
+)
+
+
+def _converter_tag() -> str:
+    """O ``quantilica.converter`` gravado: versão do pacote e revisão do roteamento."""
+    return f"anp-fetcher {__version__} roteamento={_ROUTING_REVISION}"
+
+
+def _routing_revision(tag: str) -> int | None:
+    """Revisão de roteamento de um ``quantilica.converter`` (``None``: desconhecida)."""
+    found = _CONVERTER_VERSION.match(tag)
+    if not found:
+        return None
+    if found.group(4) is not None:
+        return int(found.group(4))
+    version = tuple(map(int, found.groups()[:3]))
+    if _ROUTING_UNTAGGED_FROM <= version < _ROUTING_UNTAGGED_UNTIL:
+        return 1
+    return None
 
 
 def _written_with_zip_members(part: Path) -> bool:
-    """Se o Parquet foi gravado por um conversor que já abria ZIP por membro."""
+    """Se o Parquet foi gravado com a revisão de roteamento de agora."""
     try:
         meta = pq.ParquetFile(part).metadata.metadata or {}
     except Exception:
         return False
-    found = _CONVERTER_VERSION.match(meta.get(b"quantilica.converter", b"").decode())
-    return bool(found) and tuple(map(int, found.groups())) >= _ZIP_MEMBERS_SINCE
+    revision = _routing_revision(meta.get(b"quantilica.converter", b"").decode())
+    return revision == _ROUTING_REVISION
 
 
 def _recorded_whole_zips(
@@ -667,7 +696,11 @@ def _recorded_whole_zips(
                 if partes and all(_written_with_zip_members(p) for p in partes):
                     pastas.append(d)
         if pastas:
-            digest = _digest(path)
+            try:
+                digest = _digest(path)
+            except OSError as exc:
+                logger.debug("%s: sha256 indisponível (%s); roteado abrindo", path, exc)
+                continue
             if any(origin_matches(d, key, digest) for d in pastas):
                 found.add(path)
     return found
@@ -1044,7 +1077,11 @@ class LakeConverter:
         for group in target_groups:
             src_group_dir = input_dir / _GROUP_DIRS[group]
             if src_group_dir.exists():
-                routes[group] = route_group(group, src_group_dir, lake_dir)[0]
+                # Com force o ZIP é aberto e roteado de novo: o registro do lake
+                # (ZIP inteiro, em dia) não vale para quem pede reconversão.
+                routes[group] = route_group(
+                    group, src_group_dir, None if force else lake_dir
+                )[0]
         if target_datasets:
             known = {item.dataset_id for items in routes.values() for item in items}
             for d in sorted(target_datasets):
@@ -1200,7 +1237,7 @@ class LakeConverter:
                     raw_file,
                     partitions=item.partition_values,
                     file_key_name=file_key_override,
-                    converter=f"anp-fetcher {__version__}",
+                    converter=_converter_tag(),
                 )
             finally:
                 writer.quality_metadata = {}
