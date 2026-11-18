@@ -262,7 +262,7 @@ def test_force_reroteia_o_zip_que_o_lake_tem_inteiro(
     [
         "anp-fetcher 2.12.0 roteamento=2",  # roteamento de outra revisão
         "anp-fetcher 99.0.0",  # versão futura sem revisão: não se presume
-        "anp-fetcher 2.9.0",  # anterior aos membros
+        "anp-fetcher 2.6.2",  # anterior aos membros (lia só o primeiro)
         "quantilica-analytics",
     ],
 )
@@ -279,7 +279,16 @@ def test_so_a_mesma_revisao_de_roteamento_dispensa_abrir_o_zip(
     assert _nomes(lake) == MEMBROS
 
 
-@pytest.mark.parametrize("tag", ["anp-fetcher 2.11.1", "anp-fetcher 2.10.0"])
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "anp-fetcher 2.11.1",
+        "anp-fetcher 2.10.0",
+        "anp-fetcher 2.9.0",
+        "anp-fetcher 2.8.0",  # a versão do lake real
+        "anp-fetcher 2.7.0",  # a primeira que separa os membros do ZIP
+    ],
+)
 def test_gravado_antes_da_revisao_no_rodape_vale_como_revisao_1(
     tmp_path: Path, aberturas: list[str], tag: str
 ) -> None:

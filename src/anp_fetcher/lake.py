@@ -615,11 +615,13 @@ def _is_json_in_zip_clothing(path: Path) -> bool:
 #: esta mesma revisão. Suba-a quando a regra de roteamento mudar (membros, chaves,
 #: datasets, partições): os ZIPs gravados com outra voltam a ser abertos.
 _ROUTING_REVISION = 1
-#: Antes de a revisão ir no rodapé, a regra desta revisão valia de ``2.10.0`` a
-#: ``2.11.x``: o rodapé só trazia ``anp-fetcher <versão>``. Um ZIP gravado inteiro por
-#: versão anterior pode ter vários membros e tem de ser reaberto para migrar
-#: (``_prune_zip_parts``).
-_ROUTING_UNTAGGED_FROM = (2, 10, 0)
+#: Antes de a revisão ir no rodapé, a regra desta revisão valia de ``2.7.0`` (o
+#: primeiro conversor que separa os membros do ZIP) a ``2.11.x``: o rodapé só trazia
+#: ``anp-fetcher <versão>``. O roteamento (``route_group``, ``_zip_parts``,
+#: ``zip_data_members`` e os helpers que eles chamam) é idêntico nessas versões; um
+#: ZIP gravado inteiro por versão anterior à ``2.7.0`` lia só o primeiro membro e
+#: tem de ser reaberto para migrar (``_prune_zip_parts``).
+_ROUTING_UNTAGGED_FROM = (2, 7, 0)
 _ROUTING_UNTAGGED_UNTIL = (2, 12, 0)
 _CONVERTER_VERSION = re.compile(
     r"^anp-fetcher (\d+)\.(\d+)\.(\d+)(?: roteamento=(\d+))?"
@@ -662,9 +664,9 @@ def _recorded_whole_zips(
     O rodapé de um ZIP convertido por inteiro guarda o ``file_key`` do arquivo e o
     sha256 dele: é a prova de que ele é um ZIP de verdade, de membro único, sem
     abri-lo (nem o ``is_zipfile`` nem o índice de membros), desde que gravado por um
-    conversor que já separava os membros (``_ZIP_MEMBERS_SINCE``). Só stat, sidecar
-    e rodapés. Os ZIPs anuais do PMQC ficam de fora: viram um item por mês e nunca
-    são gravados inteiros.
+    conversor que já separava os membros e roteava igual a este
+    (``_routing_revision``). Só stat, sidecar e rodapés. Os ZIPs anuais do PMQC
+    ficam de fora: viram um item por mês e nunca são gravados inteiros.
     """
     if lake_dir is None:
         return set()
