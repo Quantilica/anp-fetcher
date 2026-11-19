@@ -5,14 +5,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [2.11.2] - 2026-11-19
 
 ### Alterado
+
 - **Build do lake sem mudança não lê o bruto.** O sha256 do bruto vem do sidecar `.manifest.json` (`quantilica.analytics.lake.sha256_file`) em vez de uma leitura completa do arquivo, e o roteamento não abre mais um ZIP que o lake já tem inteiro e em dia (nem `is_zipfile`, nem o índice de membros, nem os 64 bytes de checagem de JSON): o rodapé do Parquet prova que ele é um ZIP de membro único. ZIP com vários membros (e o ZIP anual do PMQC) ainda tem o índice aberto para rotear, mas nenhum membro é extraído nem lido quando está em dia.
 - **Revisão de roteamento no rodapé.** O Parquet passa a gravar `quantilica.converter` como `anp-fetcher <versão> roteamento=<revisão>`, e o ZIP que o lake tem inteiro só deixa de ser aberto para rotear se a revisão gravada é **igual** à do conversor (antes, bastava a versão do pacote ser `>= 2.10.0`, o que daria por boa uma regra de roteamento futura). Rodapés de `2.7.0` a `2.11.x`, sem revisão, valem como revisão 1 (o roteamento é idêntico desde a `2.7.0`, a primeira versão que separa os membros do ZIP, conferido por comparação do código e do resultado de `route_group` em ZIPs de todos os grupos de roteamento); qualquer outra versão sem revisão não vale e o ZIP é aberto.
 - Piso do `quantilica-analytics` em 0.14.0 (sha256 pelo sidecar).
 
 ### Corrigido
+
 - `convert(force=True)` não reroteia mais com o registro do lake: o ZIP que o lake tem inteiro e em dia era dado por roteado sem ser aberto, e um ZIP de vários membros gravado inteiro por versão anterior não era separado em um Parquet por membro. Com `force` todo ZIP é aberto.
 - Erro de E/S ao calcular o sha256 do ZIP durante o roteamento não derruba mais o `convert`: o ZIP é roteado abrindo-o e o erro vai para o item.
 - CI e infraestrutura alinhados ao template (fetcher-template v0.2.1).
